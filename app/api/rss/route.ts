@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const items = parseRSS(xml);
 
     return NextResponse.json({ items, category });
-  } catch (err) {
+  } catch (_err) {
     return NextResponse.json({ error: "Failed to fetch feed", items: [] }, { status: 500 });
   }
 }
@@ -43,7 +43,7 @@ type RSSItem = {
 
 function parseRSS(xml: string): RSSItem[] {
   const items: RSSItem[] = [];
-  const itemMatches = xml.matchAll(/<item>([\s\S]*?)<\/item>/g);
+  const itemMatches = Array.from(xml.matchAll(/<item>([\s\S]*?)<\/item>/g));
 
   for (const match of itemMatches) {
     const block = match[1];
@@ -64,10 +64,10 @@ function parseRSS(xml: string): RSSItem[] {
       .replace(/&#39;/g, "'")
       .replace(/&nbsp;/g, " ");
     // Google News descriptions are lists of related articles — extract source names as coverage line
-    const sourcesInDesc = [...decoded.matchAll(/<font[^>]*>([^<]+)<\/font>/g)]
+    const sourcesInDesc = Array.from(decoded.matchAll(/<font[^>]*>([^<]+)<\/font>/g))
       .map((m) => m[1].trim())
       .filter(Boolean);
-    const unique = [...new Set(sourcesInDesc)].slice(0, 4);
+    const unique = Array.from(new Set(sourcesInDesc)).slice(0, 4);
     const description = unique.length > 0 ? unique.join(" · ") : decoded.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
     // Source is often in <source url="...">Name</source>

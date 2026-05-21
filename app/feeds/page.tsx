@@ -42,7 +42,7 @@ export default function FeedsPage() {
         if (data.error) throw new Error(data.error);
         setArticles(data.items ?? []);
       })
-      .catch((e) => setError("Could not load feed. Try again."))
+      .catch(() => setError("Could not load feed. Try again."))
       .finally(() => setLoading(false));
   }, [category]);
 
