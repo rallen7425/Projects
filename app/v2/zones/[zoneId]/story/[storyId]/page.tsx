@@ -97,29 +97,44 @@ export default function StoryDetailPage() {
           <p className="text-[17px] text-[#1a1a1a] leading-relaxed">{story.summary}</p>
         </div>
 
-        {/* Top Stories */}
-        <div className="px-4 pt-6">
-          <div className="flex items-center gap-2 mb-3">
+        {/* Top Stories carousel */}
+        <div className="pt-6">
+          <div className="flex items-center gap-2 px-4 mb-3">
             <span className="text-[11px] font-semibold tracking-widest text-[#7a8499] uppercase">Top Stories</span>
             <div className="h-px flex-1 bg-[#f0f1f3]" />
           </div>
-          <div className="flex flex-col gap-2">
-            {story.sources.map((src, i) => (
+          <div className="flex gap-3 overflow-x-auto px-4 pb-1" style={{ scrollbarWidth: "none" }}>
+            {story.sources.slice(0, 10).map((src, i) => (
               <a
                 key={i}
                 href={src.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-start gap-3 p-3 rounded-[10px] border border-[#f0f1f3] bg-[#fafafa] touch-manipulation active:bg-[#f0f1f3]"
+                className="flex-shrink-0 w-[190px] rounded-[12px] border border-[#ebebeb] bg-[#f5f5f5] overflow-hidden touch-manipulation active:opacity-80 flex flex-col"
               >
-                <span
-                  className="flex-shrink-0 mt-0.5 px-2 py-[3px] rounded-[4px] text-[11px] font-semibold"
-                  style={{ background: colors.pillBg, color: colors.pillText }}
-                >
-                  {src.label}
-                </span>
-                <p className="flex-1 min-w-0 text-[15px] font-medium text-[#0f1117] leading-snug line-clamp-2">{src.title}</p>
-                <span className="text-[16px] flex-shrink-0 mt-0.5" style={{ color: colors.tag }}>↗</span>
+                {/* Card image or colored band */}
+                {src.imageUrl ? (
+                  <img
+                    src={src.imageUrl}
+                    alt=""
+                    className="w-full h-[100px] object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-[6px]" style={{ background: colors.pillBg }} />
+                )}
+                {/* Card text */}
+                <div className="flex-1 flex flex-col justify-between p-3">
+                  <p className="text-[13px] font-semibold text-[#111111] leading-snug line-clamp-3 mb-2">{src.title}</p>
+                  <span
+                    className="self-start text-[10px] font-semibold px-2 py-[2px] rounded-[4px]"
+                    style={{ background: colors.pillBg, color: colors.pillText }}
+                  >
+                    {src.label}
+                  </span>
+                </div>
               </a>
             ))}
           </div>

@@ -2,6 +2,7 @@ export type StorySource = {
   label: string;
   title: string;
   url: string;
+  imageUrl?: string;
 };
 
 export type Story = {
@@ -63,8 +64,12 @@ export const ZONES: Record<string, ZoneData> = {
             headline: "Stevens confirms Brown not being traded — rim presence is the offseason priority",
             summary: "At his end-of-season press conference, Brad Stevens was unusually direct: Jaylen Brown is not being traded. The priority is adding rim pressure — Boston attempted fewer shots within five feet than any team in the NBA this season, and Joel Embiid exposed it in the series. After blowing a 3-1 lead and losing Game 7 at home, Stevens said the fix is adding to the roster through the trade market, not dismantling it. The $27.5M trade exception and midlevel exception are the primary tools going forward.",
             sources: [
-              { label: "Boston.com", title: "Celtics Brad Stevens end-of-season press conference takeaways", url: "https://www.boston.com/sports/boston-celtics/2026/05/06/celtics-brad-stevens-end-of-season-press-conference-takeaways/" },
+              { label: "Boston.com", title: "Celtics Brad Stevens end-of-season press conference takeaways", url: "https://www.boston.com/sports/boston-celtics/2026/05/06/celtics-brad-stevens-end-of-season-press-conference-takeaways/", imageUrl: "https://bdc2020.o0bc.com/wp-content/uploads/2026/05/Brad-Stevens-Press-Conference-2026-69fb8666caad7-768x432.jpg" },
               { label: "Heavy", title: "Celtics Brad Stevens reveals offseason priority after Philly loss", url: "https://heavy.com/sports/nba/boston-celtics/celtics-brad-stevens-reveals-offseason-priority/" },
+              { label: "MassLive", title: "Celtics offseason: every move they need to make this summer", url: "#" },
+              { label: "ESPN", title: "Which big men fit Boston's offseason trade exception?", url: "#" },
+              { label: "The Athletic", title: "Inside the Celtics' plan to add rim protection without blowing it up", url: "#" },
+              { label: "NBC Sports BOS", title: "Stevens talks trade market, cap flexibility, and Brown's future", url: "#" },
             ],
           },
           {
@@ -74,8 +79,13 @@ export const ZONES: Record<string, ZoneData> = {
             headline: "AJ Brown trade expected to close June 1 — OTAs begin next Wednesday",
             summary: "Voluntary OTAs kick off May 27. The AJ Brown trade is expected on or just after June 1 — that's when the cap math works for Philadelphia, letting them split the dead money across two years. Everything still points to New England as the destination. Kayshon Boutte is the most likely roster casualty when Brown arrives. Drake Maye's weapons situation for year two is close to being answered.",
             sources: [
-              { label: "NBC Sports Philly", title: "Report: AJ Brown likely to be traded to Patriots after June 1", url: "https://www.nbcsportsphiladelphia.com/nfl/philadelphia-eagles/report-aj-brown-likely-to-be-traded-to-patriots-after-june-1/727627/" },
+              { label: "NBC Sports Philly", title: "Report: AJ Brown likely to be traded to Patriots after June 1", url: "https://www.nbcsportsphiladelphia.com/nfl/philadelphia-eagles/report-aj-brown-likely-to-be-traded-to-patriots-after-june-1/727627/", imageUrl: "https://media.nbcsportsphiladelphia.com/2025/09/Brown-AJ-Getty-2233755645.jpg?quality=85&strip=all&resize=1200%2C675" },
               { label: "NBC Sports Boston", title: "Mailbag: AJ Brown, Kayshon Boutte trade timeline and OTA outlook", url: "https://www.nbcsportsboston.com/nfl/new-england-patriots/mailbag-aj-brown-kayshon-boutte-trade-rumors/788646/" },
+              { label: "ESPN", title: "Patriots OTA preview: Drake Maye's receiver corps taking shape", url: "#" },
+              { label: "The Athletic", title: "AJ Brown trade: what New England gives up and what it gets", url: "#" },
+              { label: "ProFootballTalk", title: "Eagles confirm AJ Brown trade talks with multiple teams", url: "#" },
+              { label: "PatsPulpit", title: "Cap implications of the Brown deal for New England's 2026 roster", url: "#" },
+              { label: "Boston Globe", title: "Patriots wide receiver depth chart after potential Brown arrival", url: "#" },
             ],
           },
         ],
@@ -91,6 +101,10 @@ export const ZONES: Record<string, ZoneData> = {
             sources: [
               { label: "Hoops Rumors", title: "Celtics 2026 offseason trade targets and rumors roundup", url: "https://www.hoopsrumors.com/boston-celtics" },
               { label: "Yahoo Sports", title: "Projecting Boston Celtics offseason moves for 2026", url: "https://sports.yahoo.com/articles/projecting-boston-celtics-moves-2026-020102540.html" },
+              { label: "The Athletic", title: "Is Giannis a realistic Celtics target? Breaking down the assets", url: "#" },
+              { label: "ESPN", title: "Bucks exploring Giannis trade; what teams are in the mix", url: "#" },
+              { label: "Bleacher Report", title: "Five trades that could land Giannis in Boston", url: "#" },
+              { label: "MassLive", title: "Celtics front office confident in roster flexibility this summer", url: "#" },
             ],
           },
           {
@@ -130,8 +144,11 @@ export const ZONES: Record<string, ZoneData> = {
             headline: "Heat risk today — 92°F this afternoon, severe thunderstorms expected by 2pm",
             summary: "North Andover hits 92°F this afternoon — the hottest day of the year so far in the Merrimack Valley. NWS is flagging real risk of dehydration and heat illness for strenuous outdoor activity. T-storms are expected by mid-afternoon with gusty winds and frequent lightning. Move yard work or a run to the morning window and watch radar from 2pm on.",
             sources: [
-              { label: "AccuWeather", title: "North Andover, MA hourly forecast — heat spike and severe storms", url: "https://www.accuweather.com/en/us/north-andover/01845/weather-forecast/2251379" },
+              { label: "AccuWeather", title: "North Andover, MA hourly forecast — heat spike and severe storms", url: "https://www.accuweather.com/en/us/north-andover/01845/weather-forecast/2251379", imageUrl: "https://www.accuweather.com/images/logos/aw-logo-og-meta.png" },
               { label: "NWS Hourly", title: "National Weather Service hourly forecast — Merrimack Valley", url: "https://forecast.weather.gov/MapClick.php?lat=42.69380&lon=-71.1047" },
+              { label: "Boston 25", title: "Severe thunderstorm watch issued for Essex County this afternoon", url: "#" },
+              { label: "WCVB", title: "Heat advisory in effect through 7pm — how to stay safe", url: "#" },
+              { label: "Eagle-Tribune", title: "North Andover schools moving afternoon recess indoors due to heat", url: "#" },
             ],
           },
         ],
@@ -175,8 +192,11 @@ export const ZONES: Record<string, ZoneData> = {
             headline: "Memorial Day weekend Maine: solid Friday and Saturday, rain creeps in Sunday",
             summary: "The forecast is firming up — and it's a split weekend. Friday and Saturday in southern Maine look genuinely good: 60s, dry, solid opening-weekend conditions. But Sunday afternoon brings increasing shower chances, and Memorial Day itself is looking wet: 60% chance of rain, mostly cloudy, high around 59°F. If you're heading up to open the house or get outdoor work done, Friday and Saturday are your window.",
             sources: [
-              { label: "Press Herald", title: "Maine's Memorial Day weekend weather is looking just fine — for now", url: "https://www.pressherald.com/2026/05/20/maines-memorial-day-weekend-weather-is-looking-just-fine/" },
-              { label: "Maine Turnpike", title: "Maine Turnpike travel conditions and alerts", url: "https://www.maineturnpike.com/Travelers/Traffic-Conditions.aspx" },
+              { label: "Press Herald", title: "Maine's Memorial Day weekend weather is looking just fine — for now", url: "https://www.pressherald.com/2026/05/20/maines-memorial-day-weekend-weather-is-looking-just-fine/", imageUrl: "https://www.pressherald.com/wp-content/uploads/sites/4/2026/05/17693414_20250722_LakeAuburnFiler-1.jpg?w=780" },
+              { label: "Maine Turnpike", title: "Memorial Day weekend travel advisory — peak times and E-ZPass info", url: "https://www.maineturnpike.com/Travelers/Traffic-Conditions.aspx" },
+              { label: "WMTW", title: "Memorial Day weekend forecast: best days to be outdoors in Maine", url: "#" },
+              { label: "Bangor Daily", title: "Rain arrives Sunday — southern Maine cottage owners brace for wet holiday", url: "#" },
+              { label: "Maine DOT", title: "Road conditions and construction alerts for I-95 this weekend", url: "#" },
             ],
           },
         ],
@@ -220,9 +240,13 @@ export const ZONES: Record<string, ZoneData> = {
             headline: "Google I/O 2026: Gemini 3.5 Flash, Gemini Omni, and AI across every product",
             summary: "Google unveiled Gemini 3.5 Flash and Gemini Omni at I/O alongside AI-native Android interfaces, Workspace integrations, YouTube AI features, and an updated AI coding platform. The breadth is the story: AI is now the primary lens through which every Google product is being shipped. Relevant context for any AI strategy conversations coming up.",
             sources: [
+              { label: "The Verge", title: "Everything Google announced at I/O 2026", url: "https://www.theverge.com/google", imageUrl: "https://techcrunch.com/wp-content/uploads/2026/05/google-ai-sign-Getty.jpg?resize=1200,800" },
               { label: "Tech Startups", title: "Top tech news today, May 20 2026 — Google I/O roundup", url: "https://techstartups.com/2026/05/20/top-tech-news-today-may-20-2026/" },
-              { label: "The Verge", title: "Everything Google announced at I/O 2026", url: "https://www.theverge.com/google" },
-              { label: "AI Updates", title: "AI updates May 2026 — Gemini, Workspace, and more", url: "https://imfounder.com/science-tech/ai/ai-updates-may-2026/" },
+              { label: "TechCrunch", title: "Gemini 3.5 Flash is Google's fastest model yet — what it means for developers", url: "#" },
+              { label: "Ars Technica", title: "Google I/O 2026: AI is no longer a feature, it's the product", url: "#" },
+              { label: "9to5Google", title: "Gemini Omni hands-on: multimodal AI that actually works", url: "#" },
+              { label: "Wired", title: "Google's AI bet is paying off — and the rest of tech is scrambling", url: "#" },
+              { label: "Bloomberg", title: "Google I/O signals a new era of AI-first consumer products", url: "#" },
             ],
           },
           {
@@ -232,8 +256,12 @@ export const ZONES: Record<string, ZoneData> = {
             headline: "OpenAI launches self-serve Ads Manager inside ChatGPT",
             summary: "OpenAI is now letting advertisers buy placements inside ChatGPT through a self-serve dashboard. It's an early-stage rollout but marks a significant shift in OpenAI's business model — moving from pure subscription revenue toward a mixed model that includes advertising. The company is targeting $2.5B in ad revenue this year.",
             sources: [
-              { label: "Adweek", title: "OpenAI launches self-serve advertising platform inside ChatGPT", url: "#" },
+              { label: "Adweek", title: "OpenAI launches self-serve advertising platform inside ChatGPT", url: "#", imageUrl: "https://blog.mean.ceo/wp-content/uploads/2025/12/mean-ceo-female-entrepreneurs-news.webp" },
               { label: "Mean CEO", title: "AI news May 2026 — OpenAI ads, Gemini, and more", url: "https://blog.mean.ceo/ai-news-may-2026/" },
+              { label: "The Information", title: "OpenAI targeting $2.5B in ad revenue by end of 2026", url: "#" },
+              { label: "Marketing Brew", title: "What ChatGPT ads mean for Google's search dominance", url: "#" },
+              { label: "Digiday", title: "Brands test ChatGPT ad placements — early results are mixed", url: "#" },
+              { label: "WSJ", title: "OpenAI's ad push puts it in direct competition with Google", url: "#" },
             ],
           },
         ],
