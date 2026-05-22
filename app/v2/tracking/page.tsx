@@ -63,11 +63,11 @@ export default function TrackingPage() {
         {/* Page title row */}
         <div className="px-4 pt-3 pb-2 border-b border-[#f0f1f3] flex items-center justify-between">
           <div>
-            <div className="text-[18px] font-semibold text-[#0f1117]">Tracking</div>
-            <div className="text-[11px] text-[#7a8499] mt-0.5">Topics you're following closely</div>
+            <div className="text-[20px] font-semibold text-[#0f1117]">Tracking</div>
+            <div className="text-[13px] text-[#7a8499] mt-0.5">Topics you're following closely</div>
           </div>
-          <button className="flex items-center gap-1 text-[12px] font-medium bg-[#E6F1FB] text-[#185FA5] px-3 py-1.5 rounded-[6px] touch-manipulation active:bg-[#d0e5f7]">
-            <span className="text-[16px] leading-none">+</span>
+          <button className="flex items-center gap-1 text-[14px] font-medium bg-[#E6F1FB] text-[#185FA5] px-3 py-1.5 rounded-[6px] touch-manipulation active:bg-[#d0e5f7]">
+            <span className="text-[18px] leading-none">+</span>
             Add topic
           </button>
         </div>
@@ -83,10 +83,10 @@ export default function TrackingPage() {
               placeholder="Search topics..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-[13px] text-[#0f1117] placeholder-[#7a8499] outline-none"
+              className="flex-1 bg-transparent text-[15px] text-[#0f1117] placeholder-[#7a8499] outline-none"
             />
             {search && (
-              <button onClick={() => setSearch("")} className="text-[#7a8499] text-[16px] leading-none touch-manipulation">×</button>
+              <button onClick={() => setSearch("")} className="text-[#7a8499] text-[18px] leading-none touch-manipulation">×</button>
             )}
           </div>
         </div>
@@ -94,12 +94,12 @@ export default function TrackingPage() {
           {/* Active topics */}
           <div className="px-4 pt-3">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-semibold tracking-widest text-[#7a8499] uppercase">Active</span>
-              <span className="text-[10px] font-semibold text-[#7a8499]">· {filteredActive.length} {filteredActive.length === 1 ? "topic" : "topics"}</span>
+              <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase">Active</span>
+              <span className="text-[12px] font-semibold text-[#7a8499]">· {filteredActive.length} {filteredActive.length === 1 ? "topic" : "topics"}</span>
             </div>
             <div className="rounded-[10px] border border-[#dde1e8] overflow-hidden bg-white">
               {filteredActive.length === 0 && (
-                <div className="px-4 py-4 text-[13px] text-[#7a8499] text-center">No active topics</div>
+                <div className="px-4 py-4 text-[15px] text-[#7a8499] text-center">No active topics</div>
               )}
               {filteredActive.map((topic, i) => (
                 <div
@@ -107,28 +107,28 @@ export default function TrackingPage() {
                   className="flex items-center gap-3 px-3 py-3 border-b border-[#f0f1f3] last:border-0"
                 >
                   {/* Drag handle */}
-                  <span className="text-[#c0c5d0] text-[16px] leading-none flex-shrink-0 cursor-grab">⠿</span>
+                  <span className="text-[#c0c5d0] text-[18px] leading-none flex-shrink-0 cursor-grab">⠿</span>
 
                   {/* Emoji icon */}
-                  <div className="w-9 h-9 rounded-[8px] bg-[#f7f8fa] flex items-center justify-center text-[18px] flex-shrink-0">{topic.emoji}</div>
+                  <div className="w-9 h-9 rounded-[8px] bg-[#f7f8fa] flex items-center justify-center text-[20px] flex-shrink-0">{topic.emoji}</div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="text-[13px] font-semibold text-[#0f1117] truncate">{topic.name}</span>
+                      <span className="text-[15px] font-semibold text-[#0f1117] truncate">{topic.name}</span>
                       {topic.hasNew && <span className="w-1.5 h-1.5 rounded-full bg-[#185FA5] flex-shrink-0" />}
                     </div>
-                    <div className="text-[11px] text-[#7a8499] line-clamp-1">{topic.update}</div>
+                    <div className="text-[13px] text-[#7a8499] line-clamp-1">{topic.update}</div>
                     <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-[4px]" style={{ background: topic.zoneBg, color: topic.zoneColor }}>{topic.zone}</span>
-                      <span className="text-[10px] text-[#7a8499]">{topic.time}</span>
+                      <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-[4px]" style={{ background: topic.zoneBg, color: topic.zoneColor }}>{topic.zone}</span>
+                      <span className="text-[12px] text-[#7a8499]">{topic.time}</span>
                     </div>
                   </div>
 
                   {/* Delete */}
                   <button
                     onClick={() => removeActive(topic.id)}
-                    className="w-6 h-6 flex items-center justify-center text-[#c0c5d0] text-[18px] leading-none touch-manipulation active:text-[#E24B4A] flex-shrink-0"
+                    className="w-6 h-6 flex items-center justify-center text-[#c0c5d0] text-[20px] leading-none touch-manipulation active:text-[#E24B4A] flex-shrink-0"
                   >
                     ×
                   </button>
@@ -141,12 +141,12 @@ export default function TrackingPage() {
           {(filteredPaused.length > 0 || !search) && (
             <div className="px-4 pt-4 pb-2">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-semibold tracking-widest text-[#7a8499] uppercase">Paused</span>
-                <span className="text-[10px] font-semibold text-[#7a8499]">· {filteredPaused.length} {filteredPaused.length === 1 ? "topic" : "topics"}</span>
+                <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase">Paused</span>
+                <span className="text-[12px] font-semibold text-[#7a8499]">· {filteredPaused.length} {filteredPaused.length === 1 ? "topic" : "topics"}</span>
               </div>
               <div className="rounded-[10px] border border-[#dde1e8] overflow-hidden bg-white">
                 {filteredPaused.length === 0 && (
-                  <div className="px-4 py-4 text-[13px] text-[#7a8499] text-center">No paused topics</div>
+                  <div className="px-4 py-4 text-[15px] text-[#7a8499] text-center">No paused topics</div>
                 )}
                 {filteredPaused.map((topic) => (
                   <div
@@ -154,27 +154,27 @@ export default function TrackingPage() {
                     className="flex items-center gap-3 px-3 py-3 border-b border-[#f0f1f3] last:border-0"
                     style={{ opacity: 0.5 }}
                   >
-                    <span className="text-[#c0c5d0] text-[16px] leading-none flex-shrink-0">⠿</span>
-                    <div className="w-9 h-9 rounded-[8px] bg-[#f7f8fa] flex items-center justify-center text-[18px] flex-shrink-0">{topic.emoji}</div>
+                    <span className="text-[#c0c5d0] text-[18px] leading-none flex-shrink-0">⠿</span>
+                    <div className="w-9 h-9 rounded-[8px] bg-[#f7f8fa] flex items-center justify-center text-[20px] flex-shrink-0">{topic.emoji}</div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold text-[#0f1117] truncate mb-0.5">{topic.name}</div>
-                      <div className="text-[11px] text-[#7a8499] line-clamp-1">{topic.update}</div>
+                      <div className="text-[15px] font-semibold text-[#0f1117] truncate mb-0.5">{topic.name}</div>
+                      <div className="text-[13px] text-[#7a8499] line-clamp-1">{topic.update}</div>
                       <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-[4px]" style={{ background: topic.zoneBg, color: topic.zoneColor }}>{topic.zone}</span>
-                        {topic.resumeDate && <span className="text-[10px] text-[#7a8499]">{topic.resumeDate}</span>}
+                        <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-[4px]" style={{ background: topic.zoneBg, color: topic.zoneColor }}>{topic.zone}</span>
+                        {topic.resumeDate && <span className="text-[12px] text-[#7a8499]">{topic.resumeDate}</span>}
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                       <button
                         onClick={() => resumeTopic(topic.id)}
-                        className="text-[10px] font-medium text-[#185FA5] bg-[#E6F1FB] px-2 py-1 rounded-[5px] touch-manipulation"
+                        className="text-[12px] font-medium text-[#185FA5] bg-[#E6F1FB] px-2 py-1 rounded-[5px] touch-manipulation"
                         style={{ opacity: 1 }}
                       >
                         Resume
                       </button>
                       <button
                         onClick={() => removePaused(topic.id)}
-                        className="w-6 h-6 flex items-center justify-center text-[#c0c5d0] text-[18px] leading-none touch-manipulation"
+                        className="w-6 h-6 flex items-center justify-center text-[#c0c5d0] text-[20px] leading-none touch-manipulation"
                         style={{ opacity: 1 }}
                       >
                         ×
@@ -188,7 +188,7 @@ export default function TrackingPage() {
 
         {/* Add new topic */}
         <div className="px-4 pt-3 pb-6">
-            <div className="text-[10px] font-semibold tracking-widest text-[#7a8499] uppercase mb-2">Track a new topic</div>
+            <div className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase mb-2">Track a new topic</div>
             <div className="rounded-[10px] border border-dashed border-[#c0c5d0] bg-[#f7f8fa] p-4">
               <div className="flex gap-2">
                 <input
@@ -196,10 +196,10 @@ export default function TrackingPage() {
                   placeholder="Enter a topic, person, or event…"
                   value={addValue}
                   onChange={(e) => setAddValue(e.target.value)}
-                  className="flex-1 bg-white border border-[#dde1e8] rounded-[7px] px-3 py-2 text-[13px] text-[#0f1117] placeholder-[#7a8499] outline-none focus:border-[#185FA5]"
+                  className="flex-1 bg-white border border-[#dde1e8] rounded-[7px] px-3 py-2 text-[15px] text-[#0f1117] placeholder-[#7a8499] outline-none focus:border-[#185FA5]"
                 />
                 <button
-                  className="px-3 py-2 rounded-[7px] text-[13px] font-medium touch-manipulation"
+                  className="px-3 py-2 rounded-[7px] text-[15px] font-medium touch-manipulation"
                   style={{
                     background: addValue.trim() ? "#185FA5" : "#dde1e8",
                     color: addValue.trim() ? "#fff" : "#7a8499",
@@ -209,7 +209,7 @@ export default function TrackingPage() {
                   Track
                 </button>
               </div>
-              <div className="mt-2.5 text-[11px] text-[#7a8499] leading-snug">
+              <div className="mt-2.5 text-[13px] text-[#7a8499] leading-snug">
                 Distilled will monitor this topic and surface updates in your daily briefing.
               </div>
             </div>

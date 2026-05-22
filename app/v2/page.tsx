@@ -37,25 +37,25 @@ export default function V2Page() {
       {/* Greeting bar */}
       <div className="px-4 pt-3 pb-2 border-b border-[#f0f1f3] flex items-center justify-between">
         <div>
-          <div className="text-[11px] text-[#7a8499] uppercase tracking-widest">Fri, May 22 · North Andover, MA</div>
-          <div className="text-[14px] font-semibold text-[#0f1117] mt-0.5">Good morning, Rick</div>
+          <div className="text-[13px] text-[#7a8499] uppercase tracking-widest">Fri, May 22 · North Andover, MA</div>
+          <div className="text-[16px] font-semibold text-[#0f1117] mt-0.5">Good morning, Rick</div>
         </div>
-        <span className="text-[10px] italic px-2 py-0.5 rounded bg-[#f0f1f3] text-[#7a8499]">v2 prototype</span>
+        <span className="text-[12px] italic px-2 py-0.5 rounded bg-[#f0f1f3] text-[#7a8499]">v2 prototype</span>
       </div>
 
       {/* Breaking */}
       <div className="px-4 py-3 border-b border-[#f0f1f3]">
         <div className="flex items-center gap-2 mb-2.5">
           <span className="w-2 h-2 rounded-full bg-[#E24B4A] flex-shrink-0" />
-          <span className="text-[10px] font-semibold tracking-widest text-[#7a8499] uppercase">Breaking</span>
+          <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase">Breaking</span>
         </div>
         {BREAKING.map((item, i) => (
           <div key={i} className="flex gap-2.5 py-2.5 border-b border-[#f0f1f3] last:border-0 last:pb-0">
             <div className="w-0.5 rounded-full flex-shrink-0 self-stretch min-h-[18px]" style={{ background: item.color }} />
             <div className="flex-1 min-w-0">
-              <div className="text-[10px] text-[#7a8499] uppercase tracking-wide mb-0.5">{item.tag}</div>
-              <div className="text-[13px] font-semibold text-[#0f1117] leading-snug">{item.headline}</div>
-              <div className="text-[10px] text-[#7a8499] mt-1">{item.time}</div>
+              <div className="text-[12px] text-[#7a8499] uppercase tracking-wide mb-0.5">{item.tag}</div>
+              <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.headline}</div>
+              <div className="text-[12px] text-[#7a8499] mt-1">{item.time}</div>
             </div>
           </div>
         ))}
@@ -64,8 +64,8 @@ export default function V2Page() {
       {/* Your Zones */}
       <div className="px-4 py-3 border-b border-[#f0f1f3]">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-[10px] font-semibold tracking-widest text-[#7a8499] uppercase flex-1">Your Zones</span>
-          <button className="flex items-center gap-1 text-[10px] text-[#185FA5] bg-[#E6F1FB] px-2 py-0.5 rounded-[4px] touch-manipulation">
+          <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase flex-1">Your Zones</span>
+          <button className="flex items-center gap-1 text-[12px] text-[#185FA5] bg-[#E6F1FB] px-2 py-0.5 rounded-[4px] touch-manipulation">
             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -76,24 +76,24 @@ export default function V2Page() {
         <div className="grid grid-cols-2 gap-1.5">
           {visibleZones.map((z) => (
             <Link key={z.id} href={`/v2/zones/${z.id}`} className="rounded-[10px] p-3 text-left touch-manipulation active:opacity-80 block" style={{ background: z.bg }}>
-              <div className="text-[9px] font-semibold tracking-widest" style={{ color: z.nameColor }}>{z.name}</div>
-              <div className="text-[11px] font-semibold leading-snug mt-1" style={{ color: z.snapColor }}>{z.snap}</div>
+              <div className="text-[11px] font-semibold tracking-widest" style={{ color: z.nameColor }}>{z.name}</div>
+              <div className="text-[13px] font-semibold leading-snug mt-1" style={{ color: z.snapColor }}>{z.snap}</div>
               <div className="flex justify-between items-center mt-2.5">
-                <span className="text-[9px]" style={{ color: z.nameColor, opacity: 0.6 }}>{z.count} {z.count === 1 ? "story" : "stories"}</span>
-                <span className="text-[13px]" style={{ color: z.snapColor, opacity: 0.5 }}>›</span>
+                <span className="text-[11px]" style={{ color: z.nameColor, opacity: 0.6 }}>{z.count} {z.count === 1 ? "story" : "stories"}</span>
+                <span className="text-[15px]" style={{ color: z.snapColor, opacity: 0.5 }}>›</span>
               </div>
             </Link>
           ))}
           {zonesExpanded && (
             <button className="rounded-[10px] border border-dashed border-[#c0c5d0] p-3 flex flex-col items-center justify-center gap-1.5 min-h-[88px] touch-manipulation active:bg-[#f7f8fa]">
-              <span className="text-[18px] text-[#7a8499] leading-none">+</span>
-              <span className="text-[10px] text-[#7a8499]">add zone</span>
+              <span className="text-[20px] text-[#7a8499] leading-none">+</span>
+              <span className="text-[12px] text-[#7a8499]">add zone</span>
             </button>
           )}
         </div>
         <button
           onClick={() => setZonesExpanded(!zonesExpanded)}
-          className="w-full mt-2.5 text-[11px] text-[#185FA5] font-medium text-center py-1 touch-manipulation"
+          className="w-full mt-2.5 text-[13px] text-[#185FA5] font-medium text-center py-1 touch-manipulation"
         >
           {zonesExpanded ? "Show less ↑" : `Show all ${ZONES.length} zones ↓`}
         </button>
@@ -102,36 +102,36 @@ export default function V2Page() {
       {/* Trending */}
       <div className="px-4 py-3 border-b border-[#f0f1f3]">
         <div className="flex items-center gap-2 mb-2.5">
-          <span className="text-[10px] font-semibold tracking-widest text-[#7a8499] uppercase flex-1">Trending</span>
-          <span className="text-[10px] text-[#7a8499]">ranked for you</span>
+          <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase flex-1">Trending</span>
+          <span className="text-[12px] text-[#7a8499]">ranked for you</span>
         </div>
         {TRENDING.map((item) => (
           <div key={item.rank} className="flex items-center gap-2 py-2.5 border-b border-[#f0f1f3] last:border-0">
-            <span className="text-[11px] text-[#7a8499] w-4 text-right flex-shrink-0">{item.rank}</span>
+            <span className="text-[13px] text-[#7a8499] w-4 text-right flex-shrink-0">{item.rank}</span>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold text-[#0f1117]">{item.topic}</div>
-              <div className="text-[10px] text-[#7a8499] mt-0.5">{item.why}</div>
+              <div className="text-[15px] font-semibold text-[#0f1117]">{item.topic}</div>
+              <div className="text-[12px] text-[#7a8499] mt-0.5">{item.why}</div>
             </div>
-            {item.heat && <span className="text-[#E24B4A] text-[13px] font-bold flex-shrink-0">↑</span>}
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-[4px] flex-shrink-0" style={{ background: item.pillBg, color: item.pillColor }}>
+            {item.heat && <span className="text-[#E24B4A] text-[15px] font-bold flex-shrink-0">↑</span>}
+            <span className="text-[12px] font-medium px-1.5 py-0.5 rounded-[4px] flex-shrink-0" style={{ background: item.pillBg, color: item.pillColor }}>
               {item.pillLabel}
             </span>
             <div className="flex gap-1 flex-shrink-0">
-              <button className="w-6 h-6 rounded-[5px] border border-[#dde1e8] flex items-center justify-center text-[13px] font-bold text-[#3B6D11] touch-manipulation active:bg-[#EAF3DE]">+</button>
-              <button className="w-6 h-6 rounded-[5px] border border-[#dde1e8] flex items-center justify-center text-[11px] text-[#7a8499] touch-manipulation active:bg-[#f7f8fa] pb-0.5">···</button>
+              <button className="w-6 h-6 rounded-[5px] border border-[#dde1e8] flex items-center justify-center text-[15px] font-bold text-[#3B6D11] touch-manipulation active:bg-[#EAF3DE]">+</button>
+              <button className="w-6 h-6 rounded-[5px] border border-[#dde1e8] flex items-center justify-center text-[13px] text-[#7a8499] touch-manipulation active:bg-[#f7f8fa] pb-0.5">···</button>
             </div>
           </div>
         ))}
         <div className="text-center pt-2">
-          <button className="text-[11px] text-[#185FA5] font-medium touch-manipulation">View 7 more trending topics →</button>
+          <button className="text-[13px] text-[#185FA5] font-medium touch-manipulation">View 7 more trending topics →</button>
         </div>
       </div>
 
       {/* Tracking */}
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 mb-2.5">
-          <span className="text-[10px] font-semibold tracking-widest text-[#7a8499] uppercase flex-1">Tracking</span>
-          <Link href="/v2/tracking" className="flex items-center gap-1 text-[10px] text-[#185FA5] bg-[#E6F1FB] px-2 py-0.5 rounded-[4px] touch-manipulation">
+          <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase flex-1">Tracking</span>
+          <Link href="/v2/tracking" className="flex items-center gap-1 text-[12px] text-[#185FA5] bg-[#E6F1FB] px-2 py-0.5 rounded-[4px] touch-manipulation">
             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -141,19 +141,19 @@ export default function V2Page() {
         </div>
         {TRACKING.map((item, i) => (
           <div key={i} className="flex items-center gap-3 py-2.5 border-b border-[#f0f1f3] last:border-0">
-            <div className="w-9 h-9 rounded-[8px] bg-[#f7f8fa] flex items-center justify-center text-[18px] flex-shrink-0">{item.emoji}</div>
+            <div className="w-9 h-9 rounded-[8px] bg-[#f7f8fa] flex items-center justify-center text-[20px] flex-shrink-0">{item.emoji}</div>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold text-[#0f1117]">{item.name}</div>
-              <div className="text-[11px] text-[#7a8499] mt-0.5 line-clamp-1">{item.update}</div>
+              <div className="text-[15px] font-semibold text-[#0f1117]">{item.name}</div>
+              <div className="text-[13px] text-[#7a8499] mt-0.5 line-clamp-1">{item.update}</div>
             </div>
             <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-              <span className="text-[10px] text-[#7a8499]">{item.time}</span>
+              <span className="text-[12px] text-[#7a8499]">{item.time}</span>
               {item.hasNew && <span className="w-2 h-2 rounded-full bg-[#185FA5]" />}
             </div>
           </div>
         ))}
         <div className="text-center pt-2">
-          <Link href="/v2/tracking" className="text-[11px] text-[#185FA5] font-medium touch-manipulation">View 3 more tracked topics →</Link>
+          <Link href="/v2/tracking" className="text-[13px] text-[#185FA5] font-medium touch-manipulation">View 3 more tracked topics →</Link>
         </div>
       </div>
 

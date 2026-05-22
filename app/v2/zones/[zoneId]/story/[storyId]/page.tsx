@@ -19,8 +19,8 @@ export default function StoryDetailPage() {
   if (!story) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <div className="text-[16px] font-semibold text-[#0f1117]">Story not found</div>
-        <Link href={`/v2/zones/${zoneId}`} className="text-[13px] text-[#185FA5]">← Back to zone</Link>
+        <div className="text-[18px] font-semibold text-[#0f1117]">Story not found</div>
+        <Link href={`/v2/zones/${zoneId}`} className="text-[15px] text-[#185FA5]">← Back to zone</Link>
       </div>
     );
   }
@@ -36,7 +36,7 @@ export default function StoryDetailPage() {
             <Link
               key={z.id}
               href={`/v2/zones/${z.id}`}
-              className="flex-shrink-0 text-[13px] font-medium px-3 py-1.5 rounded-full border touch-manipulation"
+              className="flex-shrink-0 text-[15px] font-medium px-3 py-1.5 rounded-full border touch-manipulation"
               style={{
                 background:  isActive ? colors.pillBg  : "#f7f8fa",
                 color:       isActive ? colors.pillText : "#475066",
@@ -54,17 +54,17 @@ export default function StoryDetailPage() {
         {/* Tag + time */}
         <div className="flex items-center gap-2 px-4 pt-4 mb-3">
           <span
-            className="text-[10px] font-semibold tracking-wide px-2 py-[3px] rounded-[4px]"
+            className="text-[12px] font-semibold tracking-wide px-2 py-[3px] rounded-[4px]"
             style={{ background: colors.pillBg, color: colors.pillText }}
           >
             {story.tag}
           </span>
           {story.isNew  && <span className="w-1.5 h-1.5 rounded-full bg-[#E24B4A] flex-shrink-0" />}
           {story.urgent && <span className="w-1.5 h-1.5 rounded-full bg-[#EF9F27] flex-shrink-0" />}
-          <span className="text-[11px] text-[#7a8499]">{story.time}</span>
+          <span className="text-[13px] text-[#7a8499]">{story.time}</span>
           <button
             onClick={() => setSaved((s) => !s)}
-            className="ml-auto text-[20px] touch-manipulation"
+            className="ml-auto text-[22px] touch-manipulation"
             style={{ color: saved ? colors.tag : "#c0c5d0" }}
           >
             {saved ? "♥" : "♡"}
@@ -72,7 +72,7 @@ export default function StoryDetailPage() {
         </div>
 
         {/* Headline */}
-        <h1 className="px-4 text-[20px] font-bold text-[#0f1117] leading-snug mb-4">
+        <h1 className="px-4 text-[22px] font-bold text-[#0f1117] leading-snug mb-4">
           {story.headline}
         </h1>
 
@@ -91,16 +91,16 @@ export default function StoryDetailPage() {
         {/* AI Summary */}
         <div className="px-4 pt-5">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[9px] font-semibold tracking-widest text-[#7a8499] uppercase">AI Summary</span>
+            <span className="text-[11px] font-semibold tracking-widest text-[#7a8499] uppercase">AI Summary</span>
             <div className="h-px flex-1 bg-[#f0f1f3]" />
           </div>
-          <p className="text-[15px] text-[#1a1a1a] leading-relaxed">{story.summary}</p>
+          <p className="text-[17px] text-[#1a1a1a] leading-relaxed">{story.summary}</p>
         </div>
 
         {/* Top Stories */}
         <div className="px-4 pt-6">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-[9px] font-semibold tracking-widest text-[#7a8499] uppercase">Top Stories</span>
+            <span className="text-[11px] font-semibold tracking-widest text-[#7a8499] uppercase">Top Stories</span>
             <div className="h-px flex-1 bg-[#f0f1f3]" />
           </div>
           <div className="flex flex-col gap-2">
@@ -113,13 +113,13 @@ export default function StoryDetailPage() {
                 className="flex items-start gap-3 p-3 rounded-[10px] border border-[#f0f1f3] bg-[#fafafa] touch-manipulation active:bg-[#f0f1f3]"
               >
                 <span
-                  className="flex-shrink-0 mt-0.5 px-2 py-[3px] rounded-[4px] text-[9px] font-semibold"
+                  className="flex-shrink-0 mt-0.5 px-2 py-[3px] rounded-[4px] text-[11px] font-semibold"
                   style={{ background: colors.pillBg, color: colors.pillText }}
                 >
                   {src.label}
                 </span>
-                <p className="flex-1 min-w-0 text-[13px] font-medium text-[#0f1117] leading-snug line-clamp-2">{src.title}</p>
-                <span className="text-[14px] flex-shrink-0 mt-0.5" style={{ color: colors.tag }}>↗</span>
+                <p className="flex-1 min-w-0 text-[15px] font-medium text-[#0f1117] leading-snug line-clamp-2">{src.title}</p>
+                <span className="text-[16px] flex-shrink-0 mt-0.5" style={{ color: colors.tag }}>↗</span>
               </a>
             ))}
           </div>
@@ -129,7 +129,7 @@ export default function StoryDetailPage() {
         {related.length > 0 && (
           <div className="px-4 pt-6">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-[9px] font-semibold tracking-widest text-[#7a8499] uppercase">Related</span>
+              <span className="text-[11px] font-semibold tracking-widest text-[#7a8499] uppercase">Related</span>
               <div className="h-px flex-1 bg-[#f0f1f3]" />
             </div>
             <div className="flex flex-col gap-2">
@@ -142,16 +142,16 @@ export default function StoryDetailPage() {
                     className="flex items-start gap-3 p-3 rounded-[10px] border border-[#f0f1f3] bg-white touch-manipulation active:bg-[#f7f8fa]"
                   >
                     <span
-                      className="flex-shrink-0 mt-0.5 px-2 py-[2px] rounded-[4px] text-[9px] font-semibold"
+                      className="flex-shrink-0 mt-0.5 px-2 py-[2px] rounded-[4px] text-[11px] font-semibold"
                       style={{ background: relZone.colors.pillBg, color: relZone.colors.pillText }}
                     >
                       {rel.tag}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-medium text-[#0f1117] leading-snug line-clamp-2">{rel.headline}</p>
-                      <p className="text-[11px] text-[#7a8499] mt-0.5">{rel.time}</p>
+                      <p className="text-[15px] font-medium text-[#0f1117] leading-snug line-clamp-2">{rel.headline}</p>
+                      <p className="text-[13px] text-[#7a8499] mt-0.5">{rel.time}</p>
                     </div>
-                    <span className="text-[14px] text-[#7a8499] flex-shrink-0 mt-0.5">›</span>
+                    <span className="text-[16px] text-[#7a8499] flex-shrink-0 mt-0.5">›</span>
                   </Link>
                 );
               })}
