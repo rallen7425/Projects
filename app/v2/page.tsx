@@ -107,9 +107,9 @@ export default function V2Page() {
           <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase">Trending</span>
         </div>
         {TRENDING.map((item, i) => (
-          <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-[#f0f1f3] last:border-0">
+          <div key={i} className="py-2.5 border-b border-[#f0f1f3] last:border-0">
             <span
-              className="flex-shrink-0 mt-[2px] text-[11px] font-semibold px-2 py-[3px] rounded-[4px]"
+              className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-1"
               style={{ background: item.pillBg, color: item.pillColor }}
             >
               {item.pillLabel}
