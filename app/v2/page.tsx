@@ -16,17 +16,17 @@ const ZONES = [
 ];
 
 const TRENDING = [
-  { topic: "Giannis trade market",             pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
-  { topic: "OpenAI launches Ads Manager",      pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7" },
-  { topic: "Fed rate outlook shifts",           pillLabel: "Finance", pillBg: "#E1F5EE", pillColor: "#0F6E56" },
-  { topic: "Maine Turnpike Memorial Day delay", pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B" },
-  { topic: "Celtics offseason targets",         pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
+  { topic: "Giannis trade market",             sub: "Bucks listening; Celtics among potential fits",            pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
+  { topic: "OpenAI launches Ads Manager",      sub: "Self-serve ad dashboard inside ChatGPT",                   pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7" },
+  { topic: "Fed rate outlook shifts",           sub: "June cut off the table; September now earliest",           pillLabel: "Finance", pillBg: "#E1F5EE", pillColor: "#0F6E56" },
+  { topic: "Maine Turnpike Memorial Day delay", sub: "Peak northbound traffic 2–7pm Friday",                    pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B" },
+  { topic: "Celtics offseason targets",         sub: "Stevens prioritizing rim presence after Game 7 loss",      pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
 ];
 
 const TRACKING = [
-  { name: "AJ Brown trade",     pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11", hasNew: true  },
-  { name: "Gemini / Google AI", pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7", hasNew: true  },
-  { name: "Maine weather",      pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B", hasNew: false },
+  { name: "AJ Brown trade",     sub: "Expected June 1 — cap math confirmed",          pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11", hasNew: true  },
+  { name: "Gemini / Google AI", sub: "Gemini 3.5 Flash announced at Google I/O",      pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7", hasNew: true  },
+  { name: "Maine weather",      sub: "No changes to weekend forecast",                pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B", hasNew: false },
 ];
 
 const TOPIC_MENU = [
@@ -130,7 +130,10 @@ export default function V2Page() {
               {item.pillLabel}
             </span>
             <div className="flex items-start gap-2">
-              <div className="flex-1 text-[15px] font-semibold text-[#0f1117] leading-snug">{item.topic}</div>
+              <div className="flex-1">
+                <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.topic}</div>
+                {item.sub && <div className="text-[13px] text-[#7a8499] mt-0.5 leading-snug">{item.sub}</div>}
+              </div>
               <button
                 onClick={() => setOpenMenu(openMenu === i ? null : i)}
                 className="flex-shrink-0 mt-[1px] text-[16px] text-[#c0c5d0] leading-none touch-manipulation"
@@ -199,7 +202,10 @@ export default function V2Page() {
               {item.hasNew && <span className="w-1.5 h-1.5 rounded-full bg-[#185FA5] flex-shrink-0" />}
             </div>
             <div className="flex items-start gap-2">
-              <div className="flex-1 text-[15px] font-semibold text-[#0f1117] leading-snug">{item.name}</div>
+              <div className="flex-1">
+                <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.name}</div>
+                {item.sub && <div className="text-[13px] text-[#7a8499] mt-0.5 leading-snug">{item.sub}</div>}
+              </div>
               <button
                 onClick={() => setOpenTrackingMenu(openTrackingMenu === i ? null : i)}
                 className="flex-shrink-0 mt-[1px] text-[16px] text-[#c0c5d0] leading-none touch-manipulation"
