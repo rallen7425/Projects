@@ -1,6 +1,7 @@
 export type StorySource = {
   label: string;
   title: string;
+  sub?: string;
   url: string;
   imageUrl?: string;
 };
@@ -64,10 +65,10 @@ export const ZONES: Record<string, ZoneData> = {
             headline: "Stevens confirms Brown not being traded — rim presence is the offseason priority",
             summary: "At his end-of-season press conference, Brad Stevens was unusually direct: Jaylen Brown is not being traded. The priority is adding rim pressure — Boston attempted fewer shots within five feet than any team in the NBA this season, and Joel Embiid exposed it in the series. After blowing a 3-1 lead and losing Game 7 at home, Stevens said the fix is adding to the roster through the trade market, not dismantling it. The $27.5M trade exception and midlevel exception are the primary tools going forward.",
             sources: [
-              { label: "Boston.com", title: "Celtics Brad Stevens end-of-season press conference takeaways", url: "https://www.boston.com/sports/boston-celtics/2026/05/06/celtics-brad-stevens-end-of-season-press-conference-takeaways/", imageUrl: "https://bdc2020.o0bc.com/wp-content/uploads/2026/05/Brad-Stevens-Press-Conference-2026-69fb8666caad7-768x432.jpg" },
-              { label: "Heavy", title: "Celtics Brad Stevens reveals offseason priority after Philly loss", url: "https://heavy.com/sports/nba/boston-celtics/celtics-brad-stevens-reveals-offseason-priority/" },
+              { label: "Boston.com", title: "Celtics Brad Stevens end-of-season press conference takeaways", sub: "Stevens addressed the loss, Jaylen Brown's future, and the plan to add size this summer.", url: "https://www.boston.com/sports/boston-celtics/2026/05/06/celtics-brad-stevens-end-of-season-press-conference-takeaways/", imageUrl: "https://bdc2020.o0bc.com/wp-content/uploads/2026/05/Brad-Stevens-Press-Conference-2026-69fb8666caad7-768x432.jpg" },
+              { label: "Heavy", title: "Celtics Brad Stevens reveals offseason priority after Philly loss", sub: "Rim presence tops the list as Boston enters its most pivotal offseason in years.", url: "https://heavy.com/sports/nba/boston-celtics/celtics-brad-stevens-reveals-offseason-priority/" },
               { label: "MassLive", title: "Celtics offseason: every move they need to make this summer", url: "#" },
-              { label: "ESPN", title: "Which big men fit Boston's offseason trade exception?", url: "#" },
+              { label: "ESPN", title: "Which big men fit Boston's offseason trade exception?", sub: "The $27.5M exception opens doors to several rim-running targets around the league.", url: "#" },
               { label: "The Athletic", title: "Inside the Celtics' plan to add rim protection without blowing it up", url: "#" },
               { label: "NBC Sports BOS", title: "Stevens talks trade market, cap flexibility, and Brown's future", url: "#" },
             ],
@@ -79,10 +80,10 @@ export const ZONES: Record<string, ZoneData> = {
             headline: "AJ Brown trade expected to close June 1 — OTAs begin next Wednesday",
             summary: "Voluntary OTAs kick off May 27. The AJ Brown trade is expected on or just after June 1 — that's when the cap math works for Philadelphia, letting them split the dead money across two years. Everything still points to New England as the destination. Kayshon Boutte is the most likely roster casualty when Brown arrives. Drake Maye's weapons situation for year two is close to being answered.",
             sources: [
-              { label: "NBC Sports Philly", title: "Report: AJ Brown likely to be traded to Patriots after June 1", url: "https://www.nbcsportsphiladelphia.com/nfl/philadelphia-eagles/report-aj-brown-likely-to-be-traded-to-patriots-after-june-1/727627/", imageUrl: "https://media.nbcsportsphiladelphia.com/2025/09/Brown-AJ-Getty-2233755645.jpg?quality=85&strip=all&resize=1200%2C675" },
-              { label: "NBC Sports Boston", title: "Mailbag: AJ Brown, Kayshon Boutte trade timeline and OTA outlook", url: "https://www.nbcsportsboston.com/nfl/new-england-patriots/mailbag-aj-brown-kayshon-boutte-trade-rumors/788646/" },
+              { label: "NBC Sports Philly", title: "Report: AJ Brown likely to be traded to Patriots after June 1", sub: "The cap math works for Philly after June 1, splitting dead money across two years.", url: "https://www.nbcsportsphiladelphia.com/nfl/philadelphia-eagles/report-aj-brown-likely-to-be-traded-to-patriots-after-june-1/727627/", imageUrl: "https://media.nbcsportsphiladelphia.com/2025/09/Brown-AJ-Getty-2233755645.jpg?quality=85&strip=all&resize=1200%2C675" },
+              { label: "NBC Sports Boston", title: "Mailbag: AJ Brown, Kayshon Boutte trade timeline and OTA outlook", sub: "Everything still points to New England as the destination for Brown this offseason.", url: "https://www.nbcsportsboston.com/nfl/new-england-patriots/mailbag-aj-brown-kayshon-boutte-trade-rumors/788646/" },
               { label: "ESPN", title: "Patriots OTA preview: Drake Maye's receiver corps taking shape", url: "#" },
-              { label: "The Athletic", title: "AJ Brown trade: what New England gives up and what it gets", url: "#" },
+              { label: "The Athletic", title: "AJ Brown trade: what New England gives up and what it gets", sub: "A detailed breakdown of the assets and salary implications for both teams.", url: "#" },
               { label: "ProFootballTalk", title: "Eagles confirm AJ Brown trade talks with multiple teams", url: "#" },
               { label: "PatsPulpit", title: "Cap implications of the Brown deal for New England's 2026 roster", url: "#" },
               { label: "Boston Globe", title: "Patriots wide receiver depth chart after potential Brown arrival", url: "#" },
@@ -240,10 +241,10 @@ export const ZONES: Record<string, ZoneData> = {
             headline: "Google I/O 2026: Gemini 3.5 Flash, Gemini Omni, and AI across every product",
             summary: "Google unveiled Gemini 3.5 Flash and Gemini Omni at I/O alongside AI-native Android interfaces, Workspace integrations, YouTube AI features, and an updated AI coding platform. The breadth is the story: AI is now the primary lens through which every Google product is being shipped. Relevant context for any AI strategy conversations coming up.",
             sources: [
-              { label: "The Verge", title: "Everything Google announced at I/O 2026", url: "https://www.theverge.com/google", imageUrl: "https://techcrunch.com/wp-content/uploads/2026/05/google-ai-sign-Getty.jpg?resize=1200,800" },
+              { label: "The Verge", title: "Everything Google announced at I/O 2026", sub: "Gemini 3.5 Flash, Omni, AI Android interfaces, and a revamped coding platform.", url: "https://www.theverge.com/google", imageUrl: "https://techcrunch.com/wp-content/uploads/2026/05/google-ai-sign-Getty.jpg?resize=1200,800" },
+              { label: "TechCrunch", title: "Gemini 3.5 Flash is Google's fastest model yet — what it means for developers", sub: "Speed improvements and expanded multimodal capabilities make it a strong GPT-4o rival.", url: "#" },
               { label: "Tech Startups", title: "Top tech news today, May 20 2026 — Google I/O roundup", url: "https://techstartups.com/2026/05/20/top-tech-news-today-may-20-2026/" },
-              { label: "TechCrunch", title: "Gemini 3.5 Flash is Google's fastest model yet — what it means for developers", url: "#" },
-              { label: "Ars Technica", title: "Google I/O 2026: AI is no longer a feature, it's the product", url: "#" },
+              { label: "Ars Technica", title: "Google I/O 2026: AI is no longer a feature, it's the product", sub: "Every Google announcement this year had an AI lens on it — intentionally.", url: "#" },
               { label: "9to5Google", title: "Gemini Omni hands-on: multimodal AI that actually works", url: "#" },
               { label: "Wired", title: "Google's AI bet is paying off — and the rest of tech is scrambling", url: "#" },
               { label: "Bloomberg", title: "Google I/O signals a new era of AI-first consumer products", url: "#" },

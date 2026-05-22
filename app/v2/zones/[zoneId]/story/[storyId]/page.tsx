@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ZONES, ZONE_NAV, findStory, getRelated } from "@/lib/v2/zoneData";
+import { ZONES, findStory, getRelated } from "@/lib/v2/zoneData";
 
 export default function StoryDetailPage() {
   const params = useParams();
@@ -27,27 +27,6 @@ export default function StoryDetailPage() {
 
   return (
     <div>
-
-      {/* Sticky zone pill nav */}
-      <div className="sticky top-0 z-10 bg-white border-b border-[#dde1e8] px-3 py-2 flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-        {ZONE_NAV.map((z) => {
-          const isActive = z.id === zoneId;
-          return (
-            <Link
-              key={z.id}
-              href={`/v2/zones/${z.id}`}
-              className="flex-shrink-0 text-[15px] font-medium px-3 py-1.5 rounded-full border touch-manipulation"
-              style={{
-                background:  isActive ? colors.pillBg  : "#f7f8fa",
-                color:       isActive ? colors.pillText : "#475066",
-                borderColor: isActive ? colors.pillText : "#dde1e8",
-              }}
-            >
-              {z.label}
-            </Link>
-          );
-        })}
-      </div>
 
       <div className="pb-6">
 
@@ -77,15 +56,13 @@ export default function StoryDetailPage() {
         </h1>
 
         {/* Hero image */}
-        {story.imageUrl ? (
+        {story.imageUrl && (
           <img
             src={story.imageUrl}
             alt=""
             className="w-full h-[200px] object-cover"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
-        ) : (
-          <div className="mx-4 h-[120px] rounded-[10px] mb-2" style={{ background: colors.pillBg }} />
         )}
 
         {/* AI Summary */}
@@ -97,10 +74,10 @@ export default function StoryDetailPage() {
           <p className="text-[17px] text-[#1a1a1a] leading-relaxed">{story.summary}</p>
         </div>
 
-        {/* Top Stories carousel */}
+        {/* Read More carousel */}
         <div className="pt-6">
           <div className="flex items-center gap-2 px-4 mb-3">
-            <span className="text-[11px] font-semibold tracking-widest text-[#7a8499] uppercase">Top Stories</span>
+            <span className="text-[11px] font-semibold tracking-widest text-[#7a8499] uppercase">Read More</span>
             <div className="h-px flex-1 bg-[#f0f1f3]" />
           </div>
           <div className="flex gap-3 overflow-x-auto px-4 pb-1" style={{ scrollbarWidth: "none" }}>
@@ -110,31 +87,30 @@ export default function StoryDetailPage() {
                 href={src.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-shrink-0 w-[190px] rounded-[12px] border border-[#ebebeb] bg-[#f5f5f5] overflow-hidden touch-manipulation active:opacity-80 flex flex-col"
+                className="flex-shrink-0 w-[300px] rounded-[12px] border border-[#e0e0e0] bg-[#f5f5f5] p-3 flex gap-3 touch-manipulation active:opacity-80"
               >
-                {/* Card image or colored band */}
-                {src.imageUrl ? (
-                  <img
-                    src={src.imageUrl}
-                    alt=""
-                    className="w-full h-[100px] object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-[6px]" style={{ background: colors.pillBg }} />
-                )}
-                {/* Card text */}
-                <div className="flex-1 flex flex-col justify-between p-3">
-                  <p className="text-[13px] font-semibold text-[#111111] leading-snug line-clamp-3 mb-2">{src.title}</p>
+                {/* Text */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                  <div>
+                    <p className="text-[14px] font-semibold text-[#111111] leading-snug line-clamp-2 mb-1">{src.title}</p>
+                    {src.sub && <p className="text-[12px] text-[#555555] leading-snug line-clamp-2">{src.sub}</p>}
+                  </div>
                   <span
-                    className="self-start text-[10px] font-semibold px-2 py-[2px] rounded-[4px]"
+                    className="mt-2 self-start text-[10px] font-semibold px-2 py-[2px] rounded-[4px]"
                     style={{ background: colors.pillBg, color: colors.pillText }}
                   >
                     {src.label}
                   </span>
                 </div>
+                {/* Thumbnail — only if image available */}
+                {src.imageUrl && (
+                  <img
+                    src={src.imageUrl}
+                    alt=""
+                    className="flex-shrink-0 w-[72px] h-[72px] rounded-[8px] object-cover self-start"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                )}
               </a>
             ))}
           </div>
