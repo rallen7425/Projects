@@ -87,12 +87,19 @@ export default function StoryDetailPage() {
                 href={src.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-shrink-0 w-[300px] rounded-[12px] border border-[#e0e0e0] bg-[#f5f5f5] p-3 flex gap-3 touch-manipulation active:opacity-80"
+                className="flex-shrink-0 w-[260px] rounded-[12px] border border-[#e0e0e0] bg-white overflow-hidden flex flex-col touch-manipulation active:opacity-80"
               >
-                {/* Text */}
-                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                {src.imageUrl && (
+                  <img
+                    src={src.imageUrl}
+                    alt=""
+                    className="w-full h-[130px] object-cover flex-shrink-0"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                )}
+                <div className="p-3 flex flex-col flex-1 justify-between">
                   <div>
-                    <p className="text-[14px] font-semibold text-[#111111] leading-snug line-clamp-2 mb-1">{src.title}</p>
+                    <p className="text-[13px] font-semibold text-[#111111] leading-snug line-clamp-2 mb-1">{src.title}</p>
                     {src.sub && <p className="text-[12px] text-[#555555] leading-snug line-clamp-2">{src.sub}</p>}
                   </div>
                   <span
@@ -102,15 +109,6 @@ export default function StoryDetailPage() {
                     {src.label}
                   </span>
                 </div>
-                {/* Thumbnail — only if image available */}
-                {src.imageUrl && (
-                  <img
-                    src={src.imageUrl}
-                    alt=""
-                    className="flex-shrink-0 w-[72px] h-[72px] rounded-[8px] object-cover self-start"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
-                )}
               </a>
             ))}
           </div>
