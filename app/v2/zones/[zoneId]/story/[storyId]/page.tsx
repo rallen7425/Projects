@@ -118,34 +118,53 @@ export default function StoryDetailPage() {
 
         {/* Related Articles */}
         {related.length > 0 && (
-          <div className="px-4 pt-6">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="pt-6">
+            <div className="flex items-center gap-2 px-4 mb-3">
               <span className="text-[11px] font-semibold tracking-widest text-[#7a8499] uppercase">Related</span>
               <div className="h-px flex-1 bg-[#f0f1f3]" />
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="border-t border-[#f0f1f3]">
               {related.map(({ zoneId: relZoneId, story: rel }) => {
                 const relZone = ZONES[relZoneId];
                 return (
                   <Link
                     key={rel.id}
                     href={`/v2/zones/${relZoneId}/story/${rel.id}`}
-                    className="flex items-start gap-3 p-3 rounded-[10px] border border-[#f0f1f3] bg-white touch-manipulation active:bg-[#f7f8fa]"
+                    className="block px-4 py-3 border-b border-[#f0f1f3] touch-manipulation active:bg-[#f7f8fa]"
                   >
                     <span
-                      className="flex-shrink-0 mt-0.5 px-2 py-[2px] rounded-[4px] text-[11px] font-semibold"
+                      className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-1.5"
                       style={{ background: relZone.colors.pillBg, color: relZone.colors.pillText }}
                     >
                       {rel.tag}
                     </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[15px] font-medium text-[#0f1117] leading-snug line-clamp-2">{rel.headline}</p>
-                      <p className="text-[13px] text-[#7a8499] mt-0.5">{rel.time}</p>
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[15px] font-semibold text-[#0f1117] leading-snug">{rel.headline}</p>
+                        {rel.summary && (
+                          <p className="text-[13px] text-[#7a8499] mt-0.5 leading-snug line-clamp-2">{rel.summary}</p>
+                        )}
+                      </div>
+                      {rel.imageUrl && (
+                        <img
+                          src={rel.imageUrl}
+                          alt=""
+                          className="flex-shrink-0 w-[64px] h-[64px] rounded-[8px] object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      )}
                     </div>
-                    <span className="text-[16px] text-[#7a8499] flex-shrink-0 mt-0.5">›</span>
                   </Link>
                 );
               })}
+            </div>
+            <div className="px-4 pt-2 pb-2 flex justify-end">
+              <Link
+                href={`/v2/zones/${zoneId}`}
+                className="text-[14px] font-medium text-[#185FA5] touch-manipulation"
+              >
+                View more →
+              </Link>
             </div>
           </div>
         )}
