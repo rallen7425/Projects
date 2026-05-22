@@ -7,6 +7,7 @@ const TABS = [
   { href: "/feeds", label: "Feeds" },
   { href: "/saved", label: "Saved" },
   { href: "/tracking", label: "Tracking" },
+  { href: "/v2", label: "V2" },
 ];
 
 export default function TopTabNav() {
