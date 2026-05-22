@@ -123,6 +123,7 @@ export default function V2Page() {
               {item.pillLabel}
             </span>
             <div className="flex items-start gap-2">
+              <div className="flex-1 text-[15px] font-semibold text-[#0f1117] leading-snug">{item.topic}</div>
               <button
                 onClick={() => setOpenMenu(openMenu === i ? null : i)}
                 className="flex-shrink-0 mt-[1px] text-[16px] text-[#c0c5d0] leading-none touch-manipulation"
@@ -130,7 +131,6 @@ export default function V2Page() {
               >
                 ···
               </button>
-              <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.topic}</div>
             </div>
           </div>
         ))}
