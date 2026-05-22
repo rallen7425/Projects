@@ -58,29 +58,22 @@ export default function TrackingPage() {
   );
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden flex justify-center">
-      <div className="w-full max-w-[430px] h-full flex flex-col bg-white">
+    <div>
 
-        {/* Header */}
-        <div className="flex-shrink-0 px-4 pt-3 pb-3" style={{ background: "#1c2b4a" }}>
-          <div className="flex items-center justify-between mb-3">
-            <Link href="/v2" className="flex items-center gap-1 text-[13px] text-white/60 touch-manipulation">
-              <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 1L1 6l5 5"/>
-              </svg>
-              Home
-            </Link>
-            <button className="flex items-center gap-1 text-[12px] font-medium bg-white/10 text-white/80 px-3 py-1.5 rounded-[6px] touch-manipulation active:bg-white/20">
-              <span className="text-[16px] leading-none">+</span>
-              Add topic
-            </button>
+        {/* Page title row */}
+        <div className="px-4 pt-3 pb-2 border-b border-[#f0f1f3] flex items-center justify-between">
+          <div>
+            <div className="text-[18px] font-semibold text-[#0f1117]">Tracking</div>
+            <div className="text-[11px] text-[#7a8499] mt-0.5">Topics you're following closely</div>
           </div>
-          <div className="text-[20px] font-semibold text-white tracking-tight leading-none">Tracking</div>
-          <div className="text-[11px] text-white/40 mt-0.5">Topics you're following closely</div>
+          <button className="flex items-center gap-1 text-[12px] font-medium bg-[#E6F1FB] text-[#185FA5] px-3 py-1.5 rounded-[6px] touch-manipulation active:bg-[#d0e5f7]">
+            <span className="text-[16px] leading-none">+</span>
+            Add topic
+          </button>
         </div>
 
         {/* Search */}
-        <div className="flex-shrink-0 px-4 py-2.5 border-b border-[#f0f1f3] bg-white">
+        <div className="px-4 py-2.5 border-b border-[#f0f1f3] bg-white">
           <div className="flex items-center gap-2 bg-[#f7f8fa] border border-[#dde1e8] rounded-[8px] px-3 py-2">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7a8499" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -97,9 +90,6 @@ export default function TrackingPage() {
             )}
           </div>
         </div>
-
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto">
 
           {/* Active topics */}
           <div className="px-4 pt-3">
@@ -196,8 +186,8 @@ export default function TrackingPage() {
             </div>
           )}
 
-          {/* Add new topic */}
-          <div className="px-4 pt-3 pb-6">
+        {/* Add new topic */}
+        <div className="px-4 pt-3 pb-6">
             <div className="text-[10px] font-semibold tracking-widest text-[#7a8499] uppercase mb-2">Track a new topic</div>
             <div className="rounded-[10px] border border-dashed border-[#c0c5d0] bg-[#f7f8fa] p-4">
               <div className="flex gap-2">
@@ -225,48 +215,6 @@ export default function TrackingPage() {
             </div>
           </div>
 
-        </div>
-
-        {/* Bottom nav */}
-        <div className="flex-shrink-0 bg-white border-t border-[#dde1e8]" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-          <div className="flex">
-            <NavTab label="Home" href="/v2">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7a8499" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
-            </NavTab>
-            <NavTab label="Zones">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7a8499" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
-              </svg>
-            </NavTab>
-            <NavTab label="Saved">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7a8499" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-              </svg>
-            </NavTab>
-            <NavTab label="Tracking" active>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2d59a6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-              </svg>
-            </NavTab>
-          </div>
-        </div>
-
-      </div>
     </div>
   );
-}
-
-function NavTab({ label, active, href, children }: { label: string; active?: boolean; href?: string; children: React.ReactNode }) {
-  const inner = (
-    <div className="flex flex-col items-center justify-center gap-0.5 py-2 touch-manipulation w-full">
-      {children}
-      <span className="text-[10px] font-medium" style={{ color: active ? "#2d59a6" : "#7a8499" }}>{label}</span>
-    </div>
-  );
-  if (href) {
-    return <Link href={href} className="flex-1">{inner}</Link>;
-  }
-  return <div className="flex-1">{inner}</div>;
 }
