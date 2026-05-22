@@ -16,9 +16,11 @@ const ZONES = [
 ];
 
 const TRENDING = [
-  { rank: 1, topic: "Giannis trade market",        why: "Matches Sports zone",  heat: true,  pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
-  { rank: 2, topic: "OpenAI launches Ads Manager", why: "Matches Tech zone",    heat: true,  pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7" },
-  { rank: 3, topic: "Fed rate outlook shifts",      why: "Matches Finance zone", heat: false, pillLabel: "Finance", pillBg: "#f0f1f3", pillColor: "#7a8499" },
+  { topic: "Giannis trade market",             pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
+  { topic: "OpenAI launches Ads Manager",      pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7" },
+  { topic: "Fed rate outlook shifts",           pillLabel: "Finance", pillBg: "#E1F5EE", pillColor: "#0F6E56" },
+  { topic: "Maine Turnpike Memorial Day delay", pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B" },
+  { topic: "Celtics offseason targets",         pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
 ];
 
 const TRACKING = [
@@ -102,28 +104,21 @@ export default function V2Page() {
       {/* Trending */}
       <div className="px-4 py-3 border-b border-[#f0f1f3]">
         <div className="flex items-center gap-2 mb-2.5">
-          <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase flex-1">Trending</span>
-          <span className="text-[12px] text-[#7a8499]">ranked for you</span>
+          <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase">Trending</span>
         </div>
-        {TRENDING.map((item) => (
-          <div key={item.rank} className="flex items-center gap-2 py-2.5 border-b border-[#f0f1f3] last:border-0">
-            <span className="text-[13px] text-[#7a8499] w-4 text-right flex-shrink-0">{item.rank}</span>
-            <div className="flex-1 min-w-0">
-              <div className="text-[15px] font-semibold text-[#0f1117]">{item.topic}</div>
-              <div className="text-[12px] text-[#7a8499] mt-0.5">{item.why}</div>
-            </div>
-            {item.heat && <span className="text-[#E24B4A] text-[15px] font-bold flex-shrink-0">↑</span>}
-            <span className="text-[12px] font-medium px-1.5 py-0.5 rounded-[4px] flex-shrink-0" style={{ background: item.pillBg, color: item.pillColor }}>
+        {TRENDING.map((item, i) => (
+          <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-[#f0f1f3] last:border-0">
+            <span
+              className="flex-shrink-0 mt-[2px] text-[11px] font-semibold px-2 py-[3px] rounded-[4px]"
+              style={{ background: item.pillBg, color: item.pillColor }}
+            >
               {item.pillLabel}
             </span>
-            <div className="flex gap-1 flex-shrink-0">
-              <button className="w-6 h-6 rounded-[5px] border border-[#dde1e8] flex items-center justify-center text-[15px] font-bold text-[#3B6D11] touch-manipulation active:bg-[#EAF3DE]">+</button>
-              <button className="w-6 h-6 rounded-[5px] border border-[#dde1e8] flex items-center justify-center text-[13px] text-[#7a8499] touch-manipulation active:bg-[#f7f8fa] pb-0.5">···</button>
-            </div>
+            <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.topic}</div>
           </div>
         ))}
-        <div className="text-center pt-2">
-          <button className="text-[13px] text-[#185FA5] font-medium touch-manipulation">View 7 more trending topics →</button>
+        <div className="flex justify-end pt-2">
+          <button className="text-[12px] text-[#7a8499] touch-manipulation">View more →</button>
         </div>
       </div>
 
