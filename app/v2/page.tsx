@@ -16,17 +16,17 @@ const ZONES = [
 ];
 
 const TRENDING = [
-  { topic: "Giannis trade market",             sub: "Bucks listening; Celtics among potential fits",            pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
-  { topic: "OpenAI launches Ads Manager",      sub: "Self-serve ad dashboard inside ChatGPT",                   pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7" },
-  { topic: "Fed rate outlook shifts",           sub: "June cut off the table; September now earliest",           pillLabel: "Finance", pillBg: "#E1F5EE", pillColor: "#0F6E56" },
-  { topic: "Maine Turnpike Memorial Day delay", sub: "Peak northbound traffic 2–7pm Friday",                    pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B" },
-  { topic: "Celtics offseason targets",         sub: "Stevens prioritizing rim presence after Game 7 loss",      pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
+  { topic: "Giannis trade market",             sub: "Bucks listening; Celtics among potential fits",       href: "/v2/zones/sports/story/celtics-giannis",        pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
+  { topic: "OpenAI launches Ads Manager",      sub: "Self-serve ad dashboard inside ChatGPT",              href: "/v2/zones/tech/story/openai-ads-manager",       pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7" },
+  { topic: "Fed rate outlook shifts",           sub: "June cut off the table; September now earliest",      href: "/v2/zones/finance/story/fed-rate-hold",         pillLabel: "Finance", pillBg: "#E1F5EE", pillColor: "#0F6E56" },
+  { topic: "Maine Turnpike Memorial Day delay", sub: "Peak northbound traffic 2–7pm Friday",               href: "/v2/zones/maine/story/maine-turnpike-traffic",  pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B" },
+  { topic: "Celtics offseason targets",         sub: "Stevens prioritizing rim presence after Game 7 loss", href: "/v2/zones/sports/story/celtics-stevens-brown",  pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
 ];
 
 const TRACKING = [
-  { name: "AJ Brown trade",     sub: "Expected June 1 — cap math confirmed",          pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11", hasNew: true  },
-  { name: "Gemini / Google AI", sub: "Gemini 3.5 Flash announced at Google I/O",      pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7", hasNew: true  },
-  { name: "Maine weather",      sub: "No changes to weekend forecast",                pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B", hasNew: false },
+  { name: "AJ Brown trade",     sub: "Expected June 1 — cap math confirmed",     href: "/v2/zones/sports/story/patriots-aj-brown",  pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11", hasNew: true  },
+  { name: "Gemini / Google AI", sub: "Gemini 3.5 Flash announced at Google I/O", href: "/v2/zones/tech/story/google-io-gemini",     pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7", hasNew: true  },
+  { name: "Maine weather",      sub: "No changes to weekend forecast",            href: "/v2/zones/maine/story/maine-memorial-day",  pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B", hasNew: false },
 ];
 
 const TOPIC_MENU = [
@@ -130,10 +130,10 @@ export default function V2Page() {
               {item.pillLabel}
             </span>
             <div className="flex items-start gap-2">
-              <div className="flex-1">
+              <Link href={item.href} className="flex-1">
                 <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.topic}</div>
                 {item.sub && <div className="text-[13px] text-[#7a8499] mt-0.5 leading-snug">{item.sub}</div>}
-              </div>
+              </Link>
               <button
                 onClick={() => setOpenMenu(openMenu === i ? null : i)}
                 className="flex-shrink-0 mt-[1px] text-[16px] text-[#c0c5d0] leading-none touch-manipulation"
@@ -202,10 +202,10 @@ export default function V2Page() {
               {item.hasNew && <span className="w-1.5 h-1.5 rounded-full bg-[#185FA5] flex-shrink-0" />}
             </div>
             <div className="flex items-start gap-2">
-              <div className="flex-1">
+              <Link href={item.href} className="flex-1">
                 <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.name}</div>
                 {item.sub && <div className="text-[13px] text-[#7a8499] mt-0.5 leading-snug">{item.sub}</div>}
-              </div>
+              </Link>
               <button
                 onClick={() => setOpenTrackingMenu(openTrackingMenu === i ? null : i)}
                 className="flex-shrink-0 mt-[1px] text-[16px] text-[#c0c5d0] leading-none touch-manipulation"
