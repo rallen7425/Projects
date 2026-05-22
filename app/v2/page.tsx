@@ -24,9 +24,9 @@ const TRENDING = [
 ];
 
 const TRACKING = [
-  { emoji: "🏈", name: "AJ Brown trade",     update: "Expected June 1 — cap math confirmed", time: "2h", hasNew: true  },
-  { emoji: "🤖", name: "Gemini / Google AI", update: "Gemini 3.5 Flash announced at I/O",    time: "5h", hasNew: true  },
-  { emoji: "🏠", name: "Maine weather",      update: "No changes to weekend forecast",        time: "1h", hasNew: false },
+  { name: "AJ Brown trade",     pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11", hasNew: true  },
+  { name: "Gemini / Google AI", pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7", hasNew: true  },
+  { name: "Maine weather",      pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B", hasNew: false },
 ];
 
 const TOPIC_MENU = [
@@ -36,10 +36,17 @@ const TOPIC_MENU = [
   { label: "Remove Topic", icon: "✕", color: "#E24B4A" },
 ];
 
+const TRACKING_MENU = [
+  { label: "View Updates",       icon: "◎", color: "#185FA5" },
+  { label: "Pause Tracking",     icon: "⏸", color: "#475066" },
+  { label: "Remove from Tracking", icon: "✕", color: "#E24B4A" },
+];
+
 export default function V2Page() {
   const [zonesExpanded, setZonesExpanded] = useState(false);
   const visibleZones = zonesExpanded ? ZONES : ZONES.slice(0, 4);
   const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [openTrackingMenu, setOpenTrackingMenu] = useState<number | null>(null);
 
   return (
     <div className="pb-4">
@@ -181,22 +188,56 @@ export default function V2Page() {
           </Link>
         </div>
         {TRACKING.map((item, i) => (
-          <div key={i} className="flex items-center gap-3 py-2.5 border-b border-[#f0f1f3] last:border-0">
-            <div className="w-9 h-9 rounded-[8px] bg-[#f7f8fa] flex items-center justify-center text-[20px] flex-shrink-0">{item.emoji}</div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[15px] font-semibold text-[#0f1117]">{item.name}</div>
-              <div className="text-[13px] text-[#7a8499] mt-0.5 line-clamp-1">{item.update}</div>
+          <div key={i} className="py-2.5 border-b border-[#f0f1f3] last:border-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span
+                className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px]"
+                style={{ background: item.pillBg, color: item.pillColor }}
+              >
+                {item.pillLabel}
+              </span>
+              {item.hasNew && <span className="w-1.5 h-1.5 rounded-full bg-[#185FA5] flex-shrink-0" />}
             </div>
-            <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-              <span className="text-[12px] text-[#7a8499]">{item.time}</span>
-              {item.hasNew && <span className="w-2 h-2 rounded-full bg-[#185FA5]" />}
+            <div className="flex items-start gap-2">
+              <div className="flex-1 text-[15px] font-semibold text-[#0f1117] leading-snug">{item.name}</div>
+              <button
+                onClick={() => setOpenTrackingMenu(openTrackingMenu === i ? null : i)}
+                className="flex-shrink-0 mt-[1px] text-[16px] text-[#c0c5d0] leading-none touch-manipulation"
+                aria-label="More options"
+              >
+                ···
+              </button>
             </div>
           </div>
         ))}
-        <div className="text-center pt-2">
-          <Link href="/v2/tracking" className="text-[13px] text-[#185FA5] font-medium touch-manipulation">View 3 more tracked topics →</Link>
+        <div className="flex justify-end pt-2">
+          <Link href="/v2/tracking" className="text-[12px] text-[#7a8499] touch-manipulation">View more →</Link>
         </div>
       </div>
+
+      {/* Tracking action menu overlay */}
+      {openTrackingMenu !== null && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpenTrackingMenu(null)} />
+          <div className="fixed z-50 left-1/2 -translate-x-1/2 w-[260px] bg-white rounded-[14px] shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#f0f1f3] overflow-hidden" style={{ top: "40%" }}>
+            <div className="px-4 pt-3 pb-2 border-b border-[#f0f1f3]">
+              <div className="text-[12px] font-semibold text-[#7a8499] uppercase tracking-widest truncate">
+                {TRACKING[openTrackingMenu].name}
+              </div>
+            </div>
+            {TRACKING_MENU.map((action) => (
+              <button
+                key={action.label}
+                onClick={() => setOpenTrackingMenu(null)}
+                className="w-full flex items-center gap-3 px-4 py-3 border-b border-[#f7f8fa] last:border-0 touch-manipulation active:bg-[#f7f8fa] text-left"
+              >
+                <span className="text-[16px] w-5 text-center flex-shrink-0" style={{ color: action.color }}>{action.icon}</span>
+                <span className="text-[15px] font-medium" style={{ color: action.color }}>{action.label}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
     </div>
   );
