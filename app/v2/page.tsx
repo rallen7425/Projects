@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ZoneSubNav from "@/components/v2/ZoneSubNav";
 import { useSavedStories } from "@/components/SavedStoriesProvider";
+import TrackModal, { type TrackModalState } from "@/components/v2/TrackModal";
 
 const BREAKING = [
   { color: "#E24B4A", tag: "WEATHER · LOCAL", headline: "Heat risk today — 92°F, severe T-storms expected by 2pm", time: "8 min ago", href: "/v2/zones/local/story/heat-spike-storms" },
@@ -76,10 +77,7 @@ function getGreeting() {
 }
 
 type TrackingItem = typeof TRACKING[number];
-type TrackingModal =
-  | { step: "confirm"; topic: string; item: TrackingItem }
-  | { step: "success"; topic: string }
-  | null;
+type TrackingModal = (TrackModalState & { item?: TrackingItem }) | null;
 
 export default function V2Page() {
   const router = useRouter();
@@ -92,10 +90,12 @@ export default function V2Page() {
 
   function confirmAddTracking() {
     if (!trackingModal || trackingModal.step !== "confirm") return;
-    setTrackedTopics((prev) => {
-      const exists = prev.some((t) => t.name === trackingModal.item.name);
-      return exists ? prev : [{ ...trackingModal.item, hasNew: false }, ...prev];
-    });
+    if (trackingModal.item) {
+      setTrackedTopics((prev) => {
+        const exists = prev.some((t) => t.name === trackingModal.item!.name);
+        return exists ? prev : [{ ...trackingModal.item!, hasNew: false }, ...prev];
+      });
+    }
     setTrackingModal({ step: "success", topic: trackingModal.topic });
   }
 
@@ -288,62 +288,11 @@ export default function V2Page() {
         </div>
       </div>
 
-      {/* Tracking modal */}
-      {trackingModal !== null && (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setTrackingModal(null)} />
-          <div className="fixed z-50 left-1/2 -translate-x-1/2 w-[300px] bg-white rounded-[16px] shadow-[0_12px_40px_rgba(0,0,0,0.22)] overflow-hidden" style={{ top: "38%" }}>
-            {trackingModal.step === "confirm" ? (
-              <>
-                <div className="px-5 pt-5 pb-4">
-                  <div className="text-[17px] font-semibold text-[#0f1117] leading-snug mb-1">Track this topic?</div>
-                  <div className="text-[14px] text-[#7a8499] leading-snug">
-                    #{trackingModal.topic}
-                  </div>
-                </div>
-                <div className="flex border-t border-[#f0f1f3]">
-                  <button
-                    onClick={() => setTrackingModal(null)}
-                    className="flex-1 py-3.5 text-[15px] font-medium text-[#7a8499] border-r border-[#f0f1f3] touch-manipulation active:bg-[#f7f8fa]"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmAddTracking}
-                    className="flex-1 py-3.5 text-[15px] font-semibold touch-manipulation active:opacity-80"
-                    style={{ color: "#185FA5" }}
-                  >
-                    Add to Tracking
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="px-5 pt-5 pb-4 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#E1F5EE] flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-[16px] font-semibold text-[#0f1117] mb-0.5">Added to Tracking</div>
-                    <div className="text-[13px] text-[#7a8499]">#{trackingModal.topic}</div>
-                  </div>
-                </div>
-                <div className="border-t border-[#f0f1f3]">
-                  <button
-                    onClick={() => setTrackingModal(null)}
-                    className="w-full py-3.5 text-[15px] font-semibold touch-manipulation active:bg-[#f7f8fa]"
-                    style={{ color: "#185FA5" }}
-                  >
-                    Done
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </>
-      )}
+      <TrackModal
+        modal={trackingModal}
+        onConfirm={confirmAddTracking}
+        onClose={() => setTrackingModal(null)}
+      />
 
     </div>
   );

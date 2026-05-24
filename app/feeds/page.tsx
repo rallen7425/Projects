@@ -2,6 +2,8 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useSavedStories } from "@/components/SavedStoriesProvider";
+import TrackModal, { type TrackModalState } from "@/components/v2/TrackModal";
 
 type Article = {
   title: string;
@@ -73,11 +75,13 @@ function FeedsContent() {
   }, [category]);
 
   const chipColor = CAT_COLORS[category] ?? CAT_COLORS.News;
+  const { isSaved, toggle } = useSavedStories();
+  const [trackModal, setTrackModal] = useState<TrackModalState>(null);
 
   return (
     <div className="pb-4">
       {/* Category chips */}
-      <div className="sticky top-0 bg-white z-10 border-b border-[#dde1e8] px-3 py-2 flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+      <div className="bg-white border-b border-[#dde1e8] px-3 py-2 flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
         {CATEGORIES.map((cat) => (
           <button
             key={cat}
@@ -121,20 +125,19 @@ function FeedsContent() {
         <div>
           {articles.map((article, idx) => {
             const href = articleHref(article, category);
+            const artColor = CAT_COLORS[article.category] ?? CAT_COLORS.News;
+            const saveId = `feed-${article.link}`;
+            const saved = isSaved(saveId);
             return (
               <div key={idx} className="px-4 py-4 border-b border-[#f0f1f3] last:border-0">
-                {/* Category pill — always reflects the article's actual topic */}
-                {(() => {
-                  const artColor = CAT_COLORS[article.category] ?? CAT_COLORS.News;
-                  return (
-                    <span
-                      className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-2"
-                      style={{ background: artColor.bg, color: artColor.text }}
-                    >
-                      {article.category}
-                    </span>
-                  );
-                })()}
+                {/* Category pill — links to filtered feed */}
+                <Link
+                  href={`/feeds?category=${article.category}`}
+                  className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-2 touch-manipulation"
+                  style={{ background: artColor.bg, color: artColor.text }}
+                >
+                  {article.category}
+                </Link>
 
                 {/* Hero image */}
                 {article.imageUrl && (
@@ -151,7 +154,7 @@ function FeedsContent() {
                   {article.source} · {timeAgo(article.pubDate)}
                 </div>
 
-                {/* Headline + subheadline — in-app link */}
+                {/* Headline + subheadline */}
                 <Link href={href} className="block touch-manipulation">
                   <h3 className="text-[16px] font-semibold text-[#0f1117] leading-snug mb-1">
                     {article.title}
@@ -162,6 +165,28 @@ function FeedsContent() {
                     </p>
                   )}
                 </Link>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 mt-2.5">
+                  <button
+                    onClick={() => toggle({ id: saveId, title: article.title, source: article.source, snippet: article.description ?? "" })}
+                    className="touch-manipulation"
+                    aria-label={saved ? "Remove from saved" : "Save"}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill={saved ? "#185FA5" : "none"} stroke={saved ? "#185FA5" : "#c0c5d0"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setTrackModal({ step: "confirm", topic: article.title })}
+                    className="touch-manipulation"
+                    aria-label="Track topic"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c0c5d0" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -171,6 +196,12 @@ function FeedsContent() {
       {!loading && !error && articles.length === 0 && (
         <p className="text-center text-[14px] text-[#7a8499] mt-12">No articles found.</p>
       )}
+
+      <TrackModal
+        modal={trackModal}
+        onConfirm={() => setTrackModal((m) => m ? { step: "success", topic: m.topic } : null)}
+        onClose={() => setTrackModal(null)}
+      />
     </div>
   );
 }

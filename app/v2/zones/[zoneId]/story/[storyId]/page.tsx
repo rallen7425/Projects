@@ -3,6 +3,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ZONES, findStory, getRelated } from "@/lib/v2/zoneData";
+import { useSavedStories } from "@/components/SavedStoriesProvider";
+import TrackModal, { type TrackModalState } from "@/components/v2/TrackModal";
 
 const ZONE_TO_FEED: Record<string, string> = {
   sports:  "Sports",
@@ -20,10 +22,12 @@ export default function StoryDetailPage() {
   const storyId = params.storyId as string;
 
   const router = useRouter();
+  const { isSaved, toggle } = useSavedStories();
   const zone = ZONES[zoneId] ?? ZONES.sports;
   const story = findStory(zoneId, storyId);
   const related = getRelated(zoneId, storyId, 3);
   const [saved, setSaved] = useState(false);
+  const [trackModal, setTrackModal] = useState<TrackModalState>(null);
 
   const { colors } = zone;
 
@@ -112,8 +116,10 @@ export default function StoryDetailPage() {
               {related.map(({ zoneId: relZoneId, story: rel }) => {
                 const relZone = ZONES[relZoneId];
                 const feedCategory = ZONE_TO_FEED[relZoneId] ?? "All";
+                const relSaveId = `rel-${rel.id}`;
+                const relSaved = isSaved(relSaveId);
                 return (
-                  <div key={rel.id} className="px-4 py-3 border-b border-[#f0f1f3] active:bg-[#f7f8fa]">
+                  <div key={rel.id} className="px-4 py-3 border-b border-[#f0f1f3]">
                     <Link
                       href={`/feeds?category=${feedCategory}`}
                       className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-1.5 touch-manipulation"
@@ -121,16 +127,16 @@ export default function StoryDetailPage() {
                     >
                       {rel.tag}
                     </Link>
-                    <Link
-                      href={`/v2/zones/${relZoneId}/story/${rel.id}`}
-                      className="flex items-start gap-3 touch-manipulation"
-                    >
-                      <div className="flex-1 min-w-0">
+                    <div className="flex items-start gap-3">
+                      <Link
+                        href={`/v2/zones/${relZoneId}/story/${rel.id}`}
+                        className="flex-1 min-w-0 touch-manipulation"
+                      >
                         <p className="text-[15px] font-semibold text-[#0f1117] leading-snug">{rel.headline}</p>
                         {rel.summary && (
                           <p className="text-[13px] text-[#7a8499] mt-0.5 leading-snug line-clamp-2">{rel.summary}</p>
                         )}
-                      </div>
+                      </Link>
                       {rel.imageUrl && (
                         <img
                           src={rel.imageUrl}
@@ -139,7 +145,27 @@ export default function StoryDetailPage() {
                           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                       )}
-                    </Link>
+                    </div>
+                    <div className="flex items-center justify-end gap-3 mt-2">
+                      <button
+                        onClick={() => toggle({ id: relSaveId, title: rel.headline, source: rel.tag, snippet: rel.summary ?? "" })}
+                        className="touch-manipulation"
+                        aria-label={relSaved ? "Remove from saved" : "Save"}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill={relSaved ? "#185FA5" : "none"} stroke={relSaved ? "#185FA5" : "#c0c5d0"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setTrackModal({ step: "confirm", topic: rel.headline })}
+                        className="touch-manipulation"
+                        aria-label="Track topic"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c0c5d0" strokeWidth="2.5" strokeLinecap="round">
+                          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -156,6 +182,12 @@ export default function StoryDetailPage() {
         )}
 
       </div>
+
+      <TrackModal
+        modal={trackModal}
+        onConfirm={() => setTrackModal((m) => m ? { step: "success", topic: m.topic } : null)}
+        onClose={() => setTrackModal(null)}
+      />
     </div>
   );
 }
