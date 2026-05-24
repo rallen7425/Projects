@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Readability } from "@mozilla/readability";
+import { parseHTML } from "linkedom";
 
 const HEADERS = {
   "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
   "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
   "Accept-Language": "en-US,en;q=0.9",
-  "Cache-Control": "no-cache",
 };
 
 export async function GET(request: NextRequest) {
@@ -16,27 +17,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Resolve Google News redirect URLs to the real article URL
     let targetUrl = url;
-
-    // Google News redirect URLs need a second fetch to get the real article URL
     if (url.includes("news.google.com")) {
-      const gnRes = await fetch(url, { headers: HEADERS, redirect: "follow" });
-      const gnHtml = await gnRes.text();
-
-      // Try to find the real article URL in the Google News page
-      const realUrl =
-        gnHtml.match(/data-n-au="([^"]+)"/)?.[1] ||
-        gnHtml.match(/<a[^>]+href="(https?:\/\/(?!news\.google\.com)[^"]+)"[^>]*>\s*(?:Full coverage|Read more)/i)?.[1] ||
-        gnHtml.match(/window\.location\.href\s*=\s*["']([^"']+)["']/)?.[1] ||
-        gnHtml.match(/<meta[^>]+http-equiv=["']refresh["'][^>]+content=["'][^;]*;\s*url=([^"']+)["']/i)?.[1] ||
-        (gnRes.url !== url ? gnRes.url : null);
-
-      if (realUrl && !realUrl.includes("news.google.com")) {
-        targetUrl = realUrl.trim();
-      } else {
-        // Could not resolve — return empty so caller falls back to browser
-        return NextResponse.json({ paragraphs: [], finalUrl: gnRes.url });
-      }
+      targetUrl = await resolveGoogleNewsUrl(url);
     }
 
     const res = await fetch(targetUrl, {
@@ -46,20 +30,73 @@ export async function GET(request: NextRequest) {
     });
 
     if (!res.ok) {
-      return NextResponse.json({ error: `Fetch failed: ${res.status}`, paragraphs: [], finalUrl: targetUrl });
+      return NextResponse.json({ paragraphs: [], finalUrl: targetUrl });
     }
 
     const finalUrl = res.url;
     const html = await res.text();
-    const paragraphs = extractArticle(html);
+    const paragraphs = extractWithReadability(html, finalUrl);
     return NextResponse.json({ paragraphs, finalUrl });
   } catch (_err) {
-    return NextResponse.json({ error: "Could not fetch article", paragraphs: [], finalUrl: url });
+    return NextResponse.json({ paragraphs: [], finalUrl: url });
   }
 }
 
-function extractArticle(html: string): string[] {
-  // Strip non-content elements
+async function resolveGoogleNewsUrl(googleUrl: string): Promise<string> {
+  // Strategy 1: try to decode the Base64-encoded URL directly from the path
+  try {
+    const path = new URL(googleUrl).pathname.replace("/rss/articles/", "");
+    const decoded = Buffer.from(path, "base64url").toString("binary");
+    const idx = decoded.indexOf("https://");
+    if (idx !== -1) {
+      const extracted = decoded.slice(idx).split(/[\x00\s]/)[0];
+      if (extracted.length > 20 && !extracted.includes("news.google.com")) {
+        return extracted;
+      }
+    }
+  } catch { /* fall through */ }
+
+  // Strategy 2: fetch and follow HTTP redirects — res.url is the final URL
+  try {
+    const res = await fetch(googleUrl, { headers: HEADERS, redirect: "follow" });
+    if (res.url && !res.url.includes("news.google.com")) {
+      return res.url;
+    }
+    // Strategy 3: look for the real URL inside the returned HTML
+    const html = await res.text();
+    const match =
+      html.match(/data-n-au="([^"]+)"/) ||
+      html.match(/<a[^>]+href="(https?:\/\/(?!news\.google\.com)[^"]+)"[^>]*>/i);
+    if (match?.[1]) return match[1];
+  } catch { /* fall through */ }
+
+  return googleUrl;
+}
+
+function extractWithReadability(html: string, url: string): string[] {
+  try {
+    const { document } = parseHTML(html);
+    const reader = new Readability(document as unknown as Document, {
+      charThreshold: 20,
+    });
+    const article = reader.parse();
+    if (!article?.content) return fallbackExtract(html);
+
+    // Turn Readability's HTML content into plain text paragraphs
+    const { document: contentDoc } = parseHTML(article.content);
+    const blocks: string[] = [];
+    const nodes = contentDoc.querySelectorAll("p, h2, h3");
+    for (const node of Array.from(nodes)) {
+      const text = (node.textContent ?? "").replace(/\s+/g, " ").trim();
+      if (text.length > 40) blocks.push(text);
+    }
+    if (blocks.length > 0) return blocks.slice(0, 30);
+  } catch { /* fall through to regex fallback */ }
+
+  return fallbackExtract(html);
+}
+
+function fallbackExtract(html: string): string[] {
   let doc = html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -69,28 +106,19 @@ function extractArticle(html: string): string[] {
     .replace(/<header[\s\S]*?<\/header>/gi, "")
     .replace(/<!--[\s\S]*?-->/g, "");
 
-  // Find the start of the main content container and slice from there.
-  // We search for the opening tag only (not trying to close-match nested divs)
-  // so the non-greedy regex bug doesn't cut content short.
   const containerPatterns = [
     /<article[^>]*>/i,
-    /<div[^>]*\bclass="[^"]*\b(?:article-body|article__body|story-body|post-body|entry-content|article-content|content-body|ArticleBody|article_body|story__body|article__content|post__content|RichTextArticleBody|article-text|body-content|article_content|articleBody)[^"]*"[^>]*>/i,
-    /<section[^>]*\bclass="[^"]*\b(?:article|story|content|post)[^"]*"[^>]*>/i,
-    /<div[^>]*\bclass="[^"]*\b(?:story|post|entry)[^"]*"[^>]*>/i,
+    /<div[^>]*\bclass="[^"]*\b(?:article-body|article__body|story-body|post-body|entry-content|article-content|content-body|ArticleBody|article_body|story__body|article__content|post__content|RichTextArticleBody|article-text|body-content)[^"]*"[^>]*>/i,
     /<main[^>]*>/i,
   ];
 
   for (const pattern of containerPatterns) {
     const idx = doc.search(pattern);
-    if (idx !== -1) {
-      doc = doc.slice(idx);
-      break;
-    }
+    if (idx !== -1) { doc = doc.slice(idx); break; }
   }
 
-  // Extract text from <p>, <h2>, <h3> tags
   const blocks: string[] = [];
-  for (const m of doc.matchAll(/<(p|h2|h3)[^>]*>([\s\S]*?)<\/\1>/gi)) {
+  for (const m of Array.from(doc.matchAll(/<(p|h2|h3)[^>]*>([\s\S]*?)<\/\1>/gi))) {
     const text = m[2]
       .replace(/<[^>]+>/g, " ")
       .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
@@ -100,12 +128,10 @@ function extractArticle(html: string): string[] {
     if (text.length > 40) blocks.push(text);
   }
 
-  // Deduplicate and cap
   const seen = new Set<string>();
   const unique: string[] = [];
   for (const b of blocks) {
     if (!seen.has(b)) { seen.add(b); unique.push(b); }
   }
-
   return unique.slice(0, 25);
 }
