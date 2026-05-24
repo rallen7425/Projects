@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-
+import Link from "next/link";
 
 type Article = {
   title: string;
@@ -12,6 +12,14 @@ type Article = {
 };
 
 const CATEGORIES = ["All", "Business", "Tech", "Sports", "Local"];
+
+const CAT_COLORS: Record<string, { bg: string; text: string }> = {
+  All:      { bg: "#E6F1FB", text: "#185FA5" },
+  Business: { bg: "#E1F5EE", text: "#0F6E56" },
+  Tech:     { bg: "#EEEDFE", text: "#534AB7" },
+  Sports:   { bg: "#EAF3DE", text: "#3B6D11" },
+  Local:    { bg: "#FEF3E2", text: "#854F0B" },
+};
 
 function timeAgo(dateStr: string): string {
   if (!dateStr) return "";
@@ -25,6 +33,19 @@ function timeAgo(dateStr: string): string {
   } catch {
     return "";
   }
+}
+
+function articleHref(article: Article, category: string): string {
+  const p = new URLSearchParams({
+    title:  article.title,
+    source: article.source,
+    desc:   article.description,
+    link:   article.link,
+    cat:    category,
+    time:   timeAgo(article.pubDate),
+  });
+  if (article.imageUrl) p.set("img", article.imageUrl);
+  return `/feeds/article?${p.toString()}`;
 }
 
 export default function FeedsPage() {
@@ -46,22 +67,22 @@ export default function FeedsPage() {
       .finally(() => setLoading(false));
   }, [category]);
 
-  const hero = articles[0];
-  const rest = articles.slice(1);
+  const color = CAT_COLORS[category] ?? CAT_COLORS.All;
+  const pillLabel = category === "All" ? "News" : category;
 
   return (
     <div className="pb-4">
       {/* Category chips */}
-      <div className="sticky top-0 bg-white z-10 border-b border-[#dde1e8] px-3 py-2 flex gap-2 overflow-x-auto scrollbar-hide">
+      <div className="sticky top-0 bg-white z-10 border-b border-[#dde1e8] px-3 py-2 flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
         {CATEGORIES.map((cat) => (
           <button
             key={cat}
             onClick={() => setCategory(cat)}
-            className="flex-shrink-0 text-[13px] font-medium px-3 py-1.5 rounded-full border touch-manipulation transition-colors"
+            className="flex-shrink-0 text-[13px] font-medium px-3 py-1.5 rounded-full border touch-manipulation"
             style={{
-              background: category === cat ? "#2d59a6" : "#f7f8fa",
-              color: category === cat ? "#fff" : "#475066",
-              borderColor: category === cat ? "#2d59a6" : "#dde1e8",
+              background:  category === cat ? color.text : "#f7f8fa",
+              color:       category === cat ? "#fff" : "#475066",
+              borderColor: category === cat ? color.text : "#dde1e8",
             }}
           >
             {cat}
@@ -69,76 +90,72 @@ export default function FeedsPage() {
         ))}
       </div>
 
+      {/* Loading skeletons */}
       {loading && (
-        <div className="flex flex-col gap-3 p-4">
+        <div className="flex flex-col">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-4 bg-[#f7f8fa] rounded mb-2 w-1/3" />
-              <div className="h-5 bg-[#f7f8fa] rounded mb-1" />
-              <div className="h-5 bg-[#f7f8fa] rounded w-3/4" />
+            <div key={i} className="px-4 py-4 border-b border-[#f0f1f3] animate-pulse">
+              <div className="h-4 bg-[#f0f1f3] rounded w-16 mb-3" />
+              <div className="h-4 bg-[#f0f1f3] rounded w-28 mb-2" />
+              <div className="h-5 bg-[#f0f1f3] rounded mb-1.5" />
+              <div className="h-5 bg-[#f0f1f3] rounded w-4/5 mb-1.5" />
+              <div className="h-4 bg-[#f0f1f3] rounded w-2/3" />
             </div>
           ))}
         </div>
       )}
 
+      {/* Error */}
       {error && (
-        <div className="m-4 p-4 rounded-card bg-[#fff0f0] border border-[#E24B4A]/30 text-[13px] text-[#E24B4A]">
+        <div className="m-4 p-4 rounded-[10px] bg-[#fff0f0] border border-[#E24B4A]/30 text-[13px] text-[#E24B4A]">
           {error}
         </div>
       )}
 
+      {/* Article list */}
       {!loading && !error && articles.length > 0 && (
         <div>
-          {/* Hero article */}
-          {hero && (
-            <a
-              href={hero.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block mx-3 mt-3 rounded-card bg-[#f7f8fa] border border-[#dde1e8] touch-manipulation overflow-hidden"
-            >
-              <div className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[11px] font-semibold text-[#2d59a6] uppercase tracking-wide">{hero.source}</span>
-                  <span className="text-[#dde1e8]">·</span>
-                  <span className="text-[11px] text-[#7a8499]">{timeAgo(hero.pubDate)}</span>
-                </div>
-                <h2 className="text-[16px] font-semibold text-[#0f1117] leading-snug">{hero.title}</h2>
-                {hero.description && (
-                  <p className="text-[13px] text-[#475066] mt-1.5 leading-relaxed">
-                    {hero.description}
-                  </p>
-                )}
-                <span className="inline-block mt-2 text-[12px] font-medium text-[#2d59a6]">Read more →</span>
-              </div>
-            </a>
-          )}
+          {articles.map((article, idx) => {
+            const href = articleHref(article, category);
+            return (
+              <div key={idx} className="px-4 py-4 border-b border-[#f0f1f3] last:border-0">
+                {/* Category pill */}
+                <span
+                  className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-2"
+                  style={{ background: color.bg, color: color.text }}
+                >
+                  {pillLabel}
+                </span>
 
-          {/* Article list */}
-          <div className="mt-2 mx-3 rounded-card border border-[#dde1e8] overflow-hidden bg-white">
-            {rest.map((article, idx) => (
-              <a
-                key={idx}
-                href={article.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex gap-3 px-4 py-3 border-b border-[#dde1e8] last:border-b-0 touch-manipulation active:bg-[#f7f8fa]"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-[10px] font-semibold text-[#2d59a6] uppercase tracking-wide truncate max-w-[140px]">
-                      {article.source}
-                    </span>
-                    <span className="text-[#dde1e8] flex-shrink-0">·</span>
-                    <span className="text-[10px] text-[#7a8499] flex-shrink-0">{timeAgo(article.pubDate)}</span>
-                  </div>
-                  <p className="text-[13px] font-medium text-[#0f1117] leading-snug line-clamp-2">
-                    {article.title}
-                  </p>
+                {/* Hero image */}
+                {article.imageUrl && (
+                  <img
+                    src={article.imageUrl}
+                    alt=""
+                    className="w-full h-[180px] object-cover rounded-[10px] mb-3"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                )}
+
+                {/* Source + time */}
+                <div className="text-[12px] text-[#7a8499] mb-1.5">
+                  {article.source} · {timeAgo(article.pubDate)}
                 </div>
-              </a>
-            ))}
-          </div>
+
+                {/* Headline + subheadline — in-app link */}
+                <Link href={href} className="block touch-manipulation">
+                  <h3 className="text-[16px] font-semibold text-[#0f1117] leading-snug mb-1">
+                    {article.title}
+                  </h3>
+                  {article.description && (
+                    <p className="text-[13px] text-[#475066] leading-snug line-clamp-2">
+                      {article.description}
+                    </p>
+                  )}
+                </Link>
+              </div>
+            );
+          })}
         </div>
       )}
 
