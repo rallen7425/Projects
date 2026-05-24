@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ZoneSubNav from "@/components/v2/ZoneSubNav";
+import { useSavedStories } from "@/components/SavedStoriesProvider";
 
 const BREAKING = [
   { color: "#E24B4A", tag: "WEATHER · LOCAL", headline: "Heat risk today — 92°F, severe T-storms expected by 2pm", time: "8 min ago", href: "/v2/zones/local/story/heat-spike-storms" },
@@ -65,18 +66,6 @@ const TRACKING = [
   { name: "Maine weather",      sub: "No changes to weekend forecast",            href: "/v2/zones/maine/story/maine-memorial-day",  pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B", hasNew: false },
 ];
 
-const TOPIC_MENU = [
-  { label: "Track Topic",  icon: "◎", color: "#185FA5" },
-  { label: "Read Later",   icon: "⊕", color: "#475066" },
-  { label: "Pause Topic",  icon: "⏸", color: "#475066" },
-  { label: "Remove Topic", icon: "✕", color: "#E24B4A" },
-];
-
-const TRACKING_MENU = [
-  { label: "View Updates",       icon: "◎", color: "#185FA5" },
-  { label: "Pause Tracking",     icon: "⏸", color: "#475066" },
-  { label: "Remove from Tracking", icon: "✕", color: "#E24B4A" },
-];
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -86,13 +75,29 @@ function getGreeting() {
   return "Good night";
 }
 
+type TrackingItem = typeof TRACKING[number];
+type TrackingModal =
+  | { step: "confirm"; topic: string; item: TrackingItem }
+  | { step: "success"; topic: string }
+  | null;
+
 export default function V2Page() {
   const router = useRouter();
+  const { isSaved, toggle } = useSavedStories();
   const [zonesExpanded, setZonesExpanded] = useState(false);
   const visibleZones = zonesExpanded ? ZONES : ZONES.slice(0, 4);
-  const [openMenu, setOpenMenu] = useState<number | null>(null);
-  const [openTrackingMenu, setOpenTrackingMenu] = useState<number | null>(null);
   const [savedStories, setSavedStories] = useState<Set<string>>(new Set());
+  const [trackedTopics, setTrackedTopics] = useState<TrackingItem[]>(TRACKING);
+  const [trackingModal, setTrackingModal] = useState<TrackingModal>(null);
+
+  function confirmAddTracking() {
+    if (!trackingModal || trackingModal.step !== "confirm") return;
+    setTrackedTopics((prev) => {
+      const exists = prev.some((t) => t.name === trackingModal.item.name);
+      return exists ? prev : [{ ...trackingModal.item, hasNew: false }, ...prev];
+    });
+    setTrackingModal({ step: "success", topic: trackingModal.topic });
+  }
 
   return (
     <div className="bg-[#f4f5f7] min-h-full">
@@ -120,6 +125,12 @@ export default function V2Page() {
       <div className="mx-3 mt-3 rounded-[12px] bg-white border border-[#e8eaef] overflow-hidden px-4 py-3">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase flex-1">Your Zones</span>
+          <button
+            onClick={() => setZonesExpanded(!zonesExpanded)}
+            className="text-[12px] font-medium text-[#185FA5] touch-manipulation"
+          >
+            {zonesExpanded ? "View less" : "View all"}
+          </button>
           <button className="flex items-center justify-center text-[#185FA5] bg-[#E6F1FB] w-6 h-6 rounded-[4px] touch-manipulation" aria-label="Edit zones">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -178,12 +189,6 @@ export default function V2Page() {
             </button>
           )}
         </div>
-        <button
-          onClick={() => setZonesExpanded(!zonesExpanded)}
-          className="w-full mt-2.5 text-[13px] text-[#185FA5] font-medium text-center py-1 touch-manipulation"
-        >
-          {zonesExpanded ? "Show less ↑" : `Show all ${ZONES.length} zones ↓`}
-        </button>
       </div>
 
       {/* Trending */}
@@ -205,13 +210,28 @@ export default function V2Page() {
                 <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.topic}</div>
                 {item.sub && <div className="text-[13px] text-[#7a8499] mt-0.5 leading-snug">{item.sub}</div>}
               </Link>
-              <button
-                onClick={() => setOpenMenu(openMenu === i ? null : i)}
-                className="flex-shrink-0 mt-[1px] text-[16px] text-[#c0c5d0] leading-none touch-manipulation"
-                aria-label="More options"
-              >
-                ···
-              </button>
+              <div className="flex items-center gap-2 flex-shrink-0 mt-[2px]">
+                {/* Save bookmark */}
+                <button
+                  onClick={() => toggle({ id: `trending-${i}`, title: item.topic, source: item.pillLabel, snippet: item.sub ?? "" })}
+                  className="touch-manipulation"
+                  aria-label={isSaved(`trending-${i}`) ? "Remove from saved" : "Save"}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill={isSaved(`trending-${i}`) ? "#185FA5" : "none"} stroke={isSaved(`trending-${i}`) ? "#185FA5" : "#c0c5d0"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </button>
+                {/* Add to tracking */}
+                <button
+                  onClick={() => setTrackingModal({ step: "confirm", topic: item.topic, item: { name: item.topic, sub: item.sub, href: item.href, pillLabel: item.pillLabel, pillBg: item.pillBg, pillColor: item.pillColor, hasNew: false } })}
+                  className="touch-manipulation"
+                  aria-label="Track topic"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c0c5d0" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -219,35 +239,6 @@ export default function V2Page() {
           <Link href="/v2/trending" className="text-[12px] text-[#7a8499] touch-manipulation">View more →</Link>
         </div>
       </div>
-
-      {/* Topic action menu overlay */}
-      {openMenu !== null && (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setOpenMenu(null)}
-          />
-          <div className="fixed z-50 left-1/2 -translate-x-1/2 w-[260px] bg-white rounded-[14px] shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#f0f1f3] overflow-hidden"
-            style={{ top: "40%" }}
-          >
-            <div className="px-4 pt-3 pb-2 border-b border-[#f0f1f3]">
-              <div className="text-[12px] font-semibold text-[#7a8499] uppercase tracking-widest truncate">
-                {TRENDING[openMenu].topic}
-              </div>
-            </div>
-            {TOPIC_MENU.map((action) => (
-              <button
-                key={action.label}
-                onClick={() => setOpenMenu(null)}
-                className="w-full flex items-center gap-3 px-4 py-3 border-b border-[#f7f8fa] last:border-0 touch-manipulation active:bg-[#f7f8fa] text-left"
-              >
-                <span className="text-[16px] w-5 text-center flex-shrink-0" style={{ color: action.color }}>{action.icon}</span>
-                <span className="text-[15px] font-medium" style={{ color: action.color }}>{action.label}</span>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
 
       {/* Tracking */}
       <div className="mx-3 mt-3 rounded-[12px] bg-white border border-[#e8eaef] overflow-hidden px-4 py-3">
@@ -260,58 +251,96 @@ export default function V2Page() {
             </svg>
           </Link>
         </div>
-        {TRACKING.map((item, i) => (
-          <div key={i} className="py-2.5 border-b border-[#f0f1f3] last:border-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Link
-                href={`/feeds?category=${PILL_TO_FEED[item.pillLabel] ?? "All"}`}
-                className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] touch-manipulation"
-                style={{ background: item.pillBg, color: item.pillColor }}
-              >
-                {item.pillLabel}
-              </Link>
-              {item.hasNew && <span className="w-1.5 h-1.5 rounded-full bg-[#185FA5] flex-shrink-0" />}
+        {trackedTopics.map((item, i) => {
+          const savedId = `tracking-${item.name}`;
+          return (
+            <div key={i} className="py-2.5 border-b border-[#f0f1f3] last:border-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Link
+                  href={`/feeds?category=${PILL_TO_FEED[item.pillLabel] ?? "All"}`}
+                  className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] touch-manipulation"
+                  style={{ background: item.pillBg, color: item.pillColor }}
+                >
+                  {item.pillLabel}
+                </Link>
+                {item.hasNew && <span className="w-1.5 h-1.5 rounded-full bg-[#185FA5] flex-shrink-0" />}
+              </div>
+              <div className="flex items-start gap-2">
+                <Link href={item.href} className="flex-1">
+                  <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.name}</div>
+                  {item.sub && <div className="text-[13px] text-[#7a8499] mt-0.5 leading-snug">{item.sub}</div>}
+                </Link>
+                <button
+                  onClick={() => toggle({ id: savedId, title: item.name, source: item.pillLabel, snippet: item.sub ?? "" })}
+                  className="flex-shrink-0 mt-[2px] touch-manipulation"
+                  aria-label={isSaved(savedId) ? "Remove from saved" : "Save"}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill={isSaved(savedId) ? "#185FA5" : "none"} stroke={isSaved(savedId) ? "#185FA5" : "#c0c5d0"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div className="flex items-start gap-2">
-              <Link href={item.href} className="flex-1">
-                <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.name}</div>
-                {item.sub && <div className="text-[13px] text-[#7a8499] mt-0.5 leading-snug">{item.sub}</div>}
-              </Link>
-              <button
-                onClick={() => setOpenTrackingMenu(openTrackingMenu === i ? null : i)}
-                className="flex-shrink-0 mt-[1px] text-[16px] text-[#c0c5d0] leading-none touch-manipulation"
-                aria-label="More options"
-              >
-                ···
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         <div className="flex justify-end pt-2">
           <Link href="/v2/tracking" className="text-[12px] text-[#7a8499] touch-manipulation">View more →</Link>
         </div>
       </div>
 
-      {/* Tracking action menu overlay */}
-      {openTrackingMenu !== null && (
+      {/* Tracking modal */}
+      {trackingModal !== null && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpenTrackingMenu(null)} />
-          <div className="fixed z-50 left-1/2 -translate-x-1/2 w-[260px] bg-white rounded-[14px] shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#f0f1f3] overflow-hidden" style={{ top: "40%" }}>
-            <div className="px-4 pt-3 pb-2 border-b border-[#f0f1f3]">
-              <div className="text-[12px] font-semibold text-[#7a8499] uppercase tracking-widest truncate">
-                {TRACKING[openTrackingMenu].name}
-              </div>
-            </div>
-            {TRACKING_MENU.map((action) => (
-              <button
-                key={action.label}
-                onClick={() => setOpenTrackingMenu(null)}
-                className="w-full flex items-center gap-3 px-4 py-3 border-b border-[#f7f8fa] last:border-0 touch-manipulation active:bg-[#f7f8fa] text-left"
-              >
-                <span className="text-[16px] w-5 text-center flex-shrink-0" style={{ color: action.color }}>{action.icon}</span>
-                <span className="text-[15px] font-medium" style={{ color: action.color }}>{action.label}</span>
-              </button>
-            ))}
+          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setTrackingModal(null)} />
+          <div className="fixed z-50 left-1/2 -translate-x-1/2 w-[300px] bg-white rounded-[16px] shadow-[0_12px_40px_rgba(0,0,0,0.22)] overflow-hidden" style={{ top: "38%" }}>
+            {trackingModal.step === "confirm" ? (
+              <>
+                <div className="px-5 pt-5 pb-4">
+                  <div className="text-[17px] font-semibold text-[#0f1117] leading-snug mb-1">Track this topic?</div>
+                  <div className="text-[14px] text-[#7a8499] leading-snug">
+                    #{trackingModal.topic}
+                  </div>
+                </div>
+                <div className="flex border-t border-[#f0f1f3]">
+                  <button
+                    onClick={() => setTrackingModal(null)}
+                    className="flex-1 py-3.5 text-[15px] font-medium text-[#7a8499] border-r border-[#f0f1f3] touch-manipulation active:bg-[#f7f8fa]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmAddTracking}
+                    className="flex-1 py-3.5 text-[15px] font-semibold touch-manipulation active:opacity-80"
+                    style={{ color: "#185FA5" }}
+                  >
+                    Add to Tracking
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="px-5 pt-5 pb-4 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#E1F5EE] flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-[16px] font-semibold text-[#0f1117] mb-0.5">Added to Tracking</div>
+                    <div className="text-[13px] text-[#7a8499]">#{trackingModal.topic}</div>
+                  </div>
+                </div>
+                <div className="border-t border-[#f0f1f3]">
+                  <button
+                    onClick={() => setTrackingModal(null)}
+                    className="w-full py-3.5 text-[15px] font-semibold touch-manipulation active:bg-[#f7f8fa]"
+                    style={{ color: "#185FA5" }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </>
       )}
