@@ -81,7 +81,6 @@ export default function StoryDetailPage() {
         <div className="px-4 pt-5">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[11px] font-semibold tracking-widest text-[#7a8499] uppercase">AI Summary</span>
-            <div className="h-px flex-1 bg-[#f0f1f3]" />
           </div>
           <p className="text-[17px] text-[#1a1a1a] leading-relaxed">{story.summary}</p>
         </div>
@@ -97,8 +96,7 @@ export default function StoryDetailPage() {
           <div className="pt-6">
             <div className="flex items-center gap-2 px-4 mb-3">
               <span className="text-[11px] font-semibold tracking-widest text-[#7a8499] uppercase">Related</span>
-              <div className="h-px flex-1 bg-[#f0f1f3]" />
-            </div>
+              </div>
             <div className="border-t border-[#f0f1f3]">
               {related.map(({ zoneId: relZoneId, story: rel }) => {
                 const relZone = ZONES[relZoneId];

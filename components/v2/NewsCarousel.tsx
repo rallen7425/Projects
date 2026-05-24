@@ -22,7 +22,6 @@ export default function NewsCarousel({ items, pillBg, pillText, heading = "Read 
     <div className="pt-6">
       <div className="flex items-center gap-2 px-4 mb-3">
         <span className="text-[11px] font-semibold tracking-widest text-[#7a8499] uppercase">{heading}</span>
-        <div className="h-px flex-1 bg-[#f0f1f3]" />
       </div>
       <div className="flex gap-3 overflow-x-auto px-4 pb-1" style={{ scrollbarWidth: "none" }}>
         {items.slice(0, 10).map((item, i) => (
