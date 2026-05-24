@@ -9,6 +9,7 @@ type Article = {
   source: string;
   description: string;
   imageUrl: string;
+  category: string;
 };
 
 const CATEGORIES = ["All", "News", "Business", "Tech", "Sports", "Local"];
@@ -68,8 +69,7 @@ export default function FeedsPage() {
       .finally(() => setLoading(false));
   }, [category]);
 
-  const color = CAT_COLORS[category] ?? CAT_COLORS.News;
-  const pillLabel = category;
+  const chipColor = CAT_COLORS[category] ?? CAT_COLORS.News;
 
   return (
     <div className="pb-4">
@@ -81,9 +81,9 @@ export default function FeedsPage() {
             onClick={() => setCategory(cat)}
             className="flex-shrink-0 text-[13px] font-medium px-3 py-1.5 rounded-full border touch-manipulation"
             style={{
-              background:  category === cat ? color.text : "#f7f8fa",
+              background:  category === cat ? chipColor.text : "#f7f8fa",
               color:       category === cat ? "#fff" : "#475066",
-              borderColor: category === cat ? color.text : "#dde1e8",
+              borderColor: category === cat ? chipColor.text : "#dde1e8",
             }}
           >
             {cat}
@@ -120,13 +120,18 @@ export default function FeedsPage() {
             const href = articleHref(article, category);
             return (
               <div key={idx} className="px-4 py-4 border-b border-[#f0f1f3] last:border-0">
-                {/* Category pill */}
-                <span
-                  className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-2"
-                  style={{ background: color.bg, color: color.text }}
-                >
-                  {pillLabel}
-                </span>
+                {/* Category pill — always reflects the article's actual topic */}
+                {(() => {
+                  const artColor = CAT_COLORS[article.category] ?? CAT_COLORS.News;
+                  return (
+                    <span
+                      className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-2"
+                      style={{ background: artColor.bg, color: artColor.text }}
+                    >
+                      {article.category}
+                    </span>
+                  );
+                })()}
 
                 {/* Hero image */}
                 {article.imageUrl && (

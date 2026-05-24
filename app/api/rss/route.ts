@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
           fetch(FEEDS[key], {
             headers: { "User-Agent": "Distilled/1.0 RSS Reader" },
             next: { revalidate: 300 },
-          }).then((r) => r.text())
+          }).then((r) => r.text().then((xml) => ({ key, xml })))
         )
       );
 
@@ -32,21 +32,23 @@ export async function GET(request: NextRequest) {
 
       for (const result of results) {
         if (result.status !== "fulfilled") continue;
-        for (const item of parseRSS(result.value)) {
-          const key = item.title.slice(0, 60).toLowerCase();
-          if (!seen.has(key)) {
-            seen.add(key);
+        const { key, xml } = result.value;
+        const label = key.charAt(0).toUpperCase() + key.slice(1);
+        for (const item of parseRSS(xml, label)) {
+          const dedupeKey = item.title.slice(0, 60).toLowerCase();
+          if (!seen.has(dedupeKey)) {
+            seen.add(dedupeKey);
             allItems.push(item);
           }
         }
       }
 
-      // Sort by date descending and cap at 40
       allItems.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
       return NextResponse.json({ items: allItems.slice(0, 40), category });
     }
 
     const feedUrl = FEEDS[category] ?? FEEDS.news;
+    const label = category.charAt(0).toUpperCase() + category.slice(1);
     const res = await fetch(feedUrl, {
       headers: { "User-Agent": "Distilled/1.0 RSS Reader" },
       next: { revalidate: 300 },
@@ -54,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     if (!res.ok) throw new Error(`Feed fetch failed: ${res.status}`);
     const xml = await res.text();
-    return NextResponse.json({ items: parseRSS(xml), category });
+    return NextResponse.json({ items: parseRSS(xml, label), category });
   } catch (_err) {
     return NextResponse.json({ error: "Failed to fetch feed", items: [] }, { status: 500 });
   }
@@ -67,9 +69,10 @@ type RSSItem = {
   source: string;
   description: string;
   imageUrl: string;
+  category: string;
 };
 
-function parseRSS(xml: string): RSSItem[] {
+function parseRSS(xml: string, category = "News"): RSSItem[] {
   const items: RSSItem[] = [];
   const itemMatches = Array.from(xml.matchAll(/<item>([\s\S]*?)<\/item>/g));
 
@@ -100,7 +103,7 @@ function parseRSS(xml: string): RSSItem[] {
     const sourceMatch = block.match(/<source[^>]*>([^<]+)<\/source>/);
     const source = sourceMatch?.[1]?.trim() ?? extractSourceFromTitle(title);
 
-    items.push({ title: cleanTitle(title, source), link, pubDate, source, description, imageUrl });
+    items.push({ title: cleanTitle(title, source), link, pubDate, source, description, imageUrl, category });
   }
 
   return items.slice(0, 40);
