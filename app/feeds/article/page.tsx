@@ -94,25 +94,11 @@ function WebView({ url, source, title, body, imageUrl, desc, onClose }: {
               {desc}
             </p>
           )}
-          {body.length > 0 ? (
-            <div className="space-y-4">
-              {body.map((para, i) => (
-                <p key={i} className="text-[16px] text-[#1a1a1a] leading-relaxed">{para}</p>
-              ))}
-            </div>
-          ) : (
-            <div className="py-8 text-center">
-              <p className="text-[14px] text-[#7a8499] mb-4">Full article content not available in reader mode.</p>
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block px-5 py-2.5 rounded-[10px] bg-[#185FA5] text-white text-[14px] font-semibold"
-              >
-                Open in Browser →
-              </a>
-            </div>
-          )}
+          <div className="space-y-4">
+            {body.map((para, i) => (
+              <p key={i} className="text-[16px] text-[#1a1a1a] leading-relaxed">{para}</p>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -292,7 +278,13 @@ function ArticleContent() {
         {/* Open in web view */}
         {link && (
           <button
-            onClick={() => setShowWebView(true)}
+            onClick={() => {
+              if (body.length > 0) {
+                setShowWebView(true);
+              } else {
+                window.open(resolvedUrl || link, "_blank", "noopener,noreferrer");
+              }
+            }}
             className="block w-full text-center py-3 rounded-[10px] bg-[#185FA5] text-white text-[15px] font-semibold touch-manipulation active:opacity-80 mb-6"
           >
             Read on {source || "original site"} →
