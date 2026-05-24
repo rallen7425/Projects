@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ZONES, findStory, getRelated } from "@/lib/v2/zoneData";
+import NewsCarousel from "@/components/v2/NewsCarousel";
 
 export default function StoryDetailPage() {
   const params = useParams();
@@ -85,47 +86,11 @@ export default function StoryDetailPage() {
           <p className="text-[17px] text-[#1a1a1a] leading-relaxed">{story.summary}</p>
         </div>
 
-        {/* Read More carousel */}
-        <div className="pt-6">
-          <div className="flex items-center gap-2 px-4 mb-3">
-            <span className="text-[11px] font-semibold tracking-widest text-[#7a8499] uppercase">Read More</span>
-            <div className="h-px flex-1 bg-[#f0f1f3]" />
-          </div>
-          <div className="flex gap-3 overflow-x-auto px-4 pb-1" style={{ scrollbarWidth: "none" }}>
-            {story.sources.slice(0, 10).map((src, i) => (
-              <a
-                key={i}
-                href={src.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-shrink-0 w-[80vw] rounded-[12px] border border-[#e0e0e0] bg-white p-3 flex gap-3 touch-manipulation active:opacity-80"
-              >
-                {/* Text — left */}
-                <div className="flex-1 min-w-0 flex flex-col justify-between">
-                  <div>
-                    <p className="text-[13px] font-semibold text-[#111111] leading-snug line-clamp-2 mb-1">{src.title}</p>
-                    {src.sub && <p className="text-[12px] text-[#555555] leading-snug line-clamp-2">{src.sub}</p>}
-                  </div>
-                  <span
-                    className="mt-2 self-start text-[10px] font-semibold px-2 py-[2px] rounded-[4px]"
-                    style={{ background: colors.pillBg, color: colors.pillText }}
-                  >
-                    {src.label}
-                  </span>
-                </div>
-                {/* Thumbnail — right */}
-                {src.imageUrl && (
-                  <img
-                    src={src.imageUrl}
-                    alt=""
-                    className="flex-shrink-0 w-[72px] h-[72px] rounded-[8px] object-cover self-start"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
-                )}
-              </a>
-            ))}
-          </div>
-        </div>
+        <NewsCarousel
+          items={story.sources}
+          pillBg={colors.pillBg}
+          pillText={colors.pillText}
+        />
 
         {/* Related Articles */}
         {related.length > 0 && (
