@@ -3,20 +3,25 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
+  { href: "/v2", label: "Home" },
   { href: "/briefing", label: "Briefing" },
   { href: "/feeds", label: "Feeds" },
   { href: "/saved", label: "Saved" },
   { href: "/v2/tracking", label: "Tracking" },
-  { href: "/v2", label: "V2" },
 ];
 
 export default function TopTabNav() {
   const pathname = usePathname();
 
+  function isTabActive(href: string) {
+    if (href === "/v2") return pathname === "/v2" || (pathname.startsWith("/v2/") && !pathname.startsWith("/v2/tracking"));
+    return pathname.startsWith(href);
+  }
+
   return (
-    <nav className="bg-white border-b border-[#dde1e8] flex px-1">
+    <nav className="bg-white border-b border-[#dde1e8] flex px-1 flex-shrink-0">
       {TABS.map((tab) => {
-        const active = pathname.startsWith(tab.href);
+        const active = isTabActive(tab.href);
         return (
           <Link
             key={tab.href}

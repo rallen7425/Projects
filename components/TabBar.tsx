@@ -4,11 +4,12 @@ import { usePathname } from "next/navigation";
 
 const tabs = [
   {
-    href: "/briefing",
-    label: "Briefing",
+    href: "/v2",
+    label: "Home",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "#2d59a6" : "#7a8499"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 6h16M4 12h16M4 18h10"/>
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
       </svg>
     ),
   },
@@ -32,7 +33,7 @@ const tabs = [
     ),
   },
   {
-    href: "/tracking",
+    href: "/v2/tracking",
     label: "Tracking",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "#2d59a6" : "#7a8499"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -51,7 +52,9 @@ export default function TabBar() {
       style={{ height: "calc(56px + env(safe-area-inset-bottom))", paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {tabs.map((tab) => {
-        const active = pathname.startsWith(tab.href);
+        const active = tab.href === "/v2"
+          ? pathname === "/v2" || (pathname.startsWith("/v2/") && !pathname.startsWith("/v2/tracking"))
+          : pathname.startsWith(tab.href);
         return (
           <Link
             key={tab.href}

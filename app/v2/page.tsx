@@ -1,18 +1,43 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const BREAKING = [
   { color: "#E24B4A", tag: "WEATHER · LOCAL", headline: "Heat risk today — 92°F, severe T-storms expected by 2pm", time: "8 min ago", href: "/v2/zones/local/story/heat-spike-storms" },
-  { color: "#EF9F27", tag: "CELTICS",         headline: "Stevens confirms Brown not being traded this offseason",  time: "1 hr ago",  href: "/v2/zones/sports/story/celtics-stevens-brown" },
 ];
 
 const ZONES = [
-  { id: "local",   name: "LOCAL",       snap: "Heat spike, storms this afternoon",   count: 2, bg: "#E6F1FB", nameColor: "#185FA5", snapColor: "#0C447C" },
-  { id: "sports",  name: "SPORTS",      snap: "Sox win, Celtics offseason in motion", count: 4, bg: "#EAF3DE", nameColor: "#3B6D11", snapColor: "#27500A" },
-  { id: "maine",   name: "MAINE HOUSE", snap: "Fri–Sat clear, rain arrives Sunday",  count: 1, bg: "#FAEEDA", nameColor: "#854F0B", snapColor: "#633806" },
-  { id: "tech",    name: "TECH & AI",   snap: "Google I/O, Gemini, Meta layoffs",    count: 3, bg: "#EEEDFE", nameColor: "#534AB7", snapColor: "#3C3489" },
-  { id: "finance", name: "FINANCE",     snap: "Fed rate outlook, markets steady",     count: 2, bg: "#E1F5EE", nameColor: "#0F6E56", snapColor: "#085041" },
+  {
+    id: "local",   name: "LOCAL",
+    featured: "92°F today — heat risk, severe T-storms expected by 2pm",
+    stories: ["Town meeting: $48M school budget approved"],
+    count: 2, bg: "#0c2d5e", nameColor: "#85B7EB",
+  },
+  {
+    id: "sports",  name: "SPORTS",
+    featured: "Stevens: Brown stays — targeting rim presence this offseason",
+    stories: ["AJ Brown trade closing around June 1", "Giannis market opens — Celts a fit?", "Sox beat Royals 4–3, Duran HR"],
+    count: 4, bg: "#1b4332", nameColor: "#9FE1CB",
+  },
+  {
+    id: "maine",   name: "MAINE HOUSE",
+    featured: "Good Fri–Sat, rain arrives Sunday — 60% chance Memorial Day",
+    stories: ["Turnpike: heavy northbound traffic Friday afternoon"],
+    count: 2, bg: "#5c3208", nameColor: "#FAC775",
+  },
+  {
+    id: "tech",    name: "TECH & AI",
+    featured: "Google I/O: Gemini 3.5 Flash across every product",
+    stories: ["OpenAI launches Ads Manager in ChatGPT", "Exa Labs raises $250M at $2.2B"],
+    count: 3, bg: "#2a1d6e", nameColor: "#AFA9EC",
+  },
+  {
+    id: "finance", name: "FINANCE",
+    featured: "Dow hits all-time high 50,579 — 8th straight winning week",
+    stories: ["Fed holds: June cut off table, September earliest"],
+    count: 2, bg: "#0c3322", nameColor: "#6EDCB8",
+  },
 ];
 
 // Maps V2 pill labels to Feeds page category param
@@ -52,44 +77,45 @@ const TRACKING_MENU = [
   { label: "Remove from Tracking", icon: "✕", color: "#E24B4A" },
 ];
 
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h >= 4 && h < 12) return "Good morning";
+  if (h >= 12 && h < 17) return "Good afternoon";
+  if (h >= 17 && h < 21) return "Good evening";
+  return "Good night";
+}
+
 export default function V2Page() {
+  const router = useRouter();
   const [zonesExpanded, setZonesExpanded] = useState(false);
   const visibleZones = zonesExpanded ? ZONES : ZONES.slice(0, 4);
   const [openMenu, setOpenMenu] = useState<number | null>(null);
   const [openTrackingMenu, setOpenTrackingMenu] = useState<number | null>(null);
+  const [savedStories, setSavedStories] = useState<Set<string>>(new Set());
 
   return (
-    <div className="pb-4">
+    <div className="pb-4 bg-[#f4f5f7] min-h-full">
 
       {/* Greeting bar */}
-      <div className="px-4 pt-3 pb-2 border-b border-[#f0f1f3] flex items-center justify-between">
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between">
         <div>
           <div className="text-[13px] text-[#7a8499] uppercase tracking-widest">Fri, May 22 · North Andover, MA</div>
-          <div className="text-[16px] font-semibold text-[#0f1117] mt-0.5">Good morning, Rick</div>
+          <div className="text-[16px] font-semibold text-[#0f1117] mt-0.5">{getGreeting()}, Rick</div>
         </div>
         <span className="text-[12px] italic px-2 py-0.5 rounded bg-[#f0f1f3] text-[#7a8499]">v2 prototype</span>
       </div>
 
       {/* Breaking */}
-      <div className="px-4 py-3 border-b border-[#f0f1f3]">
-        <div className="flex items-center gap-2 mb-2.5">
-          <span className="w-2 h-2 rounded-full bg-[#E24B4A] flex-shrink-0" />
-          <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase">Breaking</span>
-        </div>
-        {BREAKING.map((item, i) => (
-          <Link key={i} href={item.href} className="flex gap-2.5 py-2.5 border-b border-[#f0f1f3] last:border-0 last:pb-0 touch-manipulation active:opacity-70">
-            <div className="w-0.5 rounded-full flex-shrink-0 self-stretch min-h-[18px]" style={{ background: item.color }} />
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] text-[#7a8499] uppercase tracking-wide mb-0.5">{item.tag}</div>
-              <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.headline}</div>
-              <div className="text-[12px] text-[#7a8499] mt-1">{item.time}</div>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {BREAKING.map((item, i) => (
+        <Link key={i} href={item.href} className="flex items-center gap-2 px-4 py-2 touch-manipulation active:opacity-70">
+          <span className="w-[5px] h-[5px] rounded-full bg-[#E24B4A] flex-shrink-0" />
+          <span className="text-[10px] font-semibold tracking-[0.09em] text-[#7a8499] uppercase flex-shrink-0">Breaking</span>
+          <span className="text-[13px] font-medium text-[#0f1117] leading-snug flex-1 line-clamp-1">{item.headline}</span>
+        </Link>
+      ))}
 
       {/* Your Zones */}
-      <div className="px-4 py-3 border-b border-[#f0f1f3]">
+      <div className="mx-3 mt-3 rounded-[12px] bg-white border border-[#e8eaef] overflow-hidden px-4 py-3">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase flex-1">Your Zones</span>
           <button className="flex items-center justify-center text-[#185FA5] bg-[#E6F1FB] w-6 h-6 rounded-[4px] touch-manipulation" aria-label="Edit zones">
@@ -99,16 +125,49 @@ export default function V2Page() {
             </svg>
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-2 gap-2">
           {visibleZones.map((z) => (
-            <Link key={z.id} href={`/v2/zones/${z.id}`} className="rounded-[10px] p-3 text-left touch-manipulation active:opacity-80 block" style={{ background: z.bg }}>
-              <div className="text-[11px] font-semibold tracking-widest" style={{ color: z.nameColor }}>{z.name}</div>
-              <div className="text-[13px] font-semibold leading-snug mt-1" style={{ color: z.snapColor }}>{z.snap}</div>
-              <div className="flex justify-between items-center mt-2.5">
-                <span className="text-[11px]" style={{ color: z.nameColor, opacity: 0.6 }}>{z.count} {z.count === 1 ? "story" : "stories"}</span>
-                <span className="text-[15px]" style={{ color: z.snapColor, opacity: 0.5 }}>›</span>
+            <div
+              key={z.id}
+              className="rounded-[11px] overflow-hidden flex flex-col touch-manipulation active:opacity-90 cursor-pointer"
+              style={{ background: z.bg }}
+              onClick={() => router.push(`/v2/zones/${z.id}`)}
+            >
+              {/* Zone name + featured headline */}
+              <div className="px-[9px] pt-[8px] pb-[6px]">
+                <div className="text-[8px] font-semibold tracking-[0.1em] mb-[5px]" style={{ color: z.nameColor }}>{z.name}</div>
+                <div className="text-[11px] font-semibold leading-[1.35] mb-[2px]" style={{ color: "white" }}>{z.featured}</div>
               </div>
-            </Link>
+              {/* Secondary stories */}
+              {z.stories.map((story, si) => {
+                const key = `${z.id}-${si}`;
+                const saved = savedStories.has(key);
+                return (
+                  <div key={si} className="flex items-start justify-between gap-1 px-[9px] py-[5px]" style={{ borderTop: "0.5px solid rgba(255,255,255,0.12)" }}>
+                    <span className="text-[9px] leading-[1.35] flex-1" style={{ color: "rgba(255,255,255,0.75)" }}>{story}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSavedStories((prev) => {
+                          const next = new Set(prev);
+                          next.has(key) ? next.delete(key) : next.add(key);
+                          return next;
+                        });
+                      }}
+                      className="flex-shrink-0 text-[12px] leading-none touch-manipulation"
+                      style={{ color: saved ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.4)" }}
+                    >
+                      {saved ? "♥" : "♡"}
+                    </button>
+                  </div>
+                );
+              })}
+              {/* Footer */}
+              <div className="flex items-center justify-between px-[9px] py-[5px] pb-[8px] mt-auto" style={{ borderTop: "0.5px solid rgba(255,255,255,0.15)" }}>
+                <span className="text-[8px]" style={{ color: "rgba(255,255,255,0.4)" }}>{z.count} {z.count === 1 ? "story" : "stories"}</span>
+                <span className="text-[9px] font-semibold" style={{ color: "rgba(255,255,255,0.8)" }}>open →</span>
+              </div>
+            </div>
           ))}
           {zonesExpanded && (
             <button className="rounded-[10px] border border-dashed border-[#c0c5d0] p-3 flex flex-col items-center justify-center gap-1.5 min-h-[88px] touch-manipulation active:bg-[#f7f8fa]">
@@ -126,7 +185,7 @@ export default function V2Page() {
       </div>
 
       {/* Trending */}
-      <div className="px-4 py-3 border-b border-[#f0f1f3]">
+      <div className="mx-3 mt-3 rounded-[12px] bg-white border border-[#e8eaef] overflow-hidden px-4 py-3">
         <div className="flex items-center gap-2 mb-2.5">
           <Link href="/v2/trending" className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase touch-manipulation">Trending</Link>
         </div>
@@ -189,7 +248,7 @@ export default function V2Page() {
       )}
 
       {/* Tracking */}
-      <div className="px-4 py-3">
+      <div className="mx-3 mt-3 rounded-[12px] bg-white border border-[#e8eaef] overflow-hidden px-4 py-3">
         <div className="flex items-center gap-2 mb-2.5">
           <Link href="/v2/tracking" className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase flex-1 touch-manipulation">Tracking</Link>
           <Link href="/v2/tracking" className="flex items-center justify-center text-[#185FA5] bg-[#E6F1FB] w-6 h-6 rounded-[4px] touch-manipulation" aria-label="Manage tracking">

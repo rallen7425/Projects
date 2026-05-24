@@ -39,7 +39,7 @@ export default function RootLayout({
       </head>
       <body className="bg-white font-sans">
         <SavedStoriesProvider>
-          <div className="flex flex-col min-h-screen max-w-[430px] mx-auto">
+          <div className="flex flex-col max-w-[430px] mx-auto" style={{ height: "100dvh" }}>
             <AppHeader />
             <TopTabNav />
             <main className="flex-1 overflow-y-auto" style={{ paddingBottom: "calc(56px + env(safe-area-inset-bottom))" }}>
