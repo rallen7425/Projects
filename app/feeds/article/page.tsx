@@ -43,6 +43,44 @@ function relatedHref(article: Article): string {
   return `/feeds/article?${p.toString()}`;
 }
 
+function WebView({ url, source, title, onClose }: { url: string; source: string; title: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed left-0 right-0 bg-white flex flex-col max-w-[430px] mx-auto"
+      style={{ top: 96, bottom: 56, zIndex: 45 }}
+    >
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[#f0f1f3] bg-white flex-shrink-0">
+        <button
+          onClick={onClose}
+          className="text-[14px] font-medium text-[#185FA5] touch-manipulation flex-shrink-0"
+        >
+          ← Back
+        </button>
+        <span className="text-[13px] text-[#7a8499] flex-1 truncate">{source}</span>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-shrink-0 touch-manipulation"
+          aria-label="Open in browser"
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7a8499" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
+      </div>
+      <iframe
+        src={url}
+        title={title}
+        className="flex-1 w-full border-0"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+      />
+    </div>
+  );
+}
+
 function ArticleContent() {
   const params = useSearchParams();
   const router = useRouter();
@@ -53,6 +91,7 @@ function ArticleContent() {
   const [body, setBody] = useState<string[]>([]);
   const [bodyLoading, setBodyLoading] = useState(true);
   const [bodyError, setBodyError] = useState(false);
+  const [resolvedUrl, setResolvedUrl] = useState("");
   const [showWebView, setShowWebView] = useState(false);
 
   const title    = params.get("title") ?? "";
@@ -74,6 +113,7 @@ function ArticleContent() {
     fetch(`/api/article?url=${encodeURIComponent(link)}`)
       .then((r) => r.json())
       .then((data) => {
+        if (data.finalUrl) setResolvedUrl(data.finalUrl);
         if (data.paragraphs?.length) {
           setBody(data.paragraphs);
         } else {
@@ -223,42 +263,13 @@ function ArticleContent() {
       </div>
 
       {/* In-app web view overlay */}
-      {showWebView && link && (
-        <div
-          className="fixed left-0 right-0 bg-white flex flex-col max-w-[430px] mx-auto"
-          style={{ top: 96, bottom: 56, zIndex: 45 }}
-        >
-          {/* Web view toolbar */}
-          <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[#f0f1f3] bg-white flex-shrink-0">
-            <button
-              onClick={() => setShowWebView(false)}
-              className="text-[14px] font-medium text-[#185FA5] touch-manipulation flex-shrink-0"
-            >
-              ← Back
-            </button>
-            <span className="text-[13px] text-[#7a8499] flex-1 truncate">{source}</span>
-            <a
-              href={link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-shrink-0 touch-manipulation"
-              aria-label="Open in browser"
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7a8499" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                <polyline points="15 3 21 3 21 9"/>
-                <line x1="10" y1="14" x2="21" y2="3"/>
-              </svg>
-            </a>
-          </div>
-          {/* iframe */}
-          <iframe
-            src={link}
-            title={title}
-            className="flex-1 w-full border-0"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-          />
-        </div>
+      {showWebView && (
+        <WebView
+          url={resolvedUrl || link}
+          source={source}
+          title={title}
+          onClose={() => setShowWebView(false)}
+        />
       )}
 
       {/* Related section */}
