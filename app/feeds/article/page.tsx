@@ -53,6 +53,7 @@ function ArticleContent() {
   const [body, setBody] = useState<string[]>([]);
   const [bodyLoading, setBodyLoading] = useState(true);
   const [bodyError, setBodyError] = useState(false);
+  const [showWebView, setShowWebView] = useState(false);
 
   const title    = params.get("title") ?? "";
   const source   = params.get("source") ?? "";
@@ -210,18 +211,55 @@ function ArticleContent() {
           </div>
         )}
 
-        {/* Read full article */}
+        {/* Open in web view */}
         {link && (
-          <a
-            href={link}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => setShowWebView(true)}
             className="block w-full text-center py-3 rounded-[10px] bg-[#185FA5] text-white text-[15px] font-semibold touch-manipulation active:opacity-80 mb-6"
           >
             Read on {source || "original site"} →
-          </a>
+          </button>
         )}
       </div>
+
+      {/* In-app web view overlay */}
+      {showWebView && link && (
+        <div
+          className="fixed left-0 right-0 bg-white flex flex-col max-w-[430px] mx-auto"
+          style={{ top: 96, bottom: 56, zIndex: 45 }}
+        >
+          {/* Web view toolbar */}
+          <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[#f0f1f3] bg-white flex-shrink-0">
+            <button
+              onClick={() => setShowWebView(false)}
+              className="text-[14px] font-medium text-[#185FA5] touch-manipulation flex-shrink-0"
+            >
+              ← Back
+            </button>
+            <span className="text-[13px] text-[#7a8499] flex-1 truncate">{source}</span>
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 touch-manipulation"
+              aria-label="Open in browser"
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7a8499" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </a>
+          </div>
+          {/* iframe */}
+          <iframe
+            src={link}
+            title={title}
+            className="flex-1 w-full border-0"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          />
+        </div>
+      )}
 
       {/* Related section */}
       <div className="border-t border-[#f0f1f3] pt-4">
