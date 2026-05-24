@@ -149,9 +149,29 @@ function FeedsContent() {
                   />
                 )}
 
-                {/* Source + time */}
-                <div className="text-[12px] text-[#7a8499] mb-1.5">
-                  {article.source} · {timeAgo(article.pubDate)}
+                {/* Source + time + actions */}
+                <div className="flex items-center mb-1.5">
+                  <span className="text-[12px] text-[#7a8499] flex-1">{article.source} · {timeAgo(article.pubDate)}</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => toggle({ id: saveId, title: article.title, source: article.source, snippet: article.description ?? "" })}
+                      className="touch-manipulation"
+                      aria-label={saved ? "Remove from saved" : "Save"}
+                    >
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill={saved ? "#185FA5" : "none"} stroke={saved ? "#185FA5" : "#c0c5d0"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setTrackModal({ step: "confirm", topic: article.title })}
+                      className="touch-manipulation"
+                      aria-label="Track topic"
+                    >
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#c0c5d0" strokeWidth="2.5" strokeLinecap="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Headline + subheadline */}
@@ -165,28 +185,6 @@ function FeedsContent() {
                     </p>
                   )}
                 </Link>
-
-                {/* Actions */}
-                <div className="flex items-center justify-end gap-3 mt-2.5">
-                  <button
-                    onClick={() => toggle({ id: saveId, title: article.title, source: article.source, snippet: article.description ?? "" })}
-                    className="touch-manipulation"
-                    aria-label={saved ? "Remove from saved" : "Save"}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill={saved ? "#185FA5" : "none"} stroke={saved ? "#185FA5" : "#c0c5d0"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setTrackModal({ step: "confirm", topic: article.title })}
-                    className="touch-manipulation"
-                    aria-label="Track topic"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c0c5d0" strokeWidth="2.5" strokeLinecap="round">
-                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                  </button>
-                </div>
               </div>
             );
           })}
