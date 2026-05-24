@@ -98,7 +98,7 @@ export default function StoryDetailPage() {
                 href={src.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-shrink-0 w-[260px] rounded-[12px] border border-[#e0e0e0] bg-white p-3 flex gap-3 touch-manipulation active:opacity-80"
+                className="flex-shrink-0 w-[90vw] rounded-[12px] border border-[#e0e0e0] bg-white p-3 flex gap-3 touch-manipulation active:opacity-80"
               >
                 {/* Text — left */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
