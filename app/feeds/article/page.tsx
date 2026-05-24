@@ -43,12 +43,16 @@ function relatedHref(article: Article): string {
   return `/feeds/article?${p.toString()}`;
 }
 
-function WebView({ url, source, title, onClose }: { url: string; source: string; title: string; onClose: () => void }) {
+function WebView({ url, source, title, body, imageUrl, desc, onClose }: {
+  url: string; source: string; title: string;
+  body: string[]; imageUrl: string; desc: string; onClose: () => void;
+}) {
   return (
     <div
       className="fixed left-0 right-0 bg-white flex flex-col max-w-[430px] mx-auto"
       style={{ top: 96, bottom: 56, zIndex: 45 }}
     >
+      {/* Toolbar */}
       <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[#f0f1f3] bg-white flex-shrink-0">
         <button
           onClick={onClose}
@@ -71,12 +75,46 @@ function WebView({ url, source, title, onClose }: { url: string; source: string;
           </svg>
         </a>
       </div>
-      <iframe
-        src={url}
-        title={title}
-        className="flex-1 w-full border-0"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-      />
+
+      {/* Scrollable reader content */}
+      <div className="flex-1 overflow-y-auto">
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            alt=""
+            className="w-full object-cover"
+            style={{ maxHeight: 220 }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+        )}
+        <div className="px-4 pt-4 pb-8">
+          <h1 className="text-[20px] font-bold text-[#0f1117] leading-snug mb-3">{title}</h1>
+          {desc && (
+            <p className="text-[15px] font-medium text-[#2c2c2c] leading-relaxed mb-4 border-l-[3px] border-[#dde1e8] pl-3 italic">
+              {desc}
+            </p>
+          )}
+          {body.length > 0 ? (
+            <div className="space-y-4">
+              {body.map((para, i) => (
+                <p key={i} className="text-[16px] text-[#1a1a1a] leading-relaxed">{para}</p>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-[14px] text-[#7a8499] mb-4">Full article content not available in reader mode.</p>
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block px-5 py-2.5 rounded-[10px] bg-[#185FA5] text-white text-[14px] font-semibold"
+              >
+                Open in Browser →
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -268,6 +306,9 @@ function ArticleContent() {
           url={resolvedUrl || link}
           source={source}
           title={title}
+          body={body}
+          imageUrl={imageUrl}
+          desc={desc}
           onClose={() => setShowWebView(false)}
         />
       )}
