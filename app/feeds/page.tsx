@@ -11,10 +11,11 @@ type Article = {
   imageUrl: string;
 };
 
-const CATEGORIES = ["All", "Business", "Tech", "Sports", "Local"];
+const CATEGORIES = ["All", "News", "Business", "Tech", "Sports", "Local"];
 
 const CAT_COLORS: Record<string, { bg: string; text: string }> = {
-  All:      { bg: "#E6F1FB", text: "#185FA5" },
+  All:      { bg: "#f0f1f3", text: "#475066" },
+  News:     { bg: "#E6F1FB", text: "#185FA5" },
   Business: { bg: "#E1F5EE", text: "#0F6E56" },
   Tech:     { bg: "#EEEDFE", text: "#534AB7" },
   Sports:   { bg: "#EAF3DE", text: "#3B6D11" },
@@ -67,8 +68,8 @@ export default function FeedsPage() {
       .finally(() => setLoading(false));
   }, [category]);
 
-  const color = CAT_COLORS[category] ?? CAT_COLORS.All;
-  const pillLabel = category === "All" ? "News" : category;
+  const color = CAT_COLORS[category] ?? CAT_COLORS.News;
+  const pillLabel = category;
 
   return (
     <div className="pb-4">

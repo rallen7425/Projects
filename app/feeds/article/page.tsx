@@ -3,7 +3,8 @@ import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 const CAT_COLORS: Record<string, { bg: string; text: string }> = {
-  All:      { bg: "#E6F1FB", text: "#185FA5" },
+  All:      { bg: "#f0f1f3", text: "#475066" },
+  News:     { bg: "#E6F1FB", text: "#185FA5" },
   Business: { bg: "#E1F5EE", text: "#0F6E56" },
   Tech:     { bg: "#EEEDFE", text: "#534AB7" },
   Sports:   { bg: "#EAF3DE", text: "#3B6D11" },
@@ -22,8 +23,8 @@ function ArticleContent() {
   const time     = params.get("time") ?? "";
   const imageUrl = params.get("img") ?? "";
 
-  const color = CAT_COLORS[cat] ?? CAT_COLORS.All;
-  const pillLabel = cat === "All" ? "News" : cat;
+  const color = CAT_COLORS[cat] ?? CAT_COLORS.News;
+  const pillLabel = cat;
 
   if (!title) {
     return (
