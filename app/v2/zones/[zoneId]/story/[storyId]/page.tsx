@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ZONES, findStory, getRelated } from "@/lib/v2/zoneData";
 
 export default function StoryDetailPage() {
@@ -9,6 +9,7 @@ export default function StoryDetailPage() {
   const zoneId = params.zoneId as string;
   const storyId = params.storyId as string;
 
+  const router = useRouter();
   const zone = ZONES[zoneId] ?? ZONES.sports;
   const story = findStory(zoneId, storyId);
   const related = getRelated(zoneId, storyId, 3);
@@ -27,6 +28,16 @@ export default function StoryDetailPage() {
 
   return (
     <div>
+
+      {/* Back navigation */}
+      <div className="px-4 pt-3 pb-2 border-b border-[#f0f1f3]">
+        <button
+          onClick={() => router.back()}
+          className="text-[14px] font-medium text-[#185FA5] touch-manipulation"
+        >
+          ← Back
+        </button>
+      </div>
 
       <div className="pb-6">
 
