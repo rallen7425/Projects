@@ -3,6 +3,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ZONES, findStory, getRelated } from "@/lib/v2/zoneData";
+
+const ZONE_TO_FEED: Record<string, string> = {
+  sports:  "Sports",
+  local:   "Local",
+  maine:   "Local",
+  tech:    "Tech",
+  finance: "Business",
+};
 import NewsCarousel from "@/components/v2/NewsCarousel";
 
 export default function StoryDetailPage() {
@@ -100,19 +108,20 @@ export default function StoryDetailPage() {
             <div className="border-t border-[#f0f1f3]">
               {related.map(({ zoneId: relZoneId, story: rel }) => {
                 const relZone = ZONES[relZoneId];
+                const feedCategory = ZONE_TO_FEED[relZoneId] ?? "All";
                 return (
-                  <Link
-                    key={rel.id}
-                    href={`/v2/zones/${relZoneId}/story/${rel.id}`}
-                    className="block px-4 py-3 border-b border-[#f0f1f3] touch-manipulation active:bg-[#f7f8fa]"
-                  >
-                    <span
-                      className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-1.5"
+                  <div key={rel.id} className="px-4 py-3 border-b border-[#f0f1f3] active:bg-[#f7f8fa]">
+                    <Link
+                      href={`/feeds?category=${feedCategory}`}
+                      className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-1.5 touch-manipulation"
                       style={{ background: relZone.colors.pillBg, color: relZone.colors.pillText }}
                     >
                       {rel.tag}
-                    </span>
-                    <div className="flex items-start gap-3">
+                    </Link>
+                    <Link
+                      href={`/v2/zones/${relZoneId}/story/${rel.id}`}
+                      className="flex items-start gap-3 touch-manipulation"
+                    >
                       <div className="flex-1 min-w-0">
                         <p className="text-[15px] font-semibold text-[#0f1117] leading-snug">{rel.headline}</p>
                         {rel.summary && (
@@ -127,8 +136,8 @@ export default function StoryDetailPage() {
                           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                       )}
-                    </div>
-                  </Link>
+                    </Link>
+                  </div>
                 );
               })}
             </div>

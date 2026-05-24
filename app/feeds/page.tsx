@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 type Article = {
@@ -50,8 +51,10 @@ function articleHref(article: Article, category: string): string {
   return `/feeds/article?${p.toString()}`;
 }
 
-export default function FeedsPage() {
-  const [category, setCategory] = useState("All");
+function FeedsContent() {
+  const searchParams = useSearchParams();
+  const initial = searchParams.get("category") ?? "All";
+  const [category, setCategory] = useState(CATEGORIES.includes(initial) ? initial : "All");
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -169,5 +172,13 @@ export default function FeedsPage() {
         <p className="text-center text-[14px] text-[#7a8499] mt-12">No articles found.</p>
       )}
     </div>
+  );
+}
+
+export default function FeedsPage() {
+  return (
+    <Suspense fallback={<div />}>
+      <FeedsContent />
+    </Suspense>
   );
 }

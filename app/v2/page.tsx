@@ -15,6 +15,16 @@ const ZONES = [
   { id: "finance", name: "FINANCE",     snap: "Fed rate outlook, markets steady",     count: 2, bg: "#E1F5EE", nameColor: "#0F6E56", snapColor: "#085041" },
 ];
 
+// Maps V2 pill labels to Feeds page category param
+const PILL_TO_FEED: Record<string, string> = {
+  Sports:  "Sports",
+  Tech:    "Tech",
+  Finance: "Business",
+  Maine:   "Local",
+  Local:   "Local",
+  News:    "News",
+};
+
 const TRENDING = [
   { topic: "Giannis trade market",             sub: "Bucks listening; Celtics among potential fits",       href: "/v2/zones/sports/story/celtics-giannis",        pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
   { topic: "OpenAI launches Ads Manager",      sub: "Self-serve ad dashboard inside ChatGPT",              href: "/v2/zones/tech/story/openai-ads-manager",       pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7" },
@@ -123,12 +133,13 @@ export default function V2Page() {
         </div>
         {TRENDING.map((item, i) => (
           <div key={i} className="py-2.5 border-b border-[#f0f1f3] last:border-0">
-            <span
-              className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-1"
+            <Link
+              href={`/feeds?category=${PILL_TO_FEED[item.pillLabel] ?? "All"}`}
+              className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-1 touch-manipulation"
               style={{ background: item.pillBg, color: item.pillColor }}
             >
               {item.pillLabel}
-            </span>
+            </Link>
             <div className="flex items-start gap-2">
               <Link href={item.href} className="flex-1">
                 <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.topic}</div>
@@ -193,12 +204,13 @@ export default function V2Page() {
         {TRACKING.map((item, i) => (
           <div key={i} className="py-2.5 border-b border-[#f0f1f3] last:border-0">
             <div className="flex items-center gap-2 mb-1">
-              <span
-                className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px]"
+              <Link
+                href={`/feeds?category=${PILL_TO_FEED[item.pillLabel] ?? "All"}`}
+                className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] touch-manipulation"
                 style={{ background: item.pillBg, color: item.pillColor }}
               >
                 {item.pillLabel}
-              </span>
+              </Link>
               {item.hasNew && <span className="w-1.5 h-1.5 rounded-full bg-[#185FA5] flex-shrink-0" />}
             </div>
             <div className="flex items-start gap-2">
