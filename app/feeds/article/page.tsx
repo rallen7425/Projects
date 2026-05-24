@@ -50,6 +50,9 @@ function ArticleContent() {
   const [trackModal, setTrackModal] = useState<TrackModalState>(null);
   const [related, setRelated] = useState<Article[]>([]);
   const [relLoading, setRelLoading] = useState(true);
+  const [body, setBody] = useState<string[]>([]);
+  const [bodyLoading, setBodyLoading] = useState(true);
+  const [bodyError, setBodyError] = useState(false);
 
   const title    = params.get("title") ?? "";
   const source   = params.get("source") ?? "";
@@ -62,6 +65,25 @@ function ArticleContent() {
   const saveId = `article-${link || title}`;
   const color  = CAT_COLORS[cat] ?? CAT_COLORS.News;
 
+  // Fetch article body
+  useEffect(() => {
+    if (!link) { setBodyLoading(false); return; }
+    setBodyLoading(true);
+    setBodyError(false);
+    fetch(`/api/article?url=${encodeURIComponent(link)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.paragraphs?.length) {
+          setBody(data.paragraphs);
+        } else {
+          setBodyError(true);
+        }
+      })
+      .catch(() => setBodyError(true))
+      .finally(() => setBodyLoading(false));
+  }, [link]);
+
+  // Fetch related articles
   useEffect(() => {
     if (!title) return;
     setRelLoading(true);
@@ -155,9 +177,37 @@ function ArticleContent() {
       <div className="px-4">
         {/* Subheadline / description */}
         {desc && (
-          <p className="text-[16px] text-[#2c2c2c] leading-relaxed mb-6 border-l-[3px] border-[#dde1e8] pl-3">
+          <p className="text-[17px] font-medium text-[#2c2c2c] leading-relaxed mb-5 border-l-[3px] border-[#dde1e8] pl-3 italic">
             {desc}
           </p>
+        )}
+
+        {/* Article body */}
+        {bodyLoading && (
+          <div className="space-y-3 mb-6 animate-pulse">
+            {[...Array(5)].map((_, i) => (
+              <div key={i}>
+                <div className="h-4 bg-[#f0f1f3] rounded mb-1.5" style={{ width: i % 2 === 0 ? "100%" : "88%" }} />
+                <div className="h-4 bg-[#f0f1f3] rounded" style={{ width: i % 3 === 0 ? "75%" : "92%" }} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!bodyLoading && body.length > 0 && (
+          <div className="mb-6 space-y-4">
+            {body.map((para, i) => (
+              <p key={i} className="text-[16px] text-[#1a1a1a] leading-relaxed">{para}</p>
+            ))}
+          </div>
+        )}
+
+        {!bodyLoading && bodyError && (
+          <div className="mb-5 p-3 rounded-[8px] bg-[#f7f8fa] border border-[#e8eaef]">
+            <p className="text-[13px] text-[#7a8499] text-center">
+              Full article content not available — tap below to read on {source || "the original site"}.
+            </p>
+          </div>
         )}
 
         {/* Read full article */}
@@ -166,14 +216,11 @@ function ArticleContent() {
             href={link}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full text-center py-3 rounded-[10px] bg-[#185FA5] text-white text-[15px] font-semibold touch-manipulation active:opacity-80 mb-2"
+            className="block w-full text-center py-3 rounded-[10px] bg-[#185FA5] text-white text-[15px] font-semibold touch-manipulation active:opacity-80 mb-6"
           >
-            Read full article →
+            Read on {source || "original site"} →
           </a>
         )}
-        <p className="text-center text-[12px] text-[#a0a8b8] mb-6">
-          Opens in {source || "original source"}
-        </p>
       </div>
 
       {/* Related section */}
