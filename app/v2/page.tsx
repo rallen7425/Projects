@@ -7,55 +7,56 @@ import { useSavedStories } from "@/components/SavedStoriesProvider";
 import TrackModal, { type TrackModalState } from "@/components/v2/TrackModal";
 
 const BREAKING = [
-  { color: "#E24B4A", tag: "WEATHER · LOCAL", headline: "Heat risk today — 92°F, severe T-storms expected by 2pm", time: "8 min ago", href: "/v2/zones/local/story/heat-spike-storms" },
+  { color: "#E24B4A", tag: "PATRIOTS · NFL", headline: "AJ Brown deal in principle — agreement official after June 1", time: "45m ago", href: "/v2/zones/sports/story/patriots-aj-brown" },
 ];
 
 const ZONES = [
   {
-    id: "local",   name: "LOCAL",
-    featured: "92°F today — heat risk, severe T-storms expected by 2pm",
-    featuredHref: "/v2/zones/local/story/heat-spike-storms",
-    stories: [
-      { text: "Town meeting: $48M school budget approved", href: "/v2/zones/local/story/town-meeting-budget" },
-    ],
-    count: 2, bg: "#0c2d5e", nameColor: "#85B7EB",
-  },
-  {
     id: "sports",  name: "SPORTS",
-    featured: "Stevens: Brown stays — targeting rim presence this offseason",
-    featuredHref: "/v2/zones/sports/story/celtics-stevens-brown",
+    featured: "AJ Brown deal in principle — agreement official after June 1",
+    featuredHref: "/v2/zones/sports/story/patriots-aj-brown",
     stories: [
-      { text: "AJ Brown trade closing around June 1",      href: "/v2/zones/sports/story/patriots-aj-brown" },
-      { text: "Giannis market opens — Celts a fit?",       href: "/v2/zones/sports/story/celtics-giannis" },
-      { text: "Sox beat Royals 4–3, Duran HR",             href: "/v2/zones/sports/story/sox-royals-recap" },
+      { text: "Stevens: two rim targets in trade talks",  href: "/v2/zones/sports/story/celtics-stevens-brown" },
+      { text: "Giannis market: Celtics, Warriors leading", href: "/v2/zones/sports/story/celtics-giannis" },
+      { text: "Sox beat A's 6–2, Crawford HR",            href: "/v2/zones/sports/story/sox-royals-recap" },
     ],
     count: 4, bg: "#1b4332", nameColor: "#9FE1CB",
   },
   {
+    id: "local",   name: "LOCAL",
+    featured: "Great Saturday — enjoy it before Monday's rain",
+    featuredHref: "/v2/zones/local/story/heat-spike-storms",
+    stories: [
+      { text: "Memorial Day parade: Main St closed 9:30am–noon", href: "/v2/zones/local/story/town-meeting-budget" },
+    ],
+    count: 2, bg: "#0c2d5e", nameColor: "#85B7EB",
+  },
+  {
     id: "maine",   name: "MAINE HOUSE",
-    featured: "Good Fri–Sat, rain arrives Sunday — 60% chance Memorial Day",
+    featured: "Saturday is the window — rain Sunday p.m., wet Monday",
     featuredHref: "/v2/zones/maine/story/maine-memorial-day",
     stories: [
-      { text: "Turnpike: heavy northbound traffic Friday afternoon", href: "/v2/zones/maine/story/maine-turnpike-traffic" },
+      { text: "Turnpike: delays building now, Monday return worse", href: "/v2/zones/maine/story/maine-turnpike-traffic" },
+      { text: "What's open in coastal Maine this weekend",         href: "/v2/zones/maine/story/maine-things-to-do" },
     ],
-    count: 2, bg: "#5c3208", nameColor: "#FAC775",
+    count: 3, bg: "#5c3208", nameColor: "#FAC775",
   },
   {
     id: "tech",    name: "TECH & AI",
-    featured: "Google I/O: Gemini 3.5 Flash across every product",
+    featured: "Google I/O recap: Gemini 3.5 Flash, AI Search Mode live",
     featuredHref: "/v2/zones/tech/story/google-io-gemini",
     stories: [
-      { text: "OpenAI launches Ads Manager in ChatGPT", href: "/v2/zones/tech/story/openai-ads-manager" },
-      { text: "Exa Labs raises $250M at $2.2B",         href: "/v2/zones/tech/story/exa-labs-funding" },
+      { text: "OpenAI Ads Manager open — first brand results in", href: "/v2/zones/tech/story/openai-ads-manager" },
+      { text: "WWDC June 2 — Apple AI expected front and center", href: "/v2/zones/tech/story/exa-labs-funding" },
     ],
     count: 3, bg: "#2a1d6e", nameColor: "#AFA9EC",
   },
   {
     id: "finance", name: "FINANCE",
-    featured: "Dow hits all-time high 50,579 — 8th straight winning week",
-    featuredHref: "/v2/zones/finance/story/markets-steady",
+    featured: "S&P closes at 5,304 Friday — 8th straight winning week",
+    featuredHref: "/v2/zones/finance/story/fed-rate-hold",
     stories: [
-      { text: "Fed holds: June cut off table, September earliest", href: "/v2/zones/finance/story/fed-rate-hold" },
+      { text: "Markets closed Mon — PCE and Fed speakers next week", href: "/v2/zones/finance/story/markets-steady" },
     ],
     count: 2, bg: "#0c3322", nameColor: "#6EDCB8",
   },
@@ -72,17 +73,17 @@ const PILL_TO_FEED: Record<string, string> = {
 };
 
 const TRENDING = [
-  { topic: "Giannis trade market",             sub: "Bucks listening; Celtics among potential fits",       href: "/v2/zones/sports/story/celtics-giannis",        pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
-  { topic: "OpenAI launches Ads Manager",      sub: "Self-serve ad dashboard inside ChatGPT",              href: "/v2/zones/tech/story/openai-ads-manager",       pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7" },
-  { topic: "Fed rate outlook shifts",           sub: "June cut off the table; September now earliest",      href: "/v2/zones/finance/story/fed-rate-hold",         pillLabel: "Finance", pillBg: "#E1F5EE", pillColor: "#0F6E56" },
-  { topic: "Maine Turnpike Memorial Day delay", sub: "Peak northbound traffic 2–7pm Friday",               href: "/v2/zones/maine/story/maine-turnpike-traffic",  pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B" },
-  { topic: "Celtics offseason targets",         sub: "Stevens prioritizing rim presence after Game 7 loss", href: "/v2/zones/sports/story/celtics-stevens-brown",  pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
+  { topic: "AJ Brown trade agreed in principle", sub: "Official after June 1 — 2028 first-rounder to Philly",  href: "/v2/zones/sports/story/patriots-aj-brown",      pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
+  { topic: "Maine Turnpike delays building now", sub: "Worst delays expected Monday southbound noon–7pm",       href: "/v2/zones/maine/story/maine-turnpike-traffic",  pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B" },
+  { topic: "Giannis market: Celtics, Warriors",  sub: "Bucks listening; two serious suitors emerging",         href: "/v2/zones/sports/story/celtics-giannis",        pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
+  { topic: "S&P 500: 8th straight winning week", sub: "Closes at 5,304 Friday — markets dark Monday",         href: "/v2/zones/finance/story/fed-rate-hold",         pillLabel: "Finance", pillBg: "#E1F5EE", pillColor: "#0F6E56" },
+  { topic: "WWDC June 2 — Apple AI expected",    sub: "Google I/O raised the bar; Apple's turn next week",    href: "/v2/zones/tech/story/exa-labs-funding",         pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7" },
 ];
 
 const TRACKING = [
-  { name: "AJ Brown trade",     sub: "Expected June 1 — cap math confirmed",     href: "/v2/zones/sports/story/patriots-aj-brown",  pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11", hasNew: true  },
-  { name: "Gemini / Google AI", sub: "Gemini 3.5 Flash announced at Google I/O", href: "/v2/zones/tech/story/google-io-gemini",     pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7", hasNew: true  },
-  { name: "Maine weather",      sub: "No changes to weekend forecast",            href: "/v2/zones/maine/story/maine-memorial-day",  pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B", hasNew: false },
+  { name: "AJ Brown trade",     sub: "Agreement in principle — official after June 1", href: "/v2/zones/sports/story/patriots-aj-brown",  pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11", hasNew: true  },
+  { name: "Gemini / Google AI", sub: "I/O recap: AI Mode in Search now default",       href: "/v2/zones/tech/story/google-io-gemini",     pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7", hasNew: true  },
+  { name: "Maine weather",      sub: "Saturday clear, rain Sunday p.m. — wet Monday", href: "/v2/zones/maine/story/maine-memorial-day",  pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B", hasNew: true  },
 ];
 
 
@@ -123,7 +124,7 @@ export default function V2Page() {
       {/* Greeting bar */}
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">
         <div>
-          <div className="text-[13px] text-[#7a8499] uppercase tracking-widest">Fri, May 22 · North Andover, MA</div>
+          <div className="text-[13px] text-[#7a8499] uppercase tracking-widest">Sat, May 24 · Memorial Day Weekend · North Andover, MA</div>
           <div className="text-[16px] font-semibold text-[#0f1117] mt-0.5">{getGreeting()}, Rick</div>
         </div>
         <span className="text-[12px] italic px-2 py-0.5 rounded bg-[#f0f1f3] text-[#7a8499]">v2 prototype</span>
