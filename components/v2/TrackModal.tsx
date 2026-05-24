@@ -1,4 +1,5 @@
 "use client";
+import { useTrackedTopics } from "@/components/TrackedTopicsProvider";
 
 export type TrackModalState =
   | { step: "confirm"; topic: string }
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export default function TrackModal({ modal, onConfirm, onClose }: Props) {
+  const { addTopic } = useTrackedTopics();
   if (!modal) return null;
   return (
     <>
@@ -34,7 +36,7 @@ export default function TrackModal({ modal, onConfirm, onClose }: Props) {
                 Cancel
               </button>
               <button
-                onClick={onConfirm}
+                onClick={() => { addTopic(modal.topic); onConfirm(); }}
                 className="flex-1 py-3.5 text-[15px] font-semibold text-[#185FA5] touch-manipulation active:opacity-80"
               >
                 Add to Tracking

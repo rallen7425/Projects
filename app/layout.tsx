@@ -4,6 +4,7 @@ import TabBar from "@/components/TabBar";
 import AppHeader from "@/components/AppHeader";
 import TopTabNav from "@/components/TopTabNav";
 import { SavedStoriesProvider } from "@/components/SavedStoriesProvider";
+import { TrackedTopicsProvider } from "@/components/TrackedTopicsProvider";
 
 export const metadata: Metadata = {
   title: "Distilled",
@@ -38,6 +39,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className="bg-white font-sans">
+        <TrackedTopicsProvider>
         <SavedStoriesProvider>
           <div className="flex flex-col max-w-[430px] mx-auto" style={{ height: "100dvh" }}>
             <AppHeader />
@@ -48,6 +50,7 @@ export default function RootLayout({
             <TabBar />
           </div>
         </SavedStoriesProvider>
+        </TrackedTopicsProvider>
       </body>
     </html>
   );
