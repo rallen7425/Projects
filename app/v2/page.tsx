@@ -92,12 +92,11 @@ export default function V2Page() {
       <div className="px-4 py-3 border-b border-[#f0f1f3]">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase flex-1">Your Zones</span>
-          <button className="flex items-center gap-1 text-[12px] text-[#185FA5] bg-[#E6F1FB] px-2 py-0.5 rounded-[4px] touch-manipulation">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <button className="flex items-center justify-center text-[#185FA5] bg-[#E6F1FB] w-6 h-6 rounded-[4px] touch-manipulation" aria-label="Edit zones">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
-            edit
           </button>
         </div>
         <div className="grid grid-cols-2 gap-1.5">
@@ -193,12 +192,11 @@ export default function V2Page() {
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 mb-2.5">
           <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase flex-1">Tracking</span>
-          <Link href="/v2/tracking" className="flex items-center gap-1 text-[12px] text-[#185FA5] bg-[#E6F1FB] px-2 py-0.5 rounded-[4px] touch-manipulation">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <Link href="/v2/tracking" className="flex items-center justify-center text-[#185FA5] bg-[#E6F1FB] w-6 h-6 rounded-[4px] touch-manipulation" aria-label="Manage tracking">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
-            manage
           </Link>
         </div>
         {TRACKING.map((item, i) => (
