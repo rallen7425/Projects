@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ZONES, ZONE_NAV } from "@/lib/v2/zoneData";
+import ZoneSubNav from "@/components/v2/ZoneSubNav";
 
 export default function ZoneDetailPage() {
   const params = useParams();
@@ -22,6 +23,8 @@ export default function ZoneDetailPage() {
 
   return (
     <div>
+
+      <ZoneSubNav />
 
       {/* Quick Look strip */}
       <div className="px-4 pt-3 pb-3 border-b border-[#f0f1f3]" style={{ background: colors.pillBg }}>

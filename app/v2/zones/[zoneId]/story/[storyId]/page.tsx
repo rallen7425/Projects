@@ -12,6 +12,7 @@ const ZONE_TO_FEED: Record<string, string> = {
   finance: "Business",
 };
 import NewsCarousel from "@/components/v2/NewsCarousel";
+import ZoneSubNav from "@/components/v2/ZoneSubNav";
 
 export default function StoryDetailPage() {
   const params = useParams();
@@ -37,6 +38,8 @@ export default function StoryDetailPage() {
 
   return (
     <div>
+
+      <ZoneSubNav />
 
       {/* Back navigation */}
       <div className="px-4 pt-3 pb-2 border-b border-[#f0f1f3]">

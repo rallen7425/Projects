@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ZoneSubNav from "@/components/v2/ZoneSubNav";
 
 const PILL_TO_FEED: Record<string, string> = {
   Sports:  "Sports",
@@ -42,6 +43,8 @@ export default function TrendingPage() {
 
   return (
     <div className="pb-6">
+
+      <ZoneSubNav />
 
       {/* Back + header */}
       <div className="px-4 pt-3 pb-2 border-b border-[#f0f1f3] flex items-center gap-3">

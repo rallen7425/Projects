@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ZoneSubNav from "@/components/v2/ZoneSubNav";
 
 const BREAKING = [
   { color: "#E24B4A", tag: "WEATHER · LOCAL", headline: "Heat risk today — 92°F, severe T-storms expected by 2pm", time: "8 min ago", href: "/v2/zones/local/story/heat-spike-storms" },
@@ -94,7 +95,8 @@ export default function V2Page() {
   const [savedStories, setSavedStories] = useState<Set<string>>(new Set());
 
   return (
-    <div className="pb-4 bg-[#f4f5f7] min-h-full">
+    <div className="bg-[#f4f5f7] min-h-full">
+      <ZoneSubNav />
 
       {/* Greeting bar */}
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">
