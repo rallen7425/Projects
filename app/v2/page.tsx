@@ -128,7 +128,7 @@ export default function V2Page() {
       {/* Trending */}
       <div className="px-4 py-3 border-b border-[#f0f1f3]">
         <div className="flex items-center gap-2 mb-2.5">
-          <Link href="/v2/tracking" className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase touch-manipulation">Trending</Link>
+          <Link href="/v2/trending" className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase touch-manipulation">Trending</Link>
         </div>
         {TRENDING.map((item, i) => (
           <div key={i} className="py-2.5 border-b border-[#f0f1f3] last:border-0">
@@ -155,7 +155,7 @@ export default function V2Page() {
           </div>
         ))}
         <div className="flex justify-end pt-2">
-          <button className="text-[12px] text-[#7a8499] touch-manipulation">View more →</button>
+          <Link href="/v2/trending" className="text-[12px] text-[#7a8499] touch-manipulation">View more →</Link>
         </div>
       </div>
 
