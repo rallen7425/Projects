@@ -14,31 +14,49 @@ const ZONES = [
   {
     id: "local",   name: "LOCAL",
     featured: "92°F today — heat risk, severe T-storms expected by 2pm",
-    stories: ["Town meeting: $48M school budget approved"],
+    featuredHref: "/v2/zones/local/story/heat-spike-storms",
+    stories: [
+      { text: "Town meeting: $48M school budget approved", href: "/v2/zones/local/story/town-meeting-budget" },
+    ],
     count: 2, bg: "#0c2d5e", nameColor: "#85B7EB",
   },
   {
     id: "sports",  name: "SPORTS",
     featured: "Stevens: Brown stays — targeting rim presence this offseason",
-    stories: ["AJ Brown trade closing around June 1", "Giannis market opens — Celts a fit?", "Sox beat Royals 4–3, Duran HR"],
+    featuredHref: "/v2/zones/sports/story/celtics-stevens-brown",
+    stories: [
+      { text: "AJ Brown trade closing around June 1",      href: "/v2/zones/sports/story/patriots-aj-brown" },
+      { text: "Giannis market opens — Celts a fit?",       href: "/v2/zones/sports/story/celtics-giannis" },
+      { text: "Sox beat Royals 4–3, Duran HR",             href: "/v2/zones/sports/story/sox-royals-recap" },
+    ],
     count: 4, bg: "#1b4332", nameColor: "#9FE1CB",
   },
   {
     id: "maine",   name: "MAINE HOUSE",
     featured: "Good Fri–Sat, rain arrives Sunday — 60% chance Memorial Day",
-    stories: ["Turnpike: heavy northbound traffic Friday afternoon"],
+    featuredHref: "/v2/zones/maine/story/maine-memorial-day",
+    stories: [
+      { text: "Turnpike: heavy northbound traffic Friday afternoon", href: "/v2/zones/maine/story/maine-turnpike-traffic" },
+    ],
     count: 2, bg: "#5c3208", nameColor: "#FAC775",
   },
   {
     id: "tech",    name: "TECH & AI",
     featured: "Google I/O: Gemini 3.5 Flash across every product",
-    stories: ["OpenAI launches Ads Manager in ChatGPT", "Exa Labs raises $250M at $2.2B"],
+    featuredHref: "/v2/zones/tech/story/google-io-gemini",
+    stories: [
+      { text: "OpenAI launches Ads Manager in ChatGPT", href: "/v2/zones/tech/story/openai-ads-manager" },
+      { text: "Exa Labs raises $250M at $2.2B",         href: "/v2/zones/tech/story/exa-labs-funding" },
+    ],
     count: 3, bg: "#2a1d6e", nameColor: "#AFA9EC",
   },
   {
     id: "finance", name: "FINANCE",
     featured: "Dow hits all-time high 50,579 — 8th straight winning week",
-    stories: ["Fed holds: June cut off table, September earliest"],
+    featuredHref: "/v2/zones/finance/story/markets-steady",
+    stories: [
+      { text: "Fed holds: June cut off table, September earliest", href: "/v2/zones/finance/story/fed-rate-hold" },
+    ],
     count: 2, bg: "#0c3322", nameColor: "#6EDCB8",
   },
 ];
@@ -84,7 +102,6 @@ export default function V2Page() {
   const { isSaved, toggle } = useSavedStories();
   const [zonesExpanded, setZonesExpanded] = useState(false);
   const visibleZones = zonesExpanded ? ZONES : ZONES.slice(0, 4);
-  const [savedStories, setSavedStories] = useState<Set<string>>(new Set());
   const [trackedTopics, setTrackedTopics] = useState<TrackingItem[]>(TRACKING);
   const [trackingModal, setTrackingModal] = useState<TrackingModal>(null);
 
@@ -149,32 +166,27 @@ export default function V2Page() {
               {/* Zone name + featured headline */}
               <div className="px-[9px] pt-[8px] pb-[6px]">
                 <div className="text-[8px] font-semibold tracking-[0.1em] mb-[5px]" style={{ color: z.nameColor }}>{z.name}</div>
-                <div className="text-[11px] font-semibold leading-[1.35] mb-[2px]" style={{ color: "white" }}>{z.featured}</div>
+                <Link
+                  href={z.featuredHref}
+                  onClick={(e) => e.stopPropagation()}
+                  className="block text-[11px] font-semibold leading-[1.35] mb-[2px] touch-manipulation"
+                  style={{ color: "white" }}
+                >
+                  {z.featured}
+                </Link>
               </div>
               {/* Secondary stories */}
-              {z.stories.map((story, si) => {
-                const key = `${z.id}-${si}`;
-                const saved = savedStories.has(key);
-                return (
-                  <div key={si} className="flex items-start justify-between gap-1 px-[9px] py-[5px]" style={{ borderTop: "0.5px solid rgba(255,255,255,0.12)" }}>
-                    <span className="text-[9px] leading-[1.35] flex-1" style={{ color: "rgba(255,255,255,0.75)" }}>{story}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSavedStories((prev) => {
-                          const next = new Set(prev);
-                          next.has(key) ? next.delete(key) : next.add(key);
-                          return next;
-                        });
-                      }}
-                      className="flex-shrink-0 text-[12px] leading-none touch-manipulation"
-                      style={{ color: saved ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.4)" }}
-                    >
-                      {saved ? "♥" : "♡"}
-                    </button>
-                  </div>
-                );
-              })}
+              {z.stories.map((story, si) => (
+                <Link
+                  key={si}
+                  href={story.href}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center px-[9px] py-[5px] touch-manipulation active:opacity-70"
+                  style={{ borderTop: "0.5px solid rgba(255,255,255,0.12)" }}
+                >
+                  <span className="text-[9px] leading-[1.35]" style={{ color: "rgba(255,255,255,0.75)" }}>{story.text}</span>
+                </Link>
+              ))}
               {/* Footer */}
               <div className="flex items-center justify-between px-[9px] py-[5px] pb-[8px] mt-auto" style={{ borderTop: "0.5px solid rgba(255,255,255,0.15)" }}>
                 <span className="text-[8px]" style={{ color: "rgba(255,255,255,0.4)" }}>{z.count} {z.count === 1 ? "story" : "stories"}</span>

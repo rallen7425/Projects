@@ -131,13 +131,13 @@ function FeedsContent() {
             return (
               <div key={idx} className="px-4 py-4 border-b border-[#f0f1f3] last:border-0">
                 {/* Category pill — links to filtered feed */}
-                <Link
-                  href={`/feeds?category=${article.category}`}
+                <button
+                  onClick={() => setCategory(article.category)}
                   className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] mb-2 touch-manipulation"
                   style={{ background: artColor.bg, color: artColor.text }}
                 >
                   {article.category}
-                </Link>
+                </button>
 
                 {/* Hero image */}
                 {article.imageUrl && (
@@ -174,16 +174,11 @@ function FeedsContent() {
                   </div>
                 </div>
 
-                {/* Headline + subheadline */}
+                {/* Headline */}
                 <Link href={href} className="block touch-manipulation">
-                  <h3 className="text-[16px] font-semibold text-[#0f1117] leading-snug mb-1">
+                  <h3 className="text-[16px] font-semibold text-[#0f1117] leading-snug">
                     {article.title}
                   </h3>
-                  {article.description && (
-                    <p className="text-[13px] text-[#475066] leading-snug line-clamp-2">
-                      {article.description}
-                    </p>
-                  )}
                 </Link>
               </div>
             );

@@ -1,23 +1,15 @@
 "use client";
-import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ZONES, ZONE_NAV } from "@/lib/v2/zoneData";
 import ZoneSubNav from "@/components/v2/ZoneSubNav";
+import { useSavedStories } from "@/components/SavedStoriesProvider";
 
 export default function ZoneDetailPage() {
   const params = useParams();
   const zoneId = (params.zoneId as string) || "sports";
   const zone = ZONES[zoneId] ?? ZONES.sports;
-  const [saved, setSaved] = useState<Set<string>>(new Set());
-
-  function toggleSave(id: string) {
-    setSaved((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }
+  const { isSaved, toggle } = useSavedStories();
 
   const { colors } = zone;
 
@@ -48,20 +40,32 @@ export default function ZoneDetailPage() {
         <div key={group.label}>
           <div className="px-4 pt-3 pb-1.5 text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase">{group.label}</div>
           {group.stories.map((story) => {
-            const isSaved = saved.has(story.id);
+            const saveId = `zone-${zoneId}-${story.id}`;
             return (
               <div key={story.id} className="px-4 py-3.5 border-b border-[#f5f5f5]">
-                {/* Meta */}
+                {/* Meta row: tag pill + save/track icons */}
                 <div className="flex items-center gap-[7px] mb-1.5">
-                  <span
-                    className="text-[12px] font-semibold tracking-wide px-[7px] py-[2px] rounded-[4px]"
+                  <Link
+                    href={`/v2/tag/${encodeURIComponent(story.tag)}`}
+                    className="text-[12px] font-semibold tracking-wide px-[7px] py-[2px] rounded-[4px] touch-manipulation"
                     style={{ background: colors.pillBg, color: colors.pillText }}
                   >
                     {story.tag}
-                  </span>
+                  </Link>
                   {story.isNew  && <span className="w-1.5 h-1.5 rounded-full bg-[#E24B4A] flex-shrink-0" />}
                   {story.urgent && <span className="w-1.5 h-1.5 rounded-full bg-[#EF9F27] flex-shrink-0" />}
-                  <span className="ml-auto text-[12px] text-[#7a8499]">{story.time}</span>
+                  <span className="text-[12px] text-[#7a8499] flex-1 text-right">{story.time}</span>
+                  <div className="flex items-center gap-2.5 ml-1">
+                    <button
+                      onClick={() => toggle({ id: saveId, title: story.headline, source: story.tag, snippet: story.summary ?? "" })}
+                      className="touch-manipulation"
+                      aria-label={isSaved(saveId) ? "Remove from saved" : "Save"}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill={isSaved(saveId) ? "#185FA5" : "none"} stroke={isSaved(saveId) ? "#185FA5" : "#c0c5d0"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Headline */}
@@ -73,30 +77,13 @@ export default function ZoneDetailPage() {
                 <div className="text-[16px] text-[#555555] leading-relaxed mb-2.5 line-clamp-3">{story.summary}</div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between">
-                  <Link
-                    href={`/v2/zones/${zoneId}/story/${story.id}`}
-                    className="text-[15px] font-medium touch-manipulation"
-                    style={{ color: colors.tag }}
-                  >
-                    Read more →
-                  </Link>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => toggleSave(story.id)}
-                      className="w-[30px] h-[30px] rounded-[7px] border flex items-center justify-center text-[16px] touch-manipulation"
-                      style={isSaved
-                        ? { background: colors.pillBg, borderColor: colors.pillBg, color: colors.tag }
-                        : { background: "transparent", borderColor: "rgba(0,0,0,0.1)", color: "#999999" }
-                      }
-                    >
-                      {isSaved ? "♥" : "♡"}
-                    </button>
-                    <button className="w-[30px] h-[30px] rounded-[7px] border border-[rgba(0,0,0,0.1)] flex items-center justify-center text-[16px] text-[#999999] touch-manipulation">
-                      ↗
-                    </button>
-                  </div>
-                </div>
+                <Link
+                  href={`/v2/zones/${zoneId}/story/${story.id}`}
+                  className="text-[15px] font-medium touch-manipulation"
+                  style={{ color: colors.tag }}
+                >
+                  Read more →
+                </Link>
               </div>
             );
           })}

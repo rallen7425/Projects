@@ -14,6 +14,24 @@ const ALL_KEYS = ["news", "business", "tech", "sports", "local"] as const;
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category") ?? "all";
+  const q = searchParams.get("q");
+
+  // Topic search — used by tag pages for specific queries like "Celtics" or "Federal Reserve"
+  if (q) {
+    try {
+      const url = `${BASE}/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Distilled/1.0 RSS Reader" },
+        next: { revalidate: 180 },
+      });
+      if (!res.ok) throw new Error(`Feed fetch failed: ${res.status}`);
+      const xml = await res.text();
+      const items = parseRSS(xml, q).slice(0, 20);
+      return NextResponse.json({ items, query: q });
+    } catch (_err) {
+      return NextResponse.json({ error: "Failed to fetch feed", items: [] }, { status: 500 });
+    }
+  }
 
   try {
     if (category === "all") {
