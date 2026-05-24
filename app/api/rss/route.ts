@@ -121,7 +121,12 @@ function parseRSS(xml: string, category = "News"): RSSItem[] {
     const sourceMatch = block.match(/<source[^>]*>([^<]+)<\/source>/);
     const source = sourceMatch?.[1]?.trim() ?? extractSourceFromTitle(title);
 
-    items.push({ title: cleanTitle(title, source), link, pubDate, source, description, imageUrl, category });
+    // The Google News RSS <link> is a redirect URL. The real article URL is
+    // in the first <a href> inside the description HTML.
+    const realLinkMatch = decoded.match(/<a[^>]+href="(https?:\/\/(?!news\.google\.com)[^"]+)"/i);
+    const resolvedLink = realLinkMatch?.[1] ?? link;
+
+    items.push({ title: cleanTitle(title, source), link: resolvedLink, pubDate, source, description, imageUrl, category });
   }
 
   return items.slice(0, 40);
