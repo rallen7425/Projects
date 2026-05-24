@@ -3,8 +3,8 @@ import { useState } from "react";
 import Link from "next/link";
 
 const BREAKING = [
-  { color: "#E24B4A", tag: "WEATHER · LOCAL", headline: "Heat risk today — 92°F, severe T-storms expected by 2pm", time: "8 min ago" },
-  { color: "#EF9F27", tag: "CELTICS", headline: "Stevens confirms Brown not being traded this offseason", time: "1 hr ago" },
+  { color: "#E24B4A", tag: "WEATHER · LOCAL", headline: "Heat risk today — 92°F, severe T-storms expected by 2pm", time: "8 min ago", href: "/v2/zones/local/story/heat-spike-storms" },
+  { color: "#EF9F27", tag: "CELTICS",         headline: "Stevens confirms Brown not being traded this offseason",  time: "1 hr ago",  href: "/v2/zones/sports/story/celtics-stevens-brown" },
 ];
 
 const ZONES = [
@@ -67,14 +67,14 @@ export default function V2Page() {
           <span className="text-[12px] font-semibold tracking-widest text-[#7a8499] uppercase">Breaking</span>
         </div>
         {BREAKING.map((item, i) => (
-          <div key={i} className="flex gap-2.5 py-2.5 border-b border-[#f0f1f3] last:border-0 last:pb-0">
+          <Link key={i} href={item.href} className="flex gap-2.5 py-2.5 border-b border-[#f0f1f3] last:border-0 last:pb-0 touch-manipulation active:opacity-70">
             <div className="w-0.5 rounded-full flex-shrink-0 self-stretch min-h-[18px]" style={{ background: item.color }} />
             <div className="flex-1 min-w-0">
               <div className="text-[12px] text-[#7a8499] uppercase tracking-wide mb-0.5">{item.tag}</div>
               <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.headline}</div>
               <div className="text-[12px] text-[#7a8499] mt-1">{item.time}</div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 
