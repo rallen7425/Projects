@@ -165,13 +165,13 @@ export default function V2Page() {
                 className="w-full flex items-center gap-2 px-3 py-2.5 text-left touch-manipulation"
                 style={{ background: z.bg }}
               >
-                <span className="text-[11px] font-bold tracking-[0.07em] uppercase" style={{ color: z.nameColor }}>
+                <span className="text-[11px] font-bold tracking-[0.07em] uppercase text-white">
                   {z.name}
                 </span>
-                <span className="ml-auto text-[10px]" style={{ color: `${z.nameColor}99` }}>
+                <span className="ml-auto text-[10px] text-white/60">
                   {z.count} {z.count === 1 ? "story" : "stories"}
                 </span>
-                <span className="text-[11px]" style={{ color: `${z.nameColor}66` }}>→</span>
+                <span className="text-[11px] text-white/40">→</span>
               </button>
               {/* Story bullet list */}
               <div style={{ background: z.bodyBg }}>
