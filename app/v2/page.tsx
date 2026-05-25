@@ -20,7 +20,7 @@ const ZONES = [
       { text: "Giannis market: Celtics, Warriors leading", href: "/v2/zones/sports/story/celtics-giannis" },
       { text: "Sox beat A's 6–2, Crawford HR",            href: "/v2/zones/sports/story/sox-royals-recap" },
     ],
-    count: 4, bg: "#1b4332", nameColor: "#9FE1CB", bodyBg: "#f3faf6",
+    count: 4, bg: "#1b4332", nameColor: "#9FE1CB", bodyBg: "#f3faf6", label: "Sports",
   },
   {
     id: "local",   name: "LOCAL",
@@ -29,7 +29,7 @@ const ZONES = [
     stories: [
       { text: "Memorial Day parade: Main St closed 9:30am–noon", href: "/v2/zones/local/story/town-meeting-budget" },
     ],
-    count: 2, bg: "#0c2d5e", nameColor: "#85B7EB", bodyBg: "#f2f6fc",
+    count: 2, bg: "#0c2d5e", nameColor: "#85B7EB", bodyBg: "#f2f6fc", label: "Local",
   },
   {
     id: "maine",   name: "MAINE HOUSE",
@@ -39,7 +39,7 @@ const ZONES = [
       { text: "Turnpike: delays building now, Monday return worse", href: "/v2/zones/maine/story/maine-turnpike-traffic" },
       { text: "What's open in coastal Maine this weekend",         href: "/v2/zones/maine/story/maine-things-to-do" },
     ],
-    count: 3, bg: "#5c3208", nameColor: "#FAC775", bodyBg: "#fdf8f2",
+    count: 3, bg: "#5c3208", nameColor: "#FAC775", bodyBg: "#fdf8f2", label: "Maine House",
   },
   {
     id: "tech",    name: "TECH & AI",
@@ -49,7 +49,7 @@ const ZONES = [
       { text: "OpenAI Ads Manager open — first brand results in", href: "/v2/zones/tech/story/openai-ads-manager" },
       { text: "WWDC June 2 — Apple AI expected front and center", href: "/v2/zones/tech/story/exa-labs-funding" },
     ],
-    count: 3, bg: "#2a1d6e", nameColor: "#AFA9EC", bodyBg: "#f6f5fd",
+    count: 3, bg: "#2a1d6e", nameColor: "#AFA9EC", bodyBg: "#f6f5fd", label: "Tech & AI",
   },
   {
     id: "finance", name: "FINANCE",
@@ -58,7 +58,7 @@ const ZONES = [
     stories: [
       { text: "Markets closed Mon — PCE and Fed speakers next week", href: "/v2/zones/finance/story/markets-steady" },
     ],
-    count: 2, bg: "#0c3322", nameColor: "#6EDCB8", bodyBg: "#f3faf5",
+    count: 2, bg: "#0c3322", nameColor: "#6EDCB8", bodyBg: "#f3faf5", label: "Finance",
   },
 ];
 
@@ -168,10 +168,9 @@ export default function V2Page() {
                 <span className="text-[11px] font-bold tracking-[0.07em] uppercase text-white">
                   {z.name}
                 </span>
-                <span className="ml-auto text-[10px] text-white/60">
-                  {z.count} {z.count === 1 ? "story" : "stories"}
+                <span className="ml-auto text-[10px] font-medium text-white">
+                  View {z.label} zone →
                 </span>
-                <span className="text-[11px] text-white/40">→</span>
               </button>
               {/* Story bullet list */}
               <div style={{ background: z.bodyBg }}>
