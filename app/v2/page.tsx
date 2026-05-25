@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ZoneSubNav from "@/components/v2/ZoneSubNav";
 import { useSavedStories } from "@/components/SavedStoriesProvider";
+import { useTrackedTopics } from "@/components/TrackedTopicsProvider";
 import TrackModal, { type TrackModalState } from "@/components/v2/TrackModal";
 
 const BREAKING = [
@@ -80,13 +81,6 @@ const TRENDING = [
   { topic: "WWDC June 2 — Apple AI expected",    sub: "Google I/O raised the bar; Apple's turn next week",    href: "/v2/zones/tech/story/exa-labs-funding",         pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7" },
 ];
 
-const TRACKING = [
-  { name: "AJ Brown trade",     sub: "Agreement in principle — official after June 1", href: "/v2/zones/sports/story/patriots-aj-brown",  pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11", hasNew: true  },
-  { name: "Gemini / Google AI", sub: "I/O recap: AI Mode in Search now default",       href: "/v2/zones/tech/story/google-io-gemini",     pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7", hasNew: true  },
-  { name: "Maine weather",      sub: "Saturday clear, rain Sunday p.m. — wet Monday", href: "/v2/zones/maine/story/maine-memorial-day",  pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B", hasNew: true  },
-];
-
-
 function getGreeting() {
   const h = new Date().getHours();
   if (h >= 4 && h < 12) return "Good morning";
@@ -95,27 +89,13 @@ function getGreeting() {
   return "Good night";
 }
 
-type TrackingItem = typeof TRACKING[number];
-type TrackingModal = (TrackModalState & { item?: TrackingItem }) | null;
-
 export default function V2Page() {
   const router = useRouter();
   const { isSaved, toggle } = useSavedStories();
+  const { topics: trackedTopics } = useTrackedTopics();
   const [zonesExpanded, setZonesExpanded] = useState(false);
   const visibleZones = zonesExpanded ? ZONES : ZONES.slice(0, 4);
-  const [trackedTopics, setTrackedTopics] = useState<TrackingItem[]>(TRACKING);
-  const [trackingModal, setTrackingModal] = useState<TrackingModal>(null);
-
-  function confirmAddTracking() {
-    if (!trackingModal || trackingModal.step !== "confirm") return;
-    if (trackingModal.item) {
-      setTrackedTopics((prev) => {
-        const exists = prev.some((t) => t.name === trackingModal.item!.name);
-        return exists ? prev : [{ ...trackingModal.item!, hasNew: false }, ...prev];
-      });
-    }
-    setTrackingModal({ step: "success", topic: trackingModal.topic });
-  }
+  const [trackingModal, setTrackingModal] = useState<TrackModalState>(null);
 
   return (
     <div className="bg-[#f4f5f7] min-h-full">
@@ -238,7 +218,7 @@ export default function V2Page() {
                 </button>
                 {/* Add to tracking */}
                 <button
-                  onClick={() => setTrackingModal({ step: "confirm", topic: item.topic, item: { name: item.topic, sub: item.sub, href: item.href, pillLabel: item.pillLabel, pillBg: item.pillBg, pillColor: item.pillColor, hasNew: false } })}
+                  onClick={() => setTrackingModal({ step: "confirm", topic: item.topic })}
                   className="touch-manipulation"
                   aria-label="Track topic"
                 >
@@ -266,46 +246,28 @@ export default function V2Page() {
             </svg>
           </Link>
         </div>
-        {trackedTopics.map((item, i) => {
-          const savedId = `tracking-${item.name}`;
-          return (
-            <div key={i} className="py-2.5 border-b border-[#f0f1f3] last:border-0">
-              <div className="flex items-center gap-2 mb-1">
-                <Link
-                  href={`/feeds?category=${PILL_TO_FEED[item.pillLabel] ?? "All"}`}
-                  className="inline-block text-[11px] font-semibold px-2 py-[3px] rounded-[4px] touch-manipulation"
-                  style={{ background: item.pillBg, color: item.pillColor }}
-                >
-                  {item.pillLabel}
-                </Link>
-                {item.hasNew && <span className="w-1.5 h-1.5 rounded-full bg-[#185FA5] flex-shrink-0" />}
-              </div>
-              <div className="flex items-start gap-2">
-                <Link href={item.href} className="flex-1">
-                  <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">{item.name}</div>
-                  {item.sub && <div className="text-[13px] text-[#7a8499] mt-0.5 leading-snug">{item.sub}</div>}
-                </Link>
-                <button
-                  onClick={() => toggle({ id: savedId, title: item.name, source: item.pillLabel, snippet: item.sub ?? "" })}
-                  className="flex-shrink-0 mt-[2px] touch-manipulation"
-                  aria-label={isSaved(savedId) ? "Remove from saved" : "Save"}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill={isSaved(savedId) ? "#185FA5" : "none"} stroke={isSaved(savedId) ? "#185FA5" : "#c0c5d0"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                  </svg>
-                </button>
-              </div>
+        {trackedTopics.length === 0 ? (
+          <p className="text-[13px] text-[#7a8499] py-1">
+            No topics tracked yet.{" "}
+            <Link href="/v2/tracking" className="text-[#185FA5]">Add one →</Link>
+          </p>
+        ) : (
+          trackedTopics.slice(0, 3).map((item) => (
+            <div key={item.id} className="py-2.5 border-b border-[#f0f1f3] last:border-0">
+              <Link href={`/v2/tag/${encodeURIComponent(item.name)}`} className="block">
+                <div className="text-[15px] font-semibold text-[#0f1117] leading-snug">#{item.name}</div>
+              </Link>
             </div>
-          );
-        })}
+          ))
+        )}
         <div className="flex justify-end pt-2">
-          <Link href="/v2/tracking" className="text-[12px] text-[#7a8499] touch-manipulation">View more →</Link>
+          <Link href="/v2/tracking" className="text-[12px] text-[#7a8499] touch-manipulation">View all →</Link>
         </div>
       </div>
 
       <TrackModal
         modal={trackingModal}
-        onConfirm={confirmAddTracking}
+        onConfirm={() => setTrackingModal((m) => m ? { step: "success", topic: m.topic } : null)}
         onClose={() => setTrackingModal(null)}
       />
 
