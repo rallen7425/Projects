@@ -20,7 +20,7 @@ const ZONES = [
       { text: "Giannis market: Celtics, Warriors leading", href: "/v2/zones/sports/story/celtics-giannis" },
       { text: "Sox beat A's 6–2, Crawford HR",            href: "/v2/zones/sports/story/sox-royals-recap" },
     ],
-    count: 4, bg: "#1b4332", nameColor: "#9FE1CB",
+    count: 4, bg: "#1b4332", nameColor: "#9FE1CB", bodyBg: "#f3faf6",
   },
   {
     id: "local",   name: "LOCAL",
@@ -29,7 +29,7 @@ const ZONES = [
     stories: [
       { text: "Memorial Day parade: Main St closed 9:30am–noon", href: "/v2/zones/local/story/town-meeting-budget" },
     ],
-    count: 2, bg: "#0c2d5e", nameColor: "#85B7EB",
+    count: 2, bg: "#0c2d5e", nameColor: "#85B7EB", bodyBg: "#f2f6fc",
   },
   {
     id: "maine",   name: "MAINE HOUSE",
@@ -39,7 +39,7 @@ const ZONES = [
       { text: "Turnpike: delays building now, Monday return worse", href: "/v2/zones/maine/story/maine-turnpike-traffic" },
       { text: "What's open in coastal Maine this weekend",         href: "/v2/zones/maine/story/maine-things-to-do" },
     ],
-    count: 3, bg: "#5c3208", nameColor: "#FAC775",
+    count: 3, bg: "#5c3208", nameColor: "#FAC775", bodyBg: "#fdf8f2",
   },
   {
     id: "tech",    name: "TECH & AI",
@@ -49,7 +49,7 @@ const ZONES = [
       { text: "OpenAI Ads Manager open — first brand results in", href: "/v2/zones/tech/story/openai-ads-manager" },
       { text: "WWDC June 2 — Apple AI expected front and center", href: "/v2/zones/tech/story/exa-labs-funding" },
     ],
-    count: 3, bg: "#2a1d6e", nameColor: "#AFA9EC",
+    count: 3, bg: "#2a1d6e", nameColor: "#AFA9EC", bodyBg: "#f6f5fd",
   },
   {
     id: "finance", name: "FINANCE",
@@ -58,7 +58,7 @@ const ZONES = [
     stories: [
       { text: "Markets closed Mon — PCE and Fed speakers next week", href: "/v2/zones/finance/story/markets-steady" },
     ],
-    count: 2, bg: "#0c3322", nameColor: "#6EDCB8",
+    count: 2, bg: "#0c3322", nameColor: "#6EDCB8", bodyBg: "#f3faf5",
   },
 ];
 
@@ -156,48 +156,51 @@ export default function V2Page() {
             </svg>
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col gap-2">
           {visibleZones.map((z) => (
-            <div
-              key={z.id}
-              className="rounded-[11px] overflow-hidden flex flex-col touch-manipulation active:opacity-90 cursor-pointer"
-              style={{ background: z.bg }}
-              onClick={() => router.push(`/v2/zones/${z.id}`)}
-            >
-              {/* Zone name + featured headline */}
-              <div className="px-[9px] pt-[8px] pb-[6px]">
-                <div className="text-[8px] font-semibold tracking-[0.1em] mb-[5px]" style={{ color: z.nameColor }}>{z.name}</div>
+            <div key={z.id} className="rounded-[10px] overflow-hidden border border-[#e8eaef]">
+              {/* Colored header — taps to zone page */}
+              <button
+                onClick={() => router.push(`/v2/zones/${z.id}`)}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-left touch-manipulation"
+                style={{ background: z.bg }}
+              >
+                <span className="text-[11px] font-bold tracking-[0.07em] uppercase" style={{ color: z.nameColor }}>
+                  {z.name}
+                </span>
+                <span className="ml-auto text-[10px]" style={{ color: `${z.nameColor}99` }}>
+                  {z.count} {z.count === 1 ? "story" : "stories"}
+                </span>
+                <span className="text-[11px]" style={{ color: `${z.nameColor}66` }}>→</span>
+              </button>
+              {/* Story bullet list */}
+              <div style={{ background: z.bodyBg }}>
+                {/* Featured story */}
                 <Link
                   href={z.featuredHref}
-                  onClick={(e) => e.stopPropagation()}
-                  className="block text-[11px] font-semibold leading-[1.35] mb-[2px] touch-manipulation"
-                  style={{ color: "white" }}
+                  className="flex items-start gap-2.5 px-3 py-[8px] border-b border-[#eaecf0] touch-manipulation active:opacity-70"
                 >
-                  {z.featured}
+                  <div className="w-[5px] h-[5px] rounded-full flex-shrink-0 mt-[5px]" style={{ background: z.bg }} />
+                  <span className="text-[12px] leading-[1.4] text-[#0f1117] font-medium">{z.featured}</span>
                 </Link>
-              </div>
-              {/* Secondary stories */}
-              {z.stories.map((story, si) => (
-                <Link
-                  key={si}
-                  href={story.href}
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex items-center px-[9px] py-[5px] touch-manipulation active:opacity-70"
-                  style={{ borderTop: "0.5px solid rgba(255,255,255,0.12)" }}
-                >
-                  <span className="text-[9px] leading-[1.35]" style={{ color: "rgba(255,255,255,0.75)" }}>{story.text}</span>
-                </Link>
-              ))}
-              {/* Footer */}
-              <div className="flex items-center justify-between px-[9px] py-[5px] pb-[8px] mt-auto" style={{ borderTop: "0.5px solid rgba(255,255,255,0.15)" }}>
-                <span className="text-[8px]" style={{ color: "rgba(255,255,255,0.4)" }}>{z.count} {z.count === 1 ? "story" : "stories"}</span>
-                <span className="text-[9px] font-semibold" style={{ color: "rgba(255,255,255,0.8)" }}>open →</span>
+                {/* Secondary stories */}
+                {z.stories.map((story, si) => (
+                  <Link
+                    key={si}
+                    href={story.href}
+                    className="flex items-start gap-2.5 px-3 py-[7px] touch-manipulation active:opacity-70"
+                    style={{ borderBottom: si < z.stories.length - 1 ? "1px solid #eaecf0" : "none" }}
+                  >
+                    <div className="w-[4px] h-[4px] rounded-full flex-shrink-0 mt-[6px]" style={{ background: `${z.bg}66` }} />
+                    <span className="text-[12px] leading-[1.4] text-[#3a4455]">{story.text}</span>
+                  </Link>
+                ))}
               </div>
             </div>
           ))}
           {zonesExpanded && (
-            <button className="rounded-[10px] border border-dashed border-[#c0c5d0] p-3 flex flex-col items-center justify-center gap-1.5 min-h-[88px] touch-manipulation active:bg-[#f7f8fa]">
-              <span className="text-[20px] text-[#7a8499] leading-none">+</span>
+            <button className="rounded-[10px] border border-dashed border-[#c0c5d0] p-3 flex items-center justify-center gap-2 touch-manipulation active:bg-[#f7f8fa]">
+              <span className="text-[18px] text-[#7a8499] leading-none">+</span>
               <span className="text-[12px] text-[#7a8499]">add zone</span>
             </button>
           )}
