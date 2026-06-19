@@ -8,56 +8,55 @@ import { useTrackedTopics } from "@/components/TrackedTopicsProvider";
 import TrackModal, { type TrackModalState } from "@/components/v2/TrackModal";
 
 const BREAKING = [
-  { color: "#E24B4A", tag: "PATRIOTS · NFL", headline: "AJ Brown deal in principle — agreement official after June 1", time: "45m ago", href: "/v2/zones/sports/story/patriots-aj-brown" },
+  { color: "#E24B4A", tag: "CELTICS · NBA", headline: "NBA Draft is Tuesday — Stevens has four days and one of the biggest decisions of his tenure", time: "Now", href: "/v2/zones/sports/story/celtics-draft" },
 ];
 
 const ZONES = [
   {
     id: "sports",  name: "SPORTS",
-    featured: "AJ Brown deal in principle — agreement official after June 1",
-    featuredHref: "/v2/zones/sports/story/patriots-aj-brown",
+    featured: "Celtics draft Tuesday — Giannis decision, picks 27 & 40, $27M exception",
+    featuredHref: "/v2/zones/sports/story/celtics-draft",
     stories: [
-      { text: "Stevens: two rim targets in trade talks",  href: "/v2/zones/sports/story/celtics-stevens-brown" },
-      { text: "Giannis market: Celtics, Warriors leading", href: "/v2/zones/sports/story/celtics-giannis" },
-      { text: "Sox beat A's 6–2, Crawford HR",            href: "/v2/zones/sports/story/sox-royals-recap" },
+      { text: "Sox swept by Toronto, fall to 29–43 — at Mariners tonight 10:10p", href: "/v2/zones/sports/story/sox-mariners" },
+      { text: "Gronkowski voted into Patriots Hall of Fame — 38th inductee",       href: "/v2/zones/sports/story/gronk-hof" },
     ],
-    count: 4, bg: "#1b4332", nameColor: "#9FE1CB", bodyBg: "#f3faf6", label: "Sports",
+    count: 3, bg: "#1b4332", nameColor: "#9FE1CB", bodyBg: "#f3faf6", label: "Sports",
   },
   {
     id: "local",   name: "LOCAL",
-    featured: "Great Saturday — enjoy it before Monday's rain",
-    featuredHref: "/v2/zones/local/story/heat-spike-storms",
+    featured: "World Cup at Gillette today — Scotland vs. Morocco, 6pm, heavy traffic",
+    featuredHref: "/v2/zones/local/story/world-cup-gillette",
     stories: [
-      { text: "Memorial Day parade: Main St closed 9:30am–noon", href: "/v2/zones/local/story/town-meeting-budget" },
+      { text: "Juneteenth — markets closed, banks closed, Sox at 10:10 PM", href: "/v2/zones/local/story/juneteenth-day" },
     ],
     count: 2, bg: "#0c2d5e", nameColor: "#85B7EB", bodyBg: "#f2f6fc", label: "Local",
   },
   {
     id: "maine",   name: "MAINE HOUSE",
-    featured: "Saturday is the window — rain Sunday p.m., wet Monday",
-    featuredHref: "/v2/zones/maine/story/maine-memorial-day",
+    featured: "Great summer weekend ahead — mid-70s, sunny, low humidity",
+    featuredHref: "/v2/zones/maine/story/maine-summer-weekend",
     stories: [
-      { text: "Turnpike: delays building now, Monday return worse", href: "/v2/zones/maine/story/maine-turnpike-traffic" },
-      { text: "What's open in coastal Maine this weekend",         href: "/v2/zones/maine/story/maine-things-to-do" },
+      { text: "World Cup quarter-final at Gillette July 9 — worth making the trip?", href: "/v2/zones/maine/story/maine-july-plans" },
+      { text: "Southern Maine coastal openings — summer season in full swing",       href: "/v2/zones/maine/story/maine-summer-open" },
     ],
     count: 3, bg: "#5c3208", nameColor: "#FAC775", bodyBg: "#fdf8f2", label: "Maine House",
   },
   {
     id: "tech",    name: "TECH & AI",
-    featured: "Google I/O recap: Gemini 3.5 Flash, AI Search Mode live",
-    featuredHref: "/v2/zones/tech/story/google-io-gemini",
+    featured: "OpenAI acquires Astral — the company behind Python tools uv and ruff",
+    featuredHref: "/v2/zones/tech/story/openai-astral",
     stories: [
-      { text: "OpenAI Ads Manager open — first brand results in", href: "/v2/zones/tech/story/openai-ads-manager" },
-      { text: "WWDC June 2 — Apple AI expected front and center", href: "/v2/zones/tech/story/exa-labs-funding" },
+      { text: "Anthropic launches Claude Corps — national fellowship for early-career Americans", href: "/v2/zones/tech/story/anthropic-claude-corps" },
+      { text: "AI is shifting from chat to tasks — what agentic systems actually mean",          href: "/v2/zones/tech/story/agentic-shift" },
     ],
     count: 3, bg: "#2a1d6e", nameColor: "#AFA9EC", bodyBg: "#f6f5fd", label: "Tech & AI",
   },
   {
     id: "finance", name: "FINANCE",
-    featured: "S&P closes at 5,304 Friday — 8th straight winning week",
-    featuredHref: "/v2/zones/finance/story/fed-rate-hold",
+    featured: "Markets closed for Juneteenth — NYSE and Nasdaq dark today",
+    featuredHref: "/v2/zones/finance/story/juneteenth-markets",
     stories: [
-      { text: "Markets closed Mon — PCE and Fed speakers next week", href: "/v2/zones/finance/story/markets-steady" },
+      { text: "Triple Witching was Thursday — expect volatility when markets reopen Monday", href: "/v2/zones/finance/story/markets-monday" },
     ],
     count: 2, bg: "#0c3322", nameColor: "#6EDCB8", bodyBg: "#f3faf5", label: "Finance",
   },
@@ -74,11 +73,11 @@ const PILL_TO_FEED: Record<string, string> = {
 };
 
 const TRENDING = [
-  { topic: "AJ Brown trade agreed in principle", sub: "Official after June 1 — 2028 first-rounder to Philly",  href: "/v2/zones/sports/story/patriots-aj-brown",      pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
-  { topic: "Maine Turnpike delays building now", sub: "Worst delays expected Monday southbound noon–7pm",       href: "/v2/zones/maine/story/maine-turnpike-traffic",  pillLabel: "Maine",   pillBg: "#FAEEDA", pillColor: "#854F0B" },
-  { topic: "Giannis market: Celtics, Warriors",  sub: "Bucks listening; two serious suitors emerging",         href: "/v2/zones/sports/story/celtics-giannis",        pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
-  { topic: "S&P 500: 8th straight winning week", sub: "Closes at 5,304 Friday — markets dark Monday",         href: "/v2/zones/finance/story/fed-rate-hold",         pillLabel: "Finance", pillBg: "#E1F5EE", pillColor: "#0F6E56" },
-  { topic: "WWDC June 2 — Apple AI expected",    sub: "Google I/O raised the bar; Apple's turn next week",    href: "/v2/zones/tech/story/exa-labs-funding",         pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7" },
+  { topic: "Celtics draft Tuesday — Stevens' biggest decision", sub: "Picks 27 & 40, $27M exception, Giannis window closing",       href: "/v2/zones/sports/story/celtics-draft",           pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
+  { topic: "World Cup at Gillette today — 6pm kick-off",        sub: "Scotland vs. Morocco · Route 1 and I-95 south avoid 3–10pm", href: "/v2/zones/local/story/world-cup-gillette",       pillLabel: "Local",   pillBg: "#E6F1FB", pillColor: "#185FA5" },
+  { topic: "Sox swept by Toronto, fall to 29–43",               sub: "At Mariners tonight 10:10 PM — trade deadline in 6 weeks",   href: "/v2/zones/sports/story/sox-mariners",            pillLabel: "Sports",  pillBg: "#EAF3DE", pillColor: "#3B6D11" },
+  { topic: "OpenAI acquires Astral — uv and ruff",              sub: "Open-source Python tools going to OpenAI; terms undisclosed", href: "/v2/zones/tech/story/openai-astral",             pillLabel: "Tech",    pillBg: "#EEEDFE", pillColor: "#534AB7" },
+  { topic: "Markets closed — Juneteenth federal holiday",       sub: "NYSE and Nasdaq dark today; reopen Monday June 22",          href: "/v2/zones/finance/story/juneteenth-markets",     pillLabel: "Finance", pillBg: "#E1F5EE", pillColor: "#0F6E56" },
 ];
 
 function getGreeting() {
@@ -104,7 +103,7 @@ export default function V2Page() {
       {/* Greeting bar */}
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">
         <div>
-          <div className="text-[13px] text-[#7a8499] uppercase tracking-widest">Sat, May 24 · Memorial Day Weekend · North Andover, MA</div>
+          <div className="text-[13px] text-[#7a8499] uppercase tracking-widest">Fri, June 19 · Juneteenth · North Andover, MA</div>
           <div className="text-[16px] font-semibold text-[#0f1117] mt-0.5">{getGreeting()}, Rick</div>
         </div>
         <span className="text-[12px] italic px-2 py-0.5 rounded bg-[#f0f1f3] text-[#7a8499]">v2 prototype</span>
