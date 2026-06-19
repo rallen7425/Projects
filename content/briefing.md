@@ -1,7 +1,7 @@
 # Distilled — morning briefing
 
-**Friday, May 22, 2026 · North Andover, MA**
-64°F → 64°F · Mostly cloudy · No rain · Good travel day for Maine
+**Friday, June 19, 2026 · North Andover, MA**
+81°F · Intervals of clouds and sunshine · W winds 10–20 mph · Juneteenth — markets closed
 
 *2 critical · 2 today · 3 on your radar · 4 when you have a moment*
 
@@ -9,104 +9,96 @@
 
 ## 🔴 Critical — act or be aware now
 
-### Patriots: AJ Brown deal confirmed — closes after June 1, 2028 first-round pick to Philly
-`PATRIOTS · TRADE`
-![](https://media.nbcsportsphiladelphia.com/2025/09/Brown-AJ-Getty-2233755645.jpg?quality=85&strip=all&resize=1200%2C675)
+### Celtics draft is Tuesday — Stevens has four days and one of the biggest decisions of his tenure
+`CELTICS · DRAFT`
 
-The unofficial deal is done. The Eagles will send AJ Brown to New England after June 1, when the dead cap hit splits across two seasons — dropping from $43.3M to $16.3M. The reported package: a 2028 first-round pick from New England to Philadelphia, with Makai Lemon also heading to the Patriots. Brown gives Drake Maye a true WR1 for year two. Kayshon Boutte is expected to be the cap casualty. OTAs start May 27 — Brown won't be there, but the roster shape is now clear.
+The 2026 NBA Draft is June 23–24 at Barclays Center in Brooklyn, and Brad Stevens enters it holding picks 27 and 40, a $27M trade exception, and roughly $13M in mid-level spending room. The frontcourt is the clearest need — Vucevic is a free agent and never fit the rotation — and Boston is linked to UNC's Henri Veesaar and Kentucky's Malachi Moreno at 27. But the bigger question isn't the draft picks. The Giannis Antetokounmpo conversation remains live, and the Bucks want a decision before the draft. Stevens can swing big or patch small. The roster shape for next season is decided in the next four days.
 
-→ [Trade compensation breakdown — ESPN](https://www.espn.com/nfl/story/_/id/48592782/new-england-patriots-aj-brown-trade-compensation-eagles-2026-nfl-draft-recap) · → [Receivers' reaction — Boston.com](https://www.boston.com/sports/new-england-patriots/2026/05/20/new-england-patriots-nfl-football-a-j-brown-kyle-williams-trade-rumors-eagles/) · → [Full trade package — Pats Pulpit](https://www.patspulpit.com/new-england-patriots-schedule/128821/patriots-mailbag-trade-package-aj-brown-eagles)
+→ [Celtics offseason preview — Spotrac](https://www.spotrac.com/news/_/id/3391/boston-celtics-2026-offseason-preview) · → [Biggest offseason needs — Bleacher Report](https://bleacherreport.com/articles/25441381-boston-celtics-biggest-offseason-needs-ahead-2026-nba-draft) · → [Mock draft roundup — NBC Sports Boston](https://www.nbcsportsboston.com/nba/boston-celtics/2026-nba-mock-draft-roundup-spurs-knicks-finals/790267/)
 
 ---
 
-### Anthropic hits $10.9B revenue and first-ever profit — Karpathy defects from OpenAI
-`TECH · AI`
+### Sox swept at home by Toronto, fall to 29–43 — now in Seattle for a four-game series
+`RED SOX · LAST NIGHT`
 
-Anthropic reported $10.9 billion in revenue and its first profitable quarter, now valued at $900 billion. Separately, Andrej Karpathy — OpenAI co-founder and former Tesla Autopilot lead — announced he's joining Anthropic to work on pre-training research. Both moves in the same week signal a real shift in the AI industry's center of gravity, away from OpenAI.
+The Blue Jays completed a home sweep at Fenway before the Sox flew west to Seattle. At 29–43, Boston is firmly in last place in the AL East and on pace for one of the worst records in the league. Tonight's opener at T-Mobile Park goes at 10:10 PM — a late west coast start. The offense has not come around, and there's no compelling reason to think the Mariners (39–37, in Wild Card position) are a soft landing spot. The trade deadline is six weeks away and the roster questions are mounting.
 
-→ [AI news recap May 22 — NeuralBuddies](https://www.neuralbuddies.com/p/ai-news-recap-may-22-2026) · → [Top AI stories today — Build Fast with AI](https://www.buildfastwithai.com/blogs/ai-news-today-may-22-2026)
+→ [Red Sox schedule — ESPN](https://www.espn.com/mlb/team/schedule/_/name/bos/boston-red-sox) · → [Live score tonight — ESPN](https://www.espn.com/mlb/game/_/gameId/401815837/red-sox-mariners)
 
 ---
 
 ## 📅 Your day — what's ahead
 
-### Red Sox home tonight vs Twins — Fenway 7:10pm, three-game win streak
-`RED SOX · TONIGHT`
+### World Cup at Gillette today — Scotland vs. Morocco, 6pm kick-off, heavy traffic expected
+`WORLD CUP · LOCAL`
 
-Boston returns from a 4-2 road trip through Atlanta and Kansas City — capped by Wednesday's 4-3 win to complete the Royals sweep — and opens a Memorial Day weekend home series against Minnesota tonight at 7:10. Left-hander Payton Tolle starts. The Twins counter with Connor Prielipp. The Sox are riding three straight wins heading into a holiday weekend at Fenway.
+Gillette Stadium hosts its fifth World Cup group stage match today: Scotland vs. Morocco at 6pm. If you're heading down, plan for significant traffic — authorities are warning of major congestion from up to four hours before kick-off. Route 1 and I-95 south should be avoided between 3–10pm regardless. The Boston hosting run continues: England vs. Ghana on June 23, Norway vs. France on June 26, a Round of 32 match June 29, and the quarter-final on July 9.
 
-→ [Preview and lineups — Boston Globe](https://www.bostonglobe.com/2026/05/22/sports/red-sox-twins-preview-may-22/) · → [Live score — ESPN](https://www.espn.com/mlb/game/_/gameId/401815443) · → [Red Sox schedule](https://www.mlb.com/redsox/schedule)
+→ [Gillette World Cup schedule](https://www.gillettestadium.com/events/2026-world-cup-round-of-32/) · → [Foxborough traffic advisory](https://www.foxboroughma.gov/residents/fifa_world_cup_2026)
 
 ---
 
-### Good travel day for Maine — 64°F, no rain, open window this evening
-`WEATHER · TRAVEL`
+### Juneteenth — markets closed, banks closed, Sox game at 10:10 PM tonight
+`MARKETS · HOLIDAY`
 
-A sharp drop from yesterday's 92°F heat spike. Today is 64°F, mostly cloudy, and dry — a clean window for driving up to the lake this evening. Weekend outlook: Friday and Saturday remain solid in the low 60s. Rain arrives Sunday afternoon and Memorial Day looks wet, with a 60% chance of showers and highs around 59°F. Get outdoor projects done Saturday — don't count on the full three days.
-
-→ [North Andover forecast — AccuWeather](https://www.accuweather.com/en/us/north-andover/01845/weather-forecast/2251379) · → [NWS hourly forecast](https://forecast.weather.gov/MapClick.php?lat=42.7&lon=-71.11) · → [Maine Turnpike conditions](https://www.maineturnpike.com/Travelers/Traffic-Conditions.aspx)
+NYSE and Nasdaq are closed today for Juneteenth. Bond markets and Fed payment rails also pause. The next full trading session is Monday, June 22. Thursday was a Triple Witching day — moved up a day because of today's closure — so expect some volatility when markets reopen. If you're catching the Sox tonight, 10:10 PM first pitch in Seattle — late one.
 
 ---
 
 ## 👀 On your radar — worth knowing
 
-### Celtics: Vucevic is a free agent — big man hunt is officially on
-`CELTICS · OFFSEASON`
-![](https://bdc2020.o0bc.com/wp-content/uploads/2026/05/Brad-Stevens-Press-Conference-2026-69fb8666caad7-768x432.jpg)
+### Patriots training camp is set — veterans report July 24, first public practice July 25
+`PATRIOTS · TRAINING CAMP`
 
-Nikola Vucevic didn't see the floor in Game 7 and is now an unrestricted free agent. With Queta inconsistent and Garza still developing, the center position is the most urgent need on the roster. A $37.6M big man has been floated as a trade target. The Giannis conversation remains alive — Boston.com ran a full piece this week arguing Stevens needs to swing at a player of that magnitude, not patch around the margins.
+The Patriots have confirmed training camp dates. Veterans report Friday, July 24. The first public practice is Saturday, July 25 at 10:30 AM at Gillette. Early camp is worth watching for the AJ Brown–Drake Maye connection developing in live reps for the first time. The season opens September 9 in Seattle — a Super Bowl LX rematch and the first Wednesday opener since 2012.
 
-→ [Celtics big man target — Heavy](https://heavy.com/sports/nba/boston-celtics/boston-celtics-floated-as-potential-trade-destination-for-37-6-million-big-man/) · → [The case for a big swing — Boston.com](https://www.boston.com/sports/boston-celtics/2026/05/19/the-celtics-need-to-take-a-big-swing-this-offseason-maybe-even-something-giannis-sized/)
-
----
-
-### Markets: Dow hits all-time high, S&P 500 posts 8th straight winning week
-`FINANCE · MARKETS`
-
-The Dow jumped 294 points to a record 50,579.70 on Friday. The S&P 500 closed at 7,473.47 (+0.37%), completing its eighth consecutive weekly gain — the longest streak since late 2023. Health Care (+1.19%) and Tech (+1.02%) led all sectors. The driver: optimism around a US-Iran deal turning a fragile ceasefire into lasting peace, which pulled medium- and long-term Treasury yields lower. Dell and HP jumped double digits ahead of earnings next week.
-
-→ [Market recap — Motley Fool](https://www.fool.com/coverage/stock-market-today/2026/05/22/stock-market-today-may-22-s-and-p-500-reaches-eighth-straight-week-of-gains/) · → [Dow record close — TheStreet](https://www.thestreet.com/stock-market-today/stock-market-today-dow-jones-sp-500-nasdaq-updates-may-22-2026) · → [Live updates — Bloomberg](https://www.bloomberg.com/news/articles/2026-05-21/asian-stocks-to-rise-on-optimism-over-iran-talks-markets-wrap)
+→ [Training camp announcement — Patriots.com](https://www.patriots.com/news/patriots-announce-dates-for-2026-training-camp-presented-by-new-balance) · → [2026 schedule](https://www.patriots.com/schedule/)
 
 ---
 
-### SpaceX files IPO S-1 — targeting June Nasdaq listing as SPCX
-`TECH · IPO`
-![](https://techcrunch.com/wp-content/uploads/2026/05/google-ai-sign-Getty.jpg?resize=1200,800)
+### OpenAI acquires Astral — the company behind Python tools uv and ruff
+`TECH · AI`
 
-SpaceX filed its public S-1 on May 20, reporting 2025 revenue of $18.7 billion (+33% YoY), driven by Starlink's $1.2B quarterly profit. The filing reveals a $60B option to acquire coding startup Cursor and $1.25B in monthly payments to Anthropic for cloud compute. OpenAI is expected to file confidentially for a September listing. Anthropic is targeting October. The AI economy is going public this summer.
+OpenAI is acquiring Astral, the company that built uv (Python package manager) and ruff (Python linter/formatter) — two of the most widely adopted open-source developer tools in the Python ecosystem. For anyone on teams that use these tools, the ownership question matters: what happens to the open-source commitments, the roadmap, the governance? No terms disclosed yet. Worth watching how OpenAI handles the stewardship piece.
 
-→ [AI news recap — NeuralBuddies](https://www.neuralbuddies.com/p/ai-news-recap-may-22-2026) · → [Top AI stories — Build Fast with AI](https://www.buildfastwithai.com/blogs/ai-news-today-may-22-2026)
+→ [AI news today — Build Fast with AI](https://www.buildfastwithai.com/blogs/ai-news-today-june-19-2026)
+
+---
+
+### Gronkowski voted into the Patriots Hall of Fame — 38th inductee
+`PATRIOTS · HOF`
+
+Rob Gronkowski has been voted into the Patriots Hall of Fame as the 38th inductee. Already enshrined in Canton (2023), this is the local recognition. No ceremony date announced yet.
+
+→ [Patriots.com](https://www.patriots.com/)
 
 ---
 
 ## ☕ When you have a moment — 4 reads
 
-**1. The Celtics need a Giannis-sized move — incremental isn't enough**
-`SPORTS · NBA · 5 min read`
-![](https://bdc2020.o0bc.com/wp-content/uploads/2026/05/Brad-Stevens-Press-Conference-2026-69fb8666caad7-768x432.jpg)
-Back-to-back early exits. Boston.com makes the case that Stevens can't keep patching — the Giannis market is opening and this is Boston's best chance at the kind of talent that changes the calculus.
+**1. The Celtics' actual options this offseason — picks, exceptions, and the Giannis math**
+`CELTICS · ANALYSIS · 6 min read`
+Spotrac and CelticsBlog both lay out what Stevens can actually do versus what's noise. The $27M trade exception and $13M in mid-level spending is real flexibility — but a Giannis trade requires more than money. Worth understanding the actual constraints before the draft on Tuesday.
 
-→ [Read on Boston.com](https://www.boston.com/sports/boston-celtics/2026/05/19/the-celtics-need-to-take-a-big-swing-this-offseason-maybe-even-something-giannis-sized/)
+→ [Celtics offseason preview — Spotrac](https://www.spotrac.com/news/_/id/3391/boston-celtics-2026-offseason-preview) · → [What could the offseason look like — CelticsBlog](https://www.celticsblog.com/boston-celtics-rumors/135422/2026-offseason-look-like-boston-celtics-brad-stevens-joe-mazzulla-center-ron-harper-jayson-tatum-jaylen-brown)
 
-**2. AJ Brown to New England: what both teams actually get**
-`SPORTS · NFL · 4 min read`
-![](https://media.nbcsportsphiladelphia.com/2025/09/Brown-AJ-Getty-2233755645.jpg?quality=85&strip=all&resize=1200%2C675)
-A 2028 first-rounder and Kayshon Boutte to Philly; Brown and Makai Lemon to New England. The full breakdown of assets, cap implications, and what it means for Drake Maye's year two.
+**2. AI is shifting from chat to tasks — what agentic systems actually mean**
+`TECH · AI · 5 min read`
+The real change in AI right now is not better chat — it's AI completing tasks autonomously in research, coding, legal work, and commerce. Build Fast with AI's June 19 roundup captures the actual state of the shift, including how Claude Code's weekly active users in Korea grew 6x in four months as a signal of what real adoption looks like.
 
-→ [Read on NBC Sports Boston](https://www.nbcsportsboston.com/nfl/new-england-patriots/mailbag-aj-brown-kayshon-boutte-trade-rumors/788646/)
+→ [AI news today — Build Fast with AI](https://www.buildfastwithai.com/blogs/ai-news-today-june-19-2026)
 
-**3. OpenAI and Anthropic are both going public this fall**
-`TECH · AI · 3 min read`
-![](https://techcrunch.com/wp-content/uploads/2026/05/google-ai-sign-Getty.jpg?resize=1200,800)
-SpaceX just filed its S-1. OpenAI is filing confidentially for September. Anthropic is targeting October. Three of the largest private companies in the world going public in a four-month window — what it means for the AI landscape.
+**3. Patriots 2026 schedule deep dive — where the season is won or lost**
+`PATRIOTS · ANALYSIS · 5 min read`
+The Wednesday opener in Seattle, Buffalo in Week 4, Germany in Week 10, Drake Maye vs. Mahomes in Week 15. NBC Sports Boston did the most thorough breakdown of which games are circled and why.
 
-→ [Read on NeuralBuddies](https://www.neuralbuddies.com/p/ai-news-recap-may-22-2026)
+→ [Schedule analysis — NBC Sports Boston](https://www.nbcsportsboston.com/nfl/new-england-patriots/live-updates-2026-schedule-release-leaks-tracker/788023/)
 
-**4. Why the market is at all-time highs heading into Memorial Day**
-`FINANCE · 4 min read`
-US-Iran ceasefire optimism, falling Treasury yields, and Dell/HP earnings beats are converging. The S&P is up 8 straight weeks. The question is whether the Iran news holds over the holiday weekend — any deterioration could reverse the move quickly.
+**4. World Cup quarter-final at Gillette is July 9 — what to know if you're going**
+`WORLD CUP · LOCAL · 4 min read`
+If you're considering tickets for the quarter-final, the Foxborough infrastructure guide and the CBS Boston schedule breakdown are the most useful starting points. Parking and access plans differ significantly from a normal Pats game day.
 
-→ [Read on CNBC](https://www.cnbc.com/2026/05/21/stock-market-today-live-updates.html) · → [Read on Bloomberg](https://www.bloomberg.com/news/articles/2026-05-21/asian-stocks-to-rise-on-optimism-over-iran-talks-markets-wrap)
+→ [Foxborough World Cup guide](https://www.foxboroughma.gov/residents/fifa_world_cup_2026) · → [Full Boston schedule — CBS Boston](https://www.cbsnews.com/boston/news/world-cup-schedule-2026-boston-gillette-stadium-foxboro/)
 
 ---
 
