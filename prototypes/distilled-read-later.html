@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Distilled — Read Later</title>
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box; margin: 0; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :root {
+    --bg:         #09090e;
+    --surface:    #111117;
+    --surface-2:  #17171f;
+    --surface-3:  #1e1e28;
+    --border:     rgba(255,255,255,0.06);
+    --border-mid: rgba(255,255,255,0.11);
+    --text:       #eeeef2;
+    --text-2:     rgba(238,238,242,0.58);
+    --text-3:     rgba(238,238,242,0.30);
+    --sports:     #52C97A;
+    --local:      #5B9CF6;
+    --maine:      #EF9F27;
+    --tech:       #A78BFA;
+    --finance:    #34D399;
+    --primary:        #ffffff;
+    --primary-text:   #0a0a0f;
+    --primary-subtle: rgba(255,255,255,0.08);
+    --primary-border: rgba(255,255,255,0.18);
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex; justify-content: center;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    width: 100%; max-width: 430px;
+    min-height: 100vh;
+    padding-bottom: 240px;
+  }
+
+  /* ── HEADER ── */
+  .app-header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(9,9,14,0.92);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--border);
+    padding: 52px 20px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .wordmark { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+  .header-count-badge {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.03em;
+    background: var(--sports); color: #000;
+    border-radius: 20px; padding: 2px 9px; min-width: 20px;
+    text-align: center; display: none; /* shown when count > 0 */
+  }
+  .header-clear-btn {
+    font-size: 13px; font-weight: 500; color: var(--text-3);
+    background: none; border: none; cursor: pointer; font-family: inherit;
+    padding: 4px 0; transition: color 0.15s;
+  }
+  .header-clear-btn:active { color: var(--text); }
+
+  /* ── ZONE FILTER PILLS ── */
+  .filter-scroll {
+    display: flex; gap: 8px;
+    padding: 14px 20px 0;
+    overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .filter-scroll::-webkit-scrollbar { display: none; }
+  .filter-pill {
+    flex-shrink: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.01em;
+    padding: 6px 14px; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text-3);
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .filter-pill.active-all     { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
+  .filter-pill.active-sports  { color: var(--sports);  background: rgba(82,201,122,0.12);  border-color: rgba(82,201,122,0.30);  }
+  .filter-pill.active-local   { color: var(--local);   background: rgba(91,156,246,0.12);  border-color: rgba(91,156,246,0.30);  }
+  .filter-pill.active-maine   { color: var(--maine);   background: rgba(239,159,39,0.12);  border-color: rgba(239,159,39,0.30);  }
+  .filter-pill.active-tech    { color: var(--tech);    background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.30); }
+  .filter-pill.active-finance { color: var(--finance); background: rgba(52,211,153,0.12);  border-color: rgba(52,211,153,0.30);  }
+
+  /* ── SECTION DIVIDER ── */
+  .section-head {
+    padding: 24px 20px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-head-label {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.02em;
+    color: var(--text-2); white-space: nowrap;
+  }
+  .section-head-line { flex: 1; height: 1px; background: var(--border); }
+
+  /* ── SIGNAL ITEMS (same as home) ── */
+  .signal-list { padding: 0 20px; display: flex; flex-direction: column; }
+
+  .signal-item {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: opacity 0.15s; position: relative;
+  }
+  .signal-item:last-child { border-bottom: none; }
+  .signal-item:active { opacity: 0.65; }
+  .signal-item.removing {
+    opacity: 0; transition: opacity 0.25s, max-height 0.3s, padding 0.3s;
+    max-height: 0 !important; overflow: hidden; padding: 0 !important;
+  }
+
+  .signal-thumb {
+    width: 72px; height: 72px; border-radius: 11px;
+    overflow: hidden; flex-shrink: 0; position: relative;
+  }
+  .signal-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .signal-thumb-fallback {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center; font-size: 28px;
+  }
+  .read-badge {
+    position: absolute; bottom: 5px; left: 5px;
+    background: rgba(0,0,0,0.72); backdrop-filter: blur(4px);
+    border-radius: 4px; padding: 2px 5px;
+    font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.88);
+  }
+
+  .signal-body {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column;
+  }
+  /* Meta row shown ABOVE headline via flex order */
+  .signal-meta {
+    display: flex; align-items: center; gap: 7px;
+    order: -1; margin-bottom: 6px;
+  }
+  .signal-time { font-size: 11px; color: var(--text-3); }
+  .signal-meta-actions {
+    margin-left: auto; display: flex; align-items: center; gap: 2px;
+  }
+
+  .signal-hl {
+    font-size: 14px; font-weight: 600;
+    color: var(--text); line-height: 1.4; margin-bottom: 6px;
+  }
+  .signal-synth {
+    font-size: 12px; line-height: 1.58; color: var(--text-2);
+  }
+  .ai-spark {
+    font-size: 9px; color: var(--text-3);
+    margin-right: 3px; vertical-align: 1px;
+  }
+
+  /* Zone pills */
+  .zpill {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .zpill.sports  { color: var(--sports);  background: rgba(82,201,122,0.12);  }
+  .zpill.local   { color: var(--local);   background: rgba(91,156,246,0.12);  }
+  .zpill.maine   { color: var(--maine);   background: rgba(239,159,39,0.12);  }
+  .zpill.tech    { color: var(--tech);    background: rgba(167,139,250,0.12); }
+  .zpill.finance { color: var(--finance); background: rgba(52,211,153,0.12);  }
+
+  /* Bookmark button — filled = saved, unfilled = deselected (stays on page) */
+  .bookmark-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: none; border: none; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary); cursor: pointer; transition: color 0.15s, transform 0.15s;
+    flex-shrink: 0;
+  }
+  .bookmark-btn:active { transform: scale(0.88); }
+  .bookmark-btn.unsaved { color: var(--text-3); }
+
+  /* Track quick-add button */
+  .track-quick-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: none; border: none; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-3); cursor: pointer; transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .track-quick-btn:active { color: var(--text); }
+
+  /* ── TRACK MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.72); backdrop-filter: blur(8px);
+    display: flex; align-items: flex-end;
+    animation: fadeIn 0.18s ease;
+  }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal-sheet {
+    width: 100%; max-width: 430px; margin: 0 auto;
+    background: var(--surface); border: 1px solid var(--border-mid);
+    border-bottom: none; border-radius: 22px 22px 0 0;
+    padding: 0 0 40px;
+    animation: slideUpModal 0.22s cubic-bezier(0.32,0.72,0,1);
+  }
+  @keyframes slideUpModal { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  .modal-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border-mid); margin: 12px auto 20px; }
+  .modal-title { font-size: 17px; font-weight: 700; color: var(--text); padding: 0 20px 4px; }
+  .modal-sub { font-size: 12.5px; color: var(--text-3); padding: 0 20px 18px; line-height: 1.5; }
+  .modal-input-wrap {
+    margin: 0 20px; background: var(--surface-2); border: 1px solid var(--border-mid);
+    border-radius: 12px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+    transition: border-color 0.2s;
+  }
+  .modal-input-wrap.thinking { border-color: rgba(167,139,250,0.35); }
+  .modal-input-wrap svg { color: var(--text-3); flex-shrink: 0; }
+  .modal-input {
+    flex: 1; background: none; border: none; outline: none;
+    font-size: 15px; color: var(--text); padding: 13px 0; font-family: inherit;
+  }
+  .modal-input::placeholder { color: var(--text-3); }
+  .modal-ai-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--tech); opacity: 0; transition: opacity 0.3s;
+    white-space: nowrap;
+  }
+  .modal-ai-tag.visible { opacity: 1; }
+  .modal-zone-section { padding: 14px 20px 0; }
+  .modal-zone-section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-3); margin-bottom: 10px;
+  }
+  .modal-zone-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .modal-zone-chip {
+    padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; background: var(--surface-2);
+    border: 1px solid var(--border); color: var(--text-3);
+  }
+  .modal-zone-chip.none.selected    { color: var(--text-2); background: rgba(255,255,255,0.06); border-color: var(--border-mid); }
+  .modal-zone-chip.sports.selected  { color: var(--sports);  background: rgba(82,201,122,0.12);  border-color: rgba(82,201,122,0.30);  }
+  .modal-zone-chip.local.selected   { color: var(--local);   background: rgba(91,156,246,0.12);  border-color: rgba(91,156,246,0.30);  }
+  .modal-zone-chip.maine.selected   { color: var(--maine);   background: rgba(239,159,39,0.12);  border-color: rgba(239,159,39,0.30);  }
+  .modal-zone-chip.tech.selected    { color: var(--tech);    background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.30); }
+  .modal-zone-chip.finance.selected { color: var(--finance); background: rgba(52,211,153,0.12);  border-color: rgba(52,211,153,0.30);  }
+  .modal-deadline-wrap {
+    margin: 16px 20px 0; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px;
+    display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+  }
+  .modal-deadline-left { display: flex; align-items: center; gap: 10px; }
+  .modal-deadline-text { font-size: 13.5px; color: var(--text-2); }
+  .modal-deadline-toggle {
+    width: 38px; height: 22px; border-radius: 11px;
+    background: var(--surface-3); border: 1px solid var(--border-mid);
+    position: relative; transition: background 0.2s;
+  }
+  .modal-deadline-toggle.on { background: var(--primary); border-color: var(--primary); }
+  .modal-deadline-toggle::after {
+    content:''; position:absolute; width:16px; height:16px; border-radius:50%;
+    background:var(--bg); top:2px; left:2px; transition:transform 0.2s;
+  }
+  .modal-deadline-toggle.on::after { background:var(--primary-text); transform:translateX(16px); }
+  .modal-actions { display: flex; gap: 10px; padding: 20px 20px 0; }
+  .modal-cancel {
+    flex:1; height:46px; border-radius:23px; background:var(--surface-2);
+    border:1px solid var(--border-mid); color:var(--text-2);
+    font-size:15px; font-weight:600; cursor:pointer; font-family:inherit;
+  }
+  .modal-confirm {
+    flex:2; height:46px; border-radius:23px; background:var(--primary);
+    border:none; color:var(--primary-text); font-size:15px; font-weight:700;
+    cursor:pointer; font-family:inherit;
+  }
+  .modal-confirm:active { opacity: 0.85; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; padding: 72px 40px 40px;
+  }
+  .empty-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border-mid);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 18px;
+  }
+  .empty-title { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 7px; letter-spacing: -0.01em; }
+  .empty-sub { font-size: 13px; color: var(--text-3); line-height: 1.65; max-width: 260px; }
+
+  /* ── CLEAR ALL CONFIRMATION ── */
+  .confirm-bar {
+    position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+    background: var(--surface-2); border: 1px solid var(--border-mid);
+    border-radius: 18px; padding: 12px 18px;
+    display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    z-index: 200; min-width: 280px;
+    animation: slideUp 0.2s cubic-bezier(0.32,0.72,0,1);
+  }
+  @keyframes slideUp { from{transform:translateX(-50%) translateY(20px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
+  .confirm-label { flex: 1; font-size: 13.5px; color: var(--text-2); }
+  .confirm-clear-btn {
+    font-size: 13px; font-weight: 700; color: #E24B4A;
+    background: rgba(226,75,74,0.12); border: 1px solid rgba(226,75,74,0.25);
+    border-radius: 20px; padding: 6px 14px; cursor: pointer; font-family: inherit;
+  }
+  .confirm-cancel-btn {
+    font-size: 13px; font-weight: 500; color: var(--text-3);
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed; bottom: 24px; z-index: 100;
+    left: 50%; transform: translateX(-50%);
+    width: calc(100% - 48px); max-width: 382px;
+    background: rgba(20,20,28,0.96); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255,255,255,0.11); border-radius: 30px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 8px 6px 12px;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 7px 16px; border-radius: 20px; cursor: pointer; opacity: 0.62;
+    transition: all 0.18s; text-decoration: none; position: relative;
+  }
+  .nav-item.active { opacity: 1; background: rgba(255,255,255,0.08); }
+  .nav-icon { width: 22px; height: 22px; color: var(--text); }
+  .nav-label {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--text);
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+    background: rgba(30,30,40,0.96); border: 1px solid rgba(255,255,255,0.14);
+    color: var(--text); font-size: 13.5px; font-weight: 500;
+    padding: 9px 18px; border-radius: 20px; z-index: 400;
+    backdrop-filter: blur(16px); white-space: nowrap;
+    transition: opacity 0.2s; pointer-events: none;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-left">
+      <span class="wordmark">Read Later</span>
+      <span class="header-count-badge" id="countBadge">5</span>
+    </div>
+    <button class="header-clear-btn" onclick="showClearConfirm()" id="clearBtn">Clear all</button>
+  </header>
+
+  <!-- ZONE FILTER -->
+  <div class="filter-scroll">
+    <div class="filter-pill active-all" data-filter="all" onclick="setFilter('all', this)">All</div>
+    <div class="filter-pill" data-filter="none" onclick="setFilter('none', this)">No zone</div>
+    <div class="filter-pill" data-filter="sports" onclick="setFilter('sports', this)">Sports Zone</div>
+    <div class="filter-pill" data-filter="local" onclick="setFilter('local', this)">Local Zone</div>
+    <div class="filter-pill" data-filter="maine" onclick="setFilter('maine', this)">Maine House Zone</div>
+    <div class="filter-pill" data-filter="tech" onclick="setFilter('tech', this)">Tech & AI Zone</div>
+    <div class="filter-pill" data-filter="finance" onclick="setFilter('finance', this)">Finance Zone</div>
+  </div>
+
+  <!-- SAVED ITEMS -->
+  <div class="section-head">
+    <span class="section-head-label">Saved</span>
+    <div class="section-head-line"></div>
+  </div>
+
+  <div class="signal-list" id="savedList">
+
+    <!-- Item 1 — Sports Zone -->
+    <div class="signal-item" data-zone="sports" data-track-topic="Celtics offseason moves" data-track-zone="sports" id="item-1">
+      <div class="signal-thumb">
+        <img src="https://images.unsplash.com/photo-1546519638405-a2f8f4b3f5c7?w=144&h=144&fit=crop&q=80"
+             alt="Celtics"
+             onerror="this.parentElement.innerHTML='<div class=\'signal-thumb-fallback\' style=\'background:linear-gradient(135deg,#1a3a26,#0d1f15)\'>🏀</div>'">
+        <div class="read-badge">6 min</div>
+      </div>
+      <div class="signal-body">
+        <div class="signal-meta">
+          <span class="zpill sports">Sports Zone</span>
+          <span class="signal-time">Spotrac · CelticsBlog</span>
+          <div class="signal-meta-actions">
+            <button class="bookmark-btn" onclick="toggleSave(event,'item-1')" aria-label="Remove from Read Later">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+              </svg>
+            </button>
+            <button class="track-quick-btn" onclick="quickTrack(event, this)" aria-label="Track this topic">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="signal-hl">The Celtics' actual options this offseason — picks, exceptions, and the Giannis math</div>
+        <div class="signal-synth"><span class="ai-spark">✦</span>What Stevens can actually do vs. what's noise. The $27M trade exception is real. A Giannis trade requires more than money — it requires giving up the picks that built this team.</div>
+      </div>
+    </div>
+
+    <!-- Item 2 — Tech Zone -->
+    <div class="signal-item" data-zone="tech" data-track-topic="Agentic AI systems" data-track-zone="tech" id="item-2">
+      <div class="signal-thumb">
+        <img src="https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=144&h=144&fit=crop&q=80"
+             alt="AI"
+             onerror="this.parentElement.innerHTML='<div class=\'signal-thumb-fallback\' style=\'background:linear-gradient(135deg,#1e104a,#110929)\'>🤖</div>'">
+        <div class="read-badge">5 min</div>
+      </div>
+      <div class="signal-body">
+        <div class="signal-meta">
+          <span class="zpill tech">Tech & AI Zone</span>
+          <span class="signal-time">Build Fast with AI</span>
+          <div class="signal-meta-actions">
+            <button class="bookmark-btn" onclick="toggleSave(event,'item-2')" aria-label="Remove from Read Later">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+              </svg>
+            </button>
+            <button class="track-quick-btn" onclick="quickTrack(event, this)" aria-label="Track this topic">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="signal-hl">AI is shifting from chat to tasks — what agentic systems actually mean for work</div>
+        <div class="signal-synth"><span class="ai-spark">✦</span>The real change isn't better chat — it's AI completing multi-step tasks autonomously. Research, coding, legal review, commerce. The interface shift is as significant as the move from desktop to mobile.</div>
+      </div>
+    </div>
+
+    <!-- Item 3 — Local Zone -->
+    <div class="signal-item" data-zone="local" data-track-topic="World Cup at Gillette" data-track-zone="local" id="item-3">
+      <div class="signal-thumb">
+        <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=144&h=144&fit=crop&q=80"
+             alt="World Cup"
+             onerror="this.parentElement.innerHTML='<div class=\'signal-thumb-fallback\' style=\'background:linear-gradient(135deg,#0d2040,#1a3a6e)\'>⚽</div>'">
+        <div class="read-badge">4 min</div>
+      </div>
+      <div class="signal-body">
+        <div class="signal-meta">
+          <span class="zpill local">Local Zone</span>
+          <span class="signal-time">CBS Boston</span>
+          <div class="signal-meta-actions">
+            <button class="bookmark-btn" onclick="toggleSave(event,'item-3')" aria-label="Remove from Read Later">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+              </svg>
+            </button>
+            <button class="track-quick-btn" onclick="quickTrack(event, this)" aria-label="Track this topic">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="signal-hl">World Cup quarter-final at Gillette is July 9 — what to know if you're going</div>
+        <div class="signal-synth"><span class="ai-spark">✦</span>Parking and access plans differ significantly from a regular Patriots game day. The MassDOT guide has specifics on shuttle routes, restricted zones, and bag policy.</div>
+      </div>
+    </div>
+
+    <!-- Item 4 — Maine Zone -->
+    <div class="signal-item" data-zone="maine" data-track-topic="Maine coastal weekend" data-track-zone="maine" id="item-4">
+      <div class="signal-thumb">
+        <img src="https://images.unsplash.com/photo-1559553000-c7c4aa7dc7e0?w=144&h=144&fit=crop&q=80"
+             alt="Maine"
+             onerror="this.parentElement.innerHTML='<div class=\'signal-thumb-fallback\' style=\'background:linear-gradient(135deg,#3d2005,#251203)\'>🌊</div>'">
+        <div class="read-badge">3 min</div>
+      </div>
+      <div class="signal-body">
+        <div class="signal-meta">
+          <span class="zpill maine">Maine House Zone</span>
+          <span class="signal-time">Portland Press Herald</span>
+          <div class="signal-meta-actions">
+            <button class="bookmark-btn" onclick="toggleSave(event,'item-4')" aria-label="Remove from Read Later">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+              </svg>
+            </button>
+            <button class="track-quick-btn" onclick="quickTrack(event, this)" aria-label="Track this topic">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="signal-hl">Maine weekend forecast — clear skies through Sunday, 74°F highs along the coast</div>
+        <div class="signal-synth"><span class="ai-spark">✦</span>Showers possible Monday afternoon. Ferry reservations full on the Peaks Island run through Sunday — coastal bridge advisories in effect for the holiday weekend.</div>
+      </div>
+    </div>
+
+    <!-- Item 5 — Sports Zone -->
+    <div class="signal-item" data-zone="sports" data-track-topic="Drake Maye training camp" data-track-zone="sports" id="item-5">
+      <div class="signal-thumb">
+        <img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/nfl/500/ne.png&h=144&w=144&scale=crop&location=origin&transparent=true"
+             alt="Patriots"
+             style="background:linear-gradient(135deg,#0a1520,#0d1f2e);padding:10px;"
+             onerror="this.parentElement.innerHTML='<div class=\'signal-thumb-fallback\' style=\'background:linear-gradient(135deg,#0a1520,#0d1f2e)\'>🏈</div>'">
+        <div class="read-badge">7 min</div>
+      </div>
+      <div class="signal-body">
+        <div class="signal-meta">
+          <span class="zpill sports">Sports Zone</span>
+          <span class="signal-time">The Athletic</span>
+          <div class="signal-meta-actions">
+            <button class="bookmark-btn" onclick="toggleSave(event,'item-5')" aria-label="Remove from Read Later">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+              </svg>
+            </button>
+            <button class="track-quick-btn" onclick="quickTrack(event, this)" aria-label="Track this topic">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="signal-hl">What Drake Maye's first training camp will tell us about the next Patriots era</div>
+        <div class="signal-synth"><span class="ai-spark">✦</span>The offense Maye runs in camp will be the offense New England takes to Seattle on September 9. Here's what to watch — scheme, receiver usage, and how quickly A.J. Brown integrates.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EMPTY STATE (hidden by default) -->
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <div class="empty-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+      </svg>
+    </div>
+    <div class="empty-title" id="emptyTitle">Nothing saved yet</div>
+    <div class="empty-sub" id="emptySub">Tap the bookmark icon on any story to save it here for later.</div>
+  </div>
+
+  <div style="height: 120px;"></div>
+
+</div><!-- /app -->
+
+
+<!-- TRACK TOPIC MODAL -->
+<div id="trackModal" class="modal-overlay" style="display:none;" onclick="closeTrackModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Track a topic</div>
+    <div class="modal-sub">Distilled will alert you when something significant happens.</div>
+
+    <div class="modal-input-wrap" id="modalInputWrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="modal-input" id="trackInput" placeholder="Finding the right topic…" autocomplete="off" readonly/>
+      <span class="modal-ai-tag" id="aiTag">✦ AI</span>
+    </div>
+
+    <div class="modal-zone-section">
+      <div class="modal-zone-section-label">Zone (optional)</div>
+      <div class="modal-zone-chips" id="zoneChips">
+        <div class="modal-zone-chip none selected" onclick="selectZone('none',this)">No zone</div>
+        <div class="modal-zone-chip sports" onclick="selectZone('sports',this)">Sports Zone</div>
+        <div class="modal-zone-chip local" onclick="selectZone('local',this)">Local Zone</div>
+        <div class="modal-zone-chip maine" onclick="selectZone('maine',this)">Maine House Zone</div>
+        <div class="modal-zone-chip tech" onclick="selectZone('tech',this)">Tech & AI Zone</div>
+        <div class="modal-zone-chip finance" onclick="selectZone('finance',this)">Finance Zone</div>
+      </div>
+    </div>
+
+    <div class="modal-deadline-wrap" onclick="toggleDeadline()">
+      <div class="modal-deadline-left">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text-3)">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span class="modal-deadline-text">Set a deadline or expiry</span>
+      </div>
+      <div class="modal-deadline-toggle" id="deadlineToggle"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeTrackModal()">Cancel</button>
+      <button class="modal-confirm" id="trackConfirmBtn" onclick="confirmTrack()" disabled style="opacity:0.4;">Start Tracking</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="distilled-v3-concept.html">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    <span class="nav-label">Today</span>
+  </a>
+  <a class="nav-item" href="#">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="14" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+    </svg>
+    <span class="nav-label">Zones</span>
+  </a>
+  <a class="nav-item" href="distilled-tracking.html">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="2"/>
+      <circle cx="12" cy="12" r="6"/>
+      <circle cx="12" cy="12" r="10"/>
+    </svg>
+    <span class="nav-label">Tracking</span>
+  </a>
+  <a class="nav-item active" href="#">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+    </svg>
+    <span class="nav-label">Read Later</span>
+  </a>
+</nav>
+
+<script>
+  // Track item count
+  let savedIds = new Set(['item-1','item-2','item-3','item-4','item-5']);
+  let activeFilter = 'all';
+
+  function updateUI() {
+    // Count badge
+    const badge = document.getElementById('countBadge');
+    const clearBtn = document.getElementById('clearBtn');
+    const count = savedIds.size;
+    if (count > 0) {
+      badge.style.display = 'inline-block';
+      badge.textContent = count;
+      clearBtn.style.display = 'block';
+    } else {
+      badge.style.display = 'none';
+      clearBtn.style.display = 'none';
+    }
+
+    // Empty state
+    const visibleItems = [...document.querySelectorAll('.signal-item:not([style*="display: none"])')]
+      .filter(el => !el.classList.contains('removing'));
+    const emptyState = document.getElementById('emptyState');
+
+    if (savedIds.size === 0) {
+      emptyState.style.display = 'flex';
+      document.getElementById('emptyTitle').textContent = 'Nothing saved yet';
+      document.getElementById('emptySub').textContent = 'Tap the bookmark icon on any story to save it here for later.';
+      document.querySelector('.section-head').style.display = 'none';
+      clearBtn.style.display = 'none';
+    } else if (visibleItems.length === 0 && activeFilter !== 'all') {
+      emptyState.style.display = 'flex';
+      document.getElementById('emptyTitle').textContent = 'No saved stories in this zone';
+      document.getElementById('emptySub').textContent = 'You have stories saved in other zones — select All to see them.';
+      document.querySelector('.section-head').style.display = 'none';
+    } else {
+      emptyState.style.display = 'none';
+      document.querySelector('.section-head').style.display = '';
+    }
+  }
+
+  function toggleSave(e, id) {
+    e.stopPropagation();
+    const item = document.getElementById(id);
+    if (!item) return;
+    const btn = item.querySelector('.bookmark-btn');
+    const svg = btn.querySelector('svg');
+    const isSaved = savedIds.has(id);
+
+    if (isSaved) {
+      // Deselect — icon goes unfilled/dim, item stays visible
+      savedIds.delete(id);
+      btn.classList.add('unsaved');
+      svg.setAttribute('fill', 'none');
+      showToast('Removed from Read Later');
+    } else {
+      // Re-save
+      savedIds.add(id);
+      btn.classList.remove('unsaved');
+      svg.setAttribute('fill', 'currentColor');
+      showToast('Added back to Read Later');
+    }
+    updateUI();
+  }
+
+  // Zone filter
+  function setFilter(zone, pill) {
+    activeFilter = zone;
+    document.querySelectorAll('.filter-pill').forEach(p => p.className = 'filter-pill');
+    pill.className = 'filter-pill ' + (zone === 'all' || zone === 'none' ? 'active-all' : 'active-' + zone);
+
+    document.querySelectorAll('.signal-item').forEach(item => {
+      // show all items (saved or deselected) that match the zone filter
+      const itemZone = item.dataset.zone || '';
+      let show;
+      if (zone === 'all') show = true;
+      else if (zone === 'none') show = itemZone === '';
+      else show = itemZone === zone;
+      item.style.display = show ? '' : 'none';
+    });
+    updateUI();
+  }
+
+  // Clear all
+  let confirmBar = null;
+  function showClearConfirm() {
+    if (confirmBar) return;
+    confirmBar = document.createElement('div');
+    confirmBar.className = 'confirm-bar';
+    confirmBar.innerHTML = `
+      <span class="confirm-label">Clear all ${savedIds.size} saved stories?</span>
+      <button class="confirm-clear-btn" onclick="clearAll()">Clear all</button>
+      <button class="confirm-cancel-btn" onclick="hideClearConfirm()">Cancel</button>
+    `;
+    document.body.appendChild(confirmBar);
+  }
+  function hideClearConfirm() {
+    if (confirmBar) { confirmBar.remove(); confirmBar = null; }
+  }
+  function clearAll() {
+    document.querySelectorAll('.signal-item').forEach(item => {
+      item.style.display = 'none';
+    });
+    savedIds.clear();
+    hideClearConfirm();
+    updateUI();
+    showToast('Read Later cleared');
+  }
+
+  // ── Track modal ──
+  let deadlineOn = false;
+  let selectedZone = 'none';
+  let aiThinkTimer = null;
+
+  function quickTrack(e, btn) {
+    e.stopPropagation();
+    const item = btn.closest('.signal-item');
+    const suggestedTopic = item.dataset.trackTopic || '';
+    const suggestedZone  = item.dataset.trackZone  || 'none';
+
+    // Reset modal state
+    const input = document.getElementById('trackInput');
+    const wrap  = document.getElementById('modalInputWrap');
+    const aiTag = document.getElementById('aiTag');
+    const confirmBtn = document.getElementById('trackConfirmBtn');
+
+    input.value = '';
+    input.placeholder = '✦ Analyzing article…';
+    input.readOnly = true;
+    wrap.classList.add('thinking');
+    aiTag.classList.remove('visible');
+    confirmBtn.disabled = true;
+    confirmBtn.style.opacity = '0.4';
+
+    // Reset zone chips to none
+    selectedZone = 'none';
+    document.querySelectorAll('.modal-zone-chip').forEach(c => c.classList.remove('selected'));
+    document.querySelector('.modal-zone-chip.none').classList.add('selected');
+
+    deadlineOn = false;
+    document.getElementById('deadlineToggle').classList.remove('on');
+
+    document.getElementById('trackModal').style.display = 'flex';
+
+    // Simulate AI thinking — populate after delay
+    clearTimeout(aiThinkTimer);
+    aiThinkTimer = setTimeout(() => {
+      input.value = suggestedTopic;
+      input.placeholder = '';
+      input.readOnly = false;
+      wrap.classList.remove('thinking');
+      aiTag.classList.add('visible');
+      confirmBtn.disabled = false;
+      confirmBtn.style.opacity = '1';
+
+      // Auto-select the AI-suggested zone
+      if (suggestedZone && suggestedZone !== 'none') {
+        const chip = document.querySelector(`.modal-zone-chip.${suggestedZone}`);
+        if (chip) {
+          document.querySelectorAll('.modal-zone-chip').forEach(c => c.classList.remove('selected'));
+          chip.classList.add('selected');
+          selectedZone = suggestedZone;
+        }
+      }
+      // Focus cursor at end of input
+      input.focus();
+      input.selectionStart = input.selectionEnd = input.value.length;
+    }, 750);
+  }
+
+  function closeTrackModal(e) {
+    if (!e || e.target === document.getElementById('trackModal')) {
+      clearTimeout(aiThinkTimer);
+      document.getElementById('trackModal').style.display = 'none';
+      const input = document.getElementById('trackInput');
+      input.value = '';
+      input.readOnly = false;
+      input.placeholder = 'Finding the right topic…';
+      document.getElementById('modalInputWrap').classList.remove('thinking');
+      document.getElementById('aiTag').classList.remove('visible');
+      document.getElementById('trackConfirmBtn').disabled = false;
+      document.getElementById('trackConfirmBtn').style.opacity = '1';
+      deadlineOn = false;
+      document.getElementById('deadlineToggle').classList.remove('on');
+      selectedZone = 'none';
+      document.querySelectorAll('.modal-zone-chip').forEach(c => c.classList.remove('selected'));
+      document.querySelector('.modal-zone-chip.none').classList.add('selected');
+    }
+  }
+
+  function selectZone(zone, el) {
+    selectedZone = zone;
+    document.querySelectorAll('.modal-zone-chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function toggleDeadline() {
+    deadlineOn = !deadlineOn;
+    document.getElementById('deadlineToggle').classList.toggle('on', deadlineOn);
+  }
+
+  function confirmTrack() {
+    const topic = document.getElementById('trackInput').value.trim();
+    if (!topic) return;
+    closeTrackModal();
+    showToast('Now tracking: #' + topic);
+  }
+
+  // Toast
+  let toastTimer;
+  function showToast(msg) {
+    let t = document.getElementById('toast');
+    if (t) { t.remove(); clearTimeout(toastTimer); }
+    t = document.createElement('div');
+    t.id = 'toast'; t.textContent = msg;
+    document.body.appendChild(t);
+    toastTimer = setTimeout(() => {
+      t.style.opacity = '0';
+      setTimeout(() => t.remove(), 220);
+    }, 1800);
+  }
+
+  // Init
+  updateUI();
+</script>
+
+</body>
+</html>

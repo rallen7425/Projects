@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Distilled — Tracking</title>
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box; margin: 0; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :root {
+    --bg:         #09090e;
+    --surface:    #111117;
+    --surface-2:  #17171f;
+    --surface-3:  #1e1e28;
+    --border:     rgba(255,255,255,0.06);
+    --border-mid: rgba(255,255,255,0.11);
+    --text:       #eeeef2;
+    --text-2:     rgba(238,238,242,0.58);
+    --text-3:     rgba(238,238,242,0.30);
+    --sports:     #52C97A;
+    --local:      #5B9CF6;
+    --maine:      #EF9F27;
+    --tech:       #A78BFA;
+    --finance:    #34D399;
+    --primary:        #ffffff;
+    --primary-text:   #0a0a0f;
+    --primary-subtle: rgba(255,255,255,0.08);
+    --primary-border: rgba(255,255,255,0.18);
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex; justify-content: center;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    width: 100%; max-width: 430px;
+    min-height: 100vh;
+    padding-bottom: 240px;
+  }
+
+  @keyframes breathe { 0%,100%{opacity:1} 50%{opacity:.3} }
+  @keyframes countdown-pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+  /* ── HEADER ── */
+  .app-header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(9,9,14,0.92);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--border);
+    padding: 52px 20px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .wordmark {
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.01em; color: var(--text);
+  }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .header-count {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    color: var(--text-3); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 20px;
+    padding: 3px 10px;
+  }
+  .header-add-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; transition: opacity 0.15s;
+  }
+  .header-add-btn:active { opacity: 0.8; }
+
+  /* ── ZONE FILTER PILLS ── */
+  .filter-scroll {
+    display: flex; gap: 8px;
+    padding: 14px 20px 0;
+    overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .filter-scroll::-webkit-scrollbar { display: none; }
+  .filter-pill {
+    flex-shrink: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.01em;
+    padding: 6px 14px; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text-3);
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .filter-pill.active-all   { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
+  .filter-pill.active-sports  { color: var(--sports);  background: rgba(82,201,122,0.12);  border-color: rgba(82,201,122,0.30);  }
+  .filter-pill.active-local   { color: var(--local);   background: rgba(91,156,246,0.12);  border-color: rgba(91,156,246,0.30);  }
+  .filter-pill.active-maine   { color: var(--maine);   background: rgba(239,159,39,0.12);  border-color: rgba(239,159,39,0.30);  }
+  .filter-pill.active-tech    { color: var(--tech);    background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.30); }
+  .filter-pill.active-finance { color: var(--finance); background: rgba(52,211,153,0.12);  border-color: rgba(52,211,153,0.30);  }
+
+  /* ── TOPIC SECTION ── */
+  .topic-list { margin-top: 6px; }
+  .topic-section {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+  }
+  .topic-section[data-zone]:not([data-zone=""]) .topic-state-stripe { display: block; }
+  .topic-state-stripe {
+    height: 2px; width: 100%; display: block;
+  }
+  .topic-section.state-moved  .topic-state-stripe { background: var(--sports); }
+  .topic-section.state-deadline .topic-state-stripe { background: var(--maine); }
+  .topic-section.state-watching .topic-state-stripe { background: rgba(255,255,255,0.06); }
+
+  /* Topic header row */
+  .topic-header {
+    display: flex; align-items: flex-start;
+    padding: 16px 20px 0; gap: 10px;
+  }
+  .topic-title-group { flex: 1; min-width: 0; }
+  /* Zone pill sits on its own first line */
+  .topic-zone-line { margin-bottom: 5px; min-height: 4px; }
+  /* Hashtag is now second line — smaller, wrappable */
+  .topic-hashtag {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    line-height: 1.4; letter-spacing: 0;
+  }
+
+  /* Zone pill (inline with hashtag) */
+  .zpill {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 20px; flex-shrink: 0;
+  }
+  .zpill.sports  { color: var(--sports);  background: rgba(82,201,122,0.12);  }
+  .zpill.local   { color: var(--local);   background: rgba(91,156,246,0.12);  }
+  .zpill.maine   { color: var(--maine);   background: rgba(239,159,39,0.12);  }
+  .zpill.tech    { color: var(--tech);    background: rgba(167,139,250,0.12); }
+  .zpill.finance { color: var(--finance); background: rgba(52,211,153,0.12);  }
+
+  /* Topic actions */
+  .topic-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; padding-top: 2px; }
+  .topic-action-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: none; border: none; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-3); cursor: pointer; transition: color 0.15s;
+  }
+  .topic-action-btn:active { color: var(--text); }
+
+  /* Edit mode */
+  .topic-edit-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 20px 0;
+  }
+  .topic-edit-hash { font-size: 14px; font-weight: 600; color: var(--text-3); }
+  .topic-edit-input {
+    flex: 1; background: var(--surface-2);
+    border: 1px solid rgba(167,139,250,0.40);
+    border-radius: 10px; padding: 8px 12px;
+    font-size: 15px; font-weight: 600; color: var(--text);
+    outline: none; font-family: inherit;
+  }
+  .topic-edit-save {
+    padding: 7px 14px; border-radius: 20px;
+    background: var(--primary); border: none;
+    color: var(--primary-text); font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit; flex-shrink: 0;
+  }
+  .topic-edit-cancel {
+    padding: 7px 12px; border-radius: 20px;
+    background: none; border: none; color: var(--text-3);
+    font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; flex-shrink: 0;
+  }
+
+  /* Delete confirm */
+  .topic-delete-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 20px 0;
+  }
+  .topic-delete-label { flex: 1; font-size: 15px; font-weight: 500; color: #E24B4A; }
+  .topic-delete-confirm {
+    padding: 7px 14px; border-radius: 20px;
+    background: rgba(226,75,74,0.15); border: 1px solid rgba(226,75,74,0.30);
+    color: #E24B4A; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  .topic-delete-cancel {
+    padding: 7px 12px; background: none; border: none;
+    color: var(--text-3); font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+
+  /* AI Summary */
+  .topic-synth {
+    padding: 8px 20px 0; font-size: 13px; line-height: 1.58; color: var(--text-2);
+  }
+  .ai-spark {
+    font-size: 9px; color: var(--text-3); margin-right: 3px; vertical-align: 1px;
+  }
+
+  /* Deadline chip */
+  .deadline-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(239,159,39,0.10); border: 1px solid rgba(239,159,39,0.22);
+    border-radius: 20px; padding: 4px 10px 4px 8px;
+    margin: 8px 20px 0; width: fit-content;
+  }
+  .deadline-chip-text {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--maine);
+  }
+
+  /* Story carousel */
+  .story-scroll {
+    display: flex; gap: 10px;
+    padding: 12px 20px 0;
+    overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .story-scroll::-webkit-scrollbar { display: none; }
+  .story-card {
+    flex-shrink: 0; width: 230px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+    cursor: pointer; text-decoration: none; display: block;
+    transition: opacity 0.15s;
+  }
+  .story-card:active { opacity: 0.7; }
+  .story-card-img {
+    width: 100%; height: 90px;
+    object-fit: cover; display: block;
+    background: var(--surface-2);
+  }
+  .story-card-img-placeholder {
+    width: 100%; height: 90px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+  }
+  .story-card-body { padding: 10px 12px 12px; }
+  .story-card-hl {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    line-height: 1.4; margin-bottom: 7px;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .story-card-meta { font-size: 11px; color: var(--text-3); }
+
+  /* State pulse dot on story card */
+  .story-card.has-update {
+    border-color: rgba(82,201,122,0.22);
+  }
+
+  /* Empty state */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; padding: 60px 40px;
+  }
+  .empty-icon {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border-mid);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+  }
+  .empty-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; color: var(--text-3); line-height: 1.6; margin-bottom: 20px; }
+  .empty-cta {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--primary); color: var(--primary-text);
+    font-size: 14px; font-weight: 700; padding: 10px 20px;
+    border-radius: 24px; cursor: pointer; border: none; font-family: inherit;
+    transition: opacity 0.15s;
+  }
+  .empty-cta:active { opacity: 0.8; }
+
+  /* ── TRACK MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.72); backdrop-filter: blur(8px);
+    display: flex; align-items: flex-end;
+    animation: fadeIn 0.18s ease;
+  }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal-sheet {
+    width: 100%; max-width: 430px; margin: 0 auto;
+    background: var(--surface); border: 1px solid var(--border-mid);
+    border-bottom: none; border-radius: 22px 22px 0 0;
+    padding: 0 0 40px;
+    animation: slideUp 0.22s cubic-bezier(0.32,0.72,0,1);
+  }
+  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  .modal-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border-mid); margin: 12px auto 20px; }
+  .modal-title { font-size: 17px; font-weight: 700; color: var(--text); padding: 0 20px 4px; }
+  .modal-sub { font-size: 12.5px; color: var(--text-3); padding: 0 20px 18px; line-height: 1.5; }
+  .modal-input-wrap {
+    margin: 0 20px; background: var(--surface-2); border: 1px solid var(--border-mid);
+    border-radius: 12px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+  }
+  .modal-input-wrap svg { color: var(--text-3); flex-shrink: 0; }
+  .modal-input {
+    flex: 1; background: none; border: none; outline: none;
+    font-size: 15px; color: var(--text); padding: 13px 0;
+    font-family: inherit;
+  }
+  .modal-input::placeholder { color: var(--text-3); }
+  .modal-zone-section { padding: 14px 20px 0; }
+  .modal-zone-section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-3); margin-bottom: 10px;
+  }
+  .modal-zone-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .modal-zone-chip {
+    padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; background: var(--surface-2);
+    border: 1px solid var(--border); color: var(--text-3);
+  }
+  .modal-zone-chip.none.selected    { color: var(--text-2); background: rgba(255,255,255,0.06); border-color: var(--border-mid); }
+  .modal-zone-chip.sports.selected  { color: var(--sports);  background: rgba(82,201,122,0.12);  border-color: rgba(82,201,122,0.30);  }
+  .modal-zone-chip.local.selected   { color: var(--local);   background: rgba(91,156,246,0.12);  border-color: rgba(91,156,246,0.30);  }
+  .modal-zone-chip.maine.selected   { color: var(--maine);   background: rgba(239,159,39,0.12);  border-color: rgba(239,159,39,0.30);  }
+  .modal-zone-chip.tech.selected    { color: var(--tech);    background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.30); }
+  .modal-zone-chip.finance.selected { color: var(--finance); background: rgba(52,211,153,0.12);  border-color: rgba(52,211,153,0.30);  }
+  .modal-deadline-wrap {
+    margin: 16px 20px 0; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px;
+    display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+  }
+  .modal-deadline-left { display: flex; align-items: center; gap: 10px; }
+  .modal-deadline-text { font-size: 13.5px; color: var(--text-2); }
+  .modal-deadline-toggle {
+    width: 38px; height: 22px; border-radius: 11px;
+    background: var(--surface-3); border: 1px solid var(--border-mid);
+    position: relative; transition: background 0.2s;
+  }
+  .modal-deadline-toggle.on { background: var(--primary); border-color: var(--primary); }
+  .modal-deadline-toggle::after {
+    content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--bg); top: 2px; left: 2px; transition: transform 0.2s;
+  }
+  .modal-deadline-toggle.on::after { background: var(--primary-text); transform: translateX(16px); }
+  .modal-actions { display: flex; gap: 10px; padding: 20px 20px 0; }
+  .modal-cancel {
+    flex: 1; height: 46px; border-radius: 23px; background: var(--surface-2);
+    border: 1px solid var(--border-mid); color: var(--text-2);
+    font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .modal-confirm {
+    flex: 2; height: 46px; border-radius: 23px; background: var(--primary);
+    border: none; color: var(--primary-text); font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  .modal-confirm:active { opacity: 0.85; }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed; bottom: 24px; z-index: 100;
+    left: 50%; transform: translateX(-50%);
+    width: calc(100% - 48px); max-width: 382px;
+    background: rgba(20,20,28,0.96); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255,255,255,0.11); border-radius: 30px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 8px 6px 12px;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 7px 16px; border-radius: 20px; cursor: pointer; opacity: 0.62;
+    transition: all 0.18s; text-decoration: none; position: relative;
+  }
+  .nav-item.active { opacity: 1; background: rgba(255,255,255,0.08); }
+  .nav-icon { width: 22px; height: 22px; color: var(--text); }
+  .nav-label {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--text);
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+    background: rgba(30,30,40,0.96); border: 1px solid rgba(255,255,255,0.14);
+    color: var(--text); font-size: 13.5px; font-weight: 500;
+    padding: 9px 18px; border-radius: 20px; z-index: 400;
+    backdrop-filter: blur(16px); white-space: nowrap;
+    transition: opacity 0.2s; pointer-events: none;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <span class="wordmark">Tracking</span>
+    <div class="header-right">
+      <span class="header-count" id="topicCount">4 topics</span>
+      <div class="header-add-btn" onclick="showTrackModal()" aria-label="Track new topic">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary-text)" stroke-width="2.5" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- ZONE FILTER -->
+  <div class="filter-scroll" id="filterScroll">
+    <div class="filter-pill active-all" data-filter="all" onclick="setFilter('all', this)">All</div>
+    <div class="filter-pill" data-filter="none" onclick="setFilter('none', this)">No zone</div>
+    <div class="filter-pill" data-filter="sports" onclick="setFilter('sports', this)">Sports Zone</div>
+    <div class="filter-pill" data-filter="local" onclick="setFilter('local', this)">Local Zone</div>
+    <div class="filter-pill" data-filter="maine" onclick="setFilter('maine', this)">Maine House Zone</div>
+    <div class="filter-pill" data-filter="tech" onclick="setFilter('tech', this)">Tech & AI Zone</div>
+    <div class="filter-pill" data-filter="finance" onclick="setFilter('finance', this)">Finance Zone</div>
+  </div>
+
+  <!-- TOPIC LIST -->
+  <div class="topic-list" id="topicList">
+
+    <!-- Topic 1: Celtics Offseason — Sports Zone — Watching (nothing new) -->
+    <div class="topic-section state-watching" data-zone="sports" id="topic-1">
+      <div class="topic-state-stripe"></div>
+
+      <!-- Normal header -->
+      <div class="topic-header" id="header-1">
+        <div class="topic-title-group">
+          <div class="topic-zone-line"><span class="zpill sports">Sports Zone</span></div>
+          <div class="topic-hashtag">#Celtics Offseason</div>
+        </div>
+        <div class="topic-actions">
+          <button class="topic-action-btn" onclick="startEdit(1)" aria-label="Edit topic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="topic-action-btn" onclick="startDelete(1)" aria-label="Remove topic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="topic-synth">
+        <span class="ai-spark">✦</span>Giannis talks have gone quiet since Friday — no new reporting from either side. Stevens is now focused on Thursday's draft with two frontcourt prospects drawing attention at picks 27 and 40.
+      </div>
+
+      <div class="story-scroll">
+        <a href="distilled-story-detail.html" class="story-card">
+          <img class="story-card-img"
+            src="https://images.unsplash.com/photo-1546519638405-a2f8f4b3f5c7?w=460&h=180&fit=crop&q=80"
+            alt="Celtics" onerror="this.style.display='none'">
+          <div class="story-card-body">
+            <div class="story-card-hl">Giannis talks reportedly cooling as Bucks set higher price than expected</div>
+            <div class="story-card-meta">ESPN · 2h ago</div>
+          </div>
+        </a>
+        <a href="distilled-story-detail.html" class="story-card">
+          <img class="story-card-img"
+            src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=460&h=180&fit=crop&q=80"
+            alt="Celtics" onerror="this.style.display='none'">
+          <div class="story-card-body">
+            <div class="story-card-hl">Stevens meets with Celtics ownership ahead of Thursday's draft</div>
+            <div class="story-card-meta">The Athletic · 4h ago</div>
+          </div>
+        </a>
+        <a href="distilled-story-detail.html" class="story-card">
+          <img class="story-card-img"
+            src="https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=460&h=180&fit=crop&q=80"
+            alt="NBA Draft" onerror="this.style.display='none'">
+          <div class="story-card-body">
+            <div class="story-card-hl">Picks 27 and 40: Who's on Boston's radar this Thursday?</div>
+            <div class="story-card-meta">CelticsBlog · 6h ago</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Topic 2: Red Sox Trade Deadline — Sports Zone — Deadline -->
+    <div class="topic-section state-deadline" data-zone="sports" id="topic-2">
+      <div class="topic-state-stripe"></div>
+
+      <div class="topic-header" id="header-2">
+        <div class="topic-title-group">
+          <div class="topic-zone-line"><span class="zpill sports">Sports Zone</span></div>
+          <div class="topic-hashtag">#Red Sox Trade Deadline</div>
+        </div>
+        <div class="topic-actions">
+          <button class="topic-action-btn" onclick="startEdit(2)" aria-label="Edit topic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="topic-action-btn" onclick="startDelete(2)" aria-label="Remove topic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="deadline-chip">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--maine)" stroke-width="2.2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span class="deadline-chip-text">Closes Tuesday · 4:00 PM</span>
+      </div>
+
+      <div class="topic-synth">
+        <span class="ai-spark">✦</span>At 29–43, Bloom is expected to be a seller. Pivetta and Rafaela are drawing the most calls from contenders. No deal is imminent but the activity level has picked up significantly since the weekend series loss.
+      </div>
+
+      <div class="story-scroll">
+        <a href="distilled-story-detail.html" class="story-card has-update">
+          <img class="story-card-img"
+            src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/mlb/500/bos.png&h=180&w=460&scale=crop&location=origin&transparent=true"
+            alt="Red Sox"
+            style="background:linear-gradient(135deg,#1f0a0a,#3a1010);padding:16px;"
+            onerror="this.style.display='none'">
+          <div class="story-card-body">
+            <div class="story-card-hl">Pivetta and Rafaela drawing the most calls ahead of July 31 deadline</div>
+            <div class="story-card-meta">WEEI · 1h ago</div>
+          </div>
+        </a>
+        <a href="distilled-story-detail.html" class="story-card">
+          <img class="story-card-img"
+            src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=460&h=180&fit=crop&q=80"
+            alt="Baseball" onerror="this.style.display='none'">
+          <div class="story-card-body">
+            <div class="story-card-hl">Sox swept at home — Bloom officially in seller mode entering the stretch run</div>
+            <div class="story-card-meta">Boston Globe · 3h ago</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Topic 3: Iran War — No zone — Moved (new updates) -->
+    <div class="topic-section state-moved" data-zone="" id="topic-3">
+      <div class="topic-state-stripe"></div>
+
+      <div class="topic-header" id="header-3">
+        <div class="topic-title-group">
+          <div class="topic-zone-line"><!-- no zone --></div>
+          <div class="topic-hashtag">#Iran War</div>
+        </div>
+        <div class="topic-actions">
+          <button class="topic-action-btn" onclick="startEdit(3)" aria-label="Edit topic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="topic-action-btn" onclick="startDelete(3)" aria-label="Remove topic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="topic-synth">
+        <span class="ai-spark">✦</span>Two new developments this morning: US naval assets have repositioned in the Strait of Hormuz, and Israeli intelligence is reporting an evacuation at the Natanz facility. Diplomatic back-channels are described as "effectively paused."
+      </div>
+
+      <div class="story-scroll">
+        <a href="distilled-story-detail.html" class="story-card has-update">
+          <img class="story-card-img"
+            src="https://images.unsplash.com/photo-1555617117-08d0c5e3f1a7?w=460&h=180&fit=crop&q=80"
+            alt="Naval" onerror="this.style.display='none'">
+          <div class="story-card-body">
+            <div class="story-card-hl">US naval assets repositioned in Strait of Hormuz as diplomatic talks stall</div>
+            <div class="story-card-meta">Reuters · 30m ago</div>
+          </div>
+        </a>
+        <a href="distilled-story-detail.html" class="story-card has-update">
+          <img class="story-card-img"
+            src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=460&h=180&fit=crop&q=80"
+            alt="Middle East" onerror="this.style.display='none'">
+          <div class="story-card-body">
+            <div class="story-card-hl">Israeli intelligence reports evacuation underway at Natanz nuclear facility</div>
+            <div class="story-card-meta">AP · 2h ago</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Topic 4: OpenAI / Astral — Tech Zone — Watching -->
+    <div class="topic-section state-watching" data-zone="tech" id="topic-4">
+      <div class="topic-state-stripe"></div>
+
+      <div class="topic-header" id="header-4">
+        <div class="topic-title-group">
+          <div class="topic-zone-line"><span class="zpill tech">Tech & AI Zone</span></div>
+          <div class="topic-hashtag">#OpenAI Astral</div>
+        </div>
+        <div class="topic-actions">
+          <button class="topic-action-btn" onclick="startEdit(4)" aria-label="Edit topic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="topic-action-btn" onclick="startDelete(4)" aria-label="Remove topic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="topic-synth">
+        <span class="ai-spark">✦</span>The Astral acquisition is closed. ruff and uv are now under OpenAI's ownership. Open-source continuity commitments remain unconfirmed — the Python tooling community is watching closely.
+      </div>
+
+      <div class="story-scroll">
+        <a href="distilled-story-detail.html" class="story-card">
+          <img class="story-card-img"
+            src="https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=460&h=180&fit=crop&q=80"
+            alt="AI" onerror="this.style.display='none'">
+          <div class="story-card-body">
+            <div class="story-card-hl">Astral acquisition closes: OpenAI now owns ruff and uv — open-source future unclear</div>
+            <div class="story-card-meta">The Verge · 5h ago</div>
+          </div>
+        </a>
+        <a href="distilled-story-detail.html" class="story-card">
+          <img class="story-card-img"
+            src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=460&h=180&fit=crop&q=80"
+            alt="Python" onerror="this.style.display='none'">
+          <div class="story-card-body">
+            <div class="story-card-hl">Python community reacts to OpenAI's Astral deal — cautious, not panicking</div>
+            <div class="story-card-meta">Hacker News · 4h ago</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /topicList -->
+
+  <div style="height: 120px;"></div>
+
+</div><!-- /app -->
+
+
+<!-- TRACK TOPIC MODAL -->
+<div id="trackModal" class="modal-overlay" style="display:none;" onclick="closeTrackModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Track a topic</div>
+    <div class="modal-sub">Type anything — a team, story, event, or deadline. Distilled will alert you when something significant happens.</div>
+
+    <div class="modal-input-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="modal-input" id="trackInput" placeholder="e.g. Fed rate decision" autocomplete="off"/>
+    </div>
+
+    <div class="modal-zone-section">
+      <div class="modal-zone-section-label">Zone (optional)</div>
+      <div class="modal-zone-chips">
+        <div class="modal-zone-chip none selected" onclick="selectZone('none',this)">No zone</div>
+        <div class="modal-zone-chip sports" onclick="selectZone('sports',this)">Sports Zone</div>
+        <div class="modal-zone-chip local" onclick="selectZone('local',this)">Local Zone</div>
+        <div class="modal-zone-chip maine" onclick="selectZone('maine',this)">Maine House Zone</div>
+        <div class="modal-zone-chip tech" onclick="selectZone('tech',this)">Tech & AI Zone</div>
+        <div class="modal-zone-chip finance" onclick="selectZone('finance',this)">Finance Zone</div>
+      </div>
+    </div>
+
+    <div class="modal-deadline-wrap" onclick="toggleDeadline()">
+      <div class="modal-deadline-left">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text-3)">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span class="modal-deadline-text">Set a deadline or expiry</span>
+      </div>
+      <div class="modal-deadline-toggle" id="deadlineToggle"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeTrackModal()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmTrack()">Start Tracking</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="distilled-v3-concept.html">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    <span class="nav-label">Today</span>
+  </a>
+  <a class="nav-item" href="#">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="14" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+    </svg>
+    <span class="nav-label">Zones</span>
+  </a>
+  <a class="nav-item active" href="#">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="2"/>
+      <circle cx="12" cy="12" r="6"/>
+      <circle cx="12" cy="12" r="10"/>
+    </svg>
+    <span class="nav-label">Tracking</span>
+  </a>
+  <a class="nav-item" href="distilled-read-later.html">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+    </svg>
+    <span class="nav-label">Read Later</span>
+  </a>
+</nav>
+
+
+<script>
+  // ── Zone filter ──
+  let activeFilter = 'all';
+
+  function setFilter(zone, pill) {
+    activeFilter = zone;
+    document.querySelectorAll('.filter-pill').forEach(p => p.className = 'filter-pill');
+    // 'none' gets the same neutral selected style as 'all'
+    pill.className = 'filter-pill ' + (zone === 'all' || zone === 'none' ? 'active-all' : 'active-' + zone);
+
+    document.querySelectorAll('.topic-section').forEach(sec => {
+      const secZone = sec.dataset.zone || '';
+      let show;
+      if (zone === 'all') show = true;
+      else if (zone === 'none') show = secZone === '';
+      else show = secZone === zone;
+      sec.style.display = show ? '' : 'none';
+    });
+
+    // Check empty state
+    const visible = [...document.querySelectorAll('.topic-section')].filter(s => s.style.display !== 'none');
+    let empty = document.getElementById('emptyFilter');
+    if (visible.length === 0) {
+      if (!empty) {
+        empty = document.createElement('div');
+        empty.id = 'emptyFilter';
+        empty.className = 'empty-state';
+        empty.innerHTML = `
+          <div class="empty-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+          </div>
+          <div class="empty-title">No tracked topics in this zone</div>
+          <div class="empty-sub">Start tracking a topic and assign it to this zone.</div>
+          <button class="empty-cta" onclick="showTrackModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Track a topic
+          </button>
+        `;
+        document.getElementById('topicList').appendChild(empty);
+      }
+    } else {
+      if (empty) empty.remove();
+    }
+  }
+
+  // ── Edit / Delete topic ──
+  const topicNames = {
+    1: 'Celtics Offseason',
+    2: 'Red Sox Trade Deadline',
+    3: 'Iran War',
+    4: 'OpenAI Astral',
+  };
+
+  function startEdit(id) {
+    const header = document.getElementById('header-' + id);
+    const current = topicNames[id];
+    header.innerHTML = `
+      <div class="topic-edit-row" style="padding:0;flex:1;display:flex;align-items:center;gap:8px;">
+        <span class="topic-edit-hash">#</span>
+        <input class="topic-edit-input" id="editInput-${id}" value="${current}" />
+        <button class="topic-edit-save" onclick="saveEdit(${id})">Save</button>
+        <button class="topic-edit-cancel" onclick="cancelEdit(${id})">Cancel</button>
+      </div>
+    `;
+    setTimeout(() => {
+      const inp = document.getElementById('editInput-' + id);
+      if (inp) { inp.focus(); inp.select(); }
+    }, 50);
+  }
+
+  function saveEdit(id) {
+    const inp = document.getElementById('editInput-' + id);
+    const val = inp ? inp.value.trim() : '';
+    if (val) topicNames[id] = val;
+    restoreHeader(id);
+    showToast('Topic updated');
+  }
+
+  function cancelEdit(id) { restoreHeader(id); }
+
+  function startDelete(id) {
+    const header = document.getElementById('header-' + id);
+    const name = topicNames[id];
+    header.innerHTML = `
+      <div class="topic-delete-row" style="padding:0;flex:1;display:flex;align-items:center;gap:10px;">
+        <span class="topic-delete-label">Remove #${name}?</span>
+        <button class="topic-delete-confirm" onclick="confirmDelete(${id})">Remove</button>
+        <button class="topic-delete-cancel" onclick="cancelEdit(${id})">Cancel</button>
+      </div>
+    `;
+  }
+
+  function confirmDelete(id) {
+    const section = document.getElementById('topic-' + id);
+    if (section) {
+      section.style.transition = 'opacity 0.2s';
+      section.style.opacity = '0';
+      setTimeout(() => section.remove(), 220);
+    }
+    showToast('Topic removed');
+    updateCount();
+  }
+
+  function restoreHeader(id) {
+    const zoneMap = { 1: 'sports', 2: 'sports', 3: '', 4: 'tech' };
+    const zoneLabelMap = { sports: 'Sports Zone', tech: 'Tech & AI Zone', local: 'Local Zone', maine: 'Maine House Zone', finance: 'Finance Zone' };
+    const zone = zoneMap[id];
+    const zoneHtml = zone ? `<span class="zpill ${zone}">${zoneLabelMap[zone]}</span>` : '';
+    const pencilSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+    const xSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    document.getElementById('header-' + id).innerHTML = `
+      <div class="topic-title-group">
+        <div class="topic-zone-line">${zoneHtml}</div>
+        <div class="topic-hashtag">#${topicNames[id]}</div>
+      </div>
+      <div class="topic-actions">
+        <button class="topic-action-btn" onclick="startEdit(${id})" aria-label="Edit topic">${pencilSvg}</button>
+        <button class="topic-action-btn" onclick="startDelete(${id})" aria-label="Remove topic">${xSvg}</button>
+      </div>
+    `;
+  }
+
+  function updateCount() {
+    const n = document.querySelectorAll('.topic-section').length;
+    document.getElementById('topicCount').textContent = n + ' topic' + (n === 1 ? '' : 's');
+  }
+
+  // ── Track modal ──
+  let deadlineOn = false;
+  let selectedZone = 'none';
+
+  function showTrackModal() {
+    document.getElementById('trackModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('trackInput').focus(), 300);
+  }
+  function closeTrackModal(e) {
+    if (!e || e.target === document.getElementById('trackModal')) {
+      document.getElementById('trackModal').style.display = 'none';
+      document.getElementById('trackInput').value = '';
+      deadlineOn = false;
+      document.getElementById('deadlineToggle').classList.remove('on');
+      selectedZone = 'none';
+      document.querySelectorAll('.modal-zone-chip').forEach(c => c.classList.remove('selected'));
+      document.querySelector('.modal-zone-chip.none').classList.add('selected');
+    }
+  }
+  function toggleDeadline() {
+    deadlineOn = !deadlineOn;
+    document.getElementById('deadlineToggle').classList.toggle('on', deadlineOn);
+  }
+  function selectZone(zone, el) {
+    selectedZone = zone;
+    document.querySelectorAll('.modal-zone-chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+  function confirmTrack() {
+    const topic = document.getElementById('trackInput').value.trim();
+    if (!topic) return;
+    document.getElementById('trackModal').style.display = 'none';
+    document.getElementById('trackInput').value = '';
+    showToast('Now tracking: #' + topic);
+    closeTrackModal();
+  }
+
+  // ── Toast ──
+  let toastTimer;
+  function showToast(msg) {
+    let t = document.getElementById('toast');
+    if (t) { t.remove(); clearTimeout(toastTimer); }
+    t = document.createElement('div');
+    t.id = 'toast'; t.textContent = msg;
+    document.body.appendChild(t);
+    toastTimer = setTimeout(() => {
+      t.style.opacity = '0';
+      setTimeout(() => t.remove(), 220);
+    }, 1800);
+  }
+</script>
+
+</body>
+</html>

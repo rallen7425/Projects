@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Distilled — Story Detail</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #09090e;
+    --surface: #111117;
+    --surface-2: #17171f;
+    --surface-3: #1e1e28;
+    --border: rgba(255,255,255,0.06);
+    --border-mid: rgba(255,255,255,0.11);
+    --text: #eeeef2;
+    --text-2: rgba(238,238,242,0.58);
+    --text-3: rgba(238,238,242,0.30);
+    --sports: #52C97A;
+    --local: #5B9CF6;
+    --maine: #EF9F27;
+    --tech: #A78BFA;
+    --finance: #34D399;
+    --critical: #E24B4A;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --primary:        #ffffff;
+    --primary-text:   #0a0a0f;
+    --primary-subtle: rgba(255,255,255,0.08);
+    --primary-border: rgba(255,255,255,0.18);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    overflow-x: hidden;
+  }
+
+  /* ── Top nav bar ── */
+  .top-bar {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 54px 20px 14px;
+    background: linear-gradient(to bottom, rgba(9,9,14,0.98) 70%, rgba(9,9,14,0));
+  }
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-2);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 0;
+  }
+  .back-btn svg { opacity: 0.7; }
+  .back-btn:active { opacity: 0.5; }
+
+  .top-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid var(--border-mid);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-2);
+    transition: background 0.15s;
+  }
+  .icon-btn:active { background: rgba(255,255,255,0.13); }
+  .icon-btn.bookmarked { color: var(--primary); }
+
+  /* ── Hero image ── */
+  .hero {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    overflow: hidden;
+    margin-top: 0;
+  }
+  .hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .hero-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(9,9,14,0.2) 0%,
+      rgba(9,9,14,0) 40%,
+      rgba(9,9,14,0.7) 75%,
+      rgba(9,9,14,1) 100%
+    );
+  }
+  .hero-zone-pill {
+    position: absolute;
+    bottom: 14px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sports);
+  }
+  .zone-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sports);
+    flex-shrink: 0;
+  }
+  .hero-time {
+    position: absolute;
+    bottom: 14px;
+    right: 20px;
+    font-size: 12px;
+    color: var(--text-3);
+  }
+
+  /* ── Content area ── */
+  .content {
+    padding: 0 20px;
+    padding-bottom: 48px;
+  }
+
+  /* ── Prev / Next navigation ── */
+  .story-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0 8px;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+  }
+  .story-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-2);
+    cursor: pointer;
+    padding: 8px 0;
+    transition: color 0.15s;
+    background: none;
+    border: none;
+    font-family: inherit;
+  }
+  .story-nav-btn:active { color: var(--text); }
+  .story-nav-btn svg { color: var(--text-3); }
+
+  .headline {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.28;
+    letter-spacing: -0.3px;
+    color: var(--text);
+    margin-top: 16px;
+    margin-bottom: 20px;
+  }
+
+  /* ── AI Snapshot section ── */
+  .snapshot-section {
+    background: var(--surface);
+    border: 1px solid var(--border-mid);
+    border-top: 2px solid var(--sports);
+    border-radius: var(--radius);
+    padding: 18px 18px 20px;
+    margin-bottom: 8px;
+  }
+
+  .snapshot-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .snapshot-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(82,201,122,0.12);
+    border: 1px solid rgba(82,201,122,0.25);
+    border-radius: 20px;
+    padding: 3px 9px 3px 6px;
+  }
+
+  .snapshot-badge-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--sports);
+  }
+
+  .snapshot-badge-text {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sports);
+  }
+
+  .snapshot-prose {
+    font-size: 15.5px;
+    line-height: 1.65;
+    color: var(--text);
+    font-weight: 400;
+  }
+  .snapshot-prose p + p {
+    margin-top: 13px;
+  }
+
+  .snapshot-updated {
+    margin-top: 14px;
+    font-size: 11.5px;
+    color: var(--text-3);
+  }
+
+  /* ── Sources section ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin: 24px 0 12px;
+  }
+
+  .sources-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .source-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+    text-decoration: none;
+  }
+  .source-item:active { background: var(--surface-2); }
+
+  .source-pub-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-mid);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-2);
+    letter-spacing: -0.3px;
+  }
+  .source-pub-mark.espn { color: #d50a0a; font-size: 10px; }
+  .source-pub-mark.athletic { color: #ffa500; font-size: 10px; }
+  .source-pub-mark.globe { color: #5B9CF6; font-size: 9px; }
+  .source-pub-mark.ap { color: var(--text); }
+
+  .source-text { flex: 1; min-width: 0; }
+  .source-pub-name {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--text-3);
+    margin-bottom: 3px;
+    text-transform: uppercase;
+  }
+  .source-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .source-arrow {
+    color: var(--text-3);
+    flex-shrink: 0;
+  }
+
+  /* ── Related stories ── */
+  .related-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 0;
+  }
+
+  .related-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 13px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .related-item:active { background: var(--surface-2); }
+
+  .related-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: var(--surface-3);
+    flex-shrink: 0;
+  }
+
+  .related-text { flex: 1; min-width: 0; }
+  .related-zone {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sports);
+    margin-bottom: 4px;
+  }
+  .related-headline {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.35;
+  }
+
+
+  /* ── Track this story chip ── */
+  .track-prompt {
+    background: var(--surface);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .track-prompt:active { opacity: 0.7; }
+
+  .track-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--primary-subtle);
+    border: 1px solid var(--primary-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .track-text { flex: 1; }
+  .track-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .track-sub {
+    font-size: 12px;
+    color: var(--text-3);
+  }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Top nav -->
+<div class="top-bar">
+  <div class="back-btn" onclick="history.back()">
+    <svg width="9" height="15" viewBox="0 0 9 15" fill="none">
+      <path d="M8 1L1.5 7.5L8 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Sports Zone
+  </div>
+  <div class="top-bar-actions">
+    <div class="icon-btn" id="bookmarkBtn" onclick="toggleBookmark()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+      </svg>
+    </div>
+    <div class="icon-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- Hero image -->
+<div class="hero">
+  <img
+    src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80"
+    alt="NBA Draft"
+    onerror="this.style.background='linear-gradient(135deg, #1a2a1a 0%, #0d1a0d 100%)'; this.removeAttribute('src')"
+  />
+  <div class="hero-gradient"></div>
+  <div class="hero-zone-pill">
+    <div class="zone-dot"></div>
+    Sports Zone
+  </div>
+  <div class="hero-time">2h ago</div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <h1 class="headline">Celtics Select Alexandre Sarr with No. 2 Pick, Signaling a Rebuild Direction</h1>
+
+  <!-- AI Snapshot -->
+  <div class="snapshot-section">
+    <div class="snapshot-label">
+      <div class="snapshot-badge">
+        <div class="snapshot-badge-dot"></div>
+        <span class="snapshot-badge-text">Distilled AI</span>
+      </div>
+    </div>
+    <div class="snapshot-prose">
+      <p>The Boston Celtics used the second overall pick in the 2024 NBA Draft to select French center Alexandre Sarr from Perth in the NBL. The selection surprised analysts who projected the team might trade down or target guard depth, and signals a willingness to build long-term youth alongside their championship core rather than chase an immediate win-now move.</p>
+      <p>At 7-foot-1 with a 7-foot-5 wingspan, Sarr is a modern, switchable big who fits the defensive scheme Brad Stevens has been building toward. He averaged 13.5 points and 7.3 rebounds in his lone NBL season and drew comparisons to Kristaps Porzingis for his two-way potential. He is not expected to start immediately. The Celtics now hold three first-round picks in the next two drafts.</p>
+      <p>The pick is viewed as a calculated bet that Sarr's ceiling is worth the short-term luxury of developing a second-year player while running championship contention with the existing core.</p>
+    </div>
+    <div class="snapshot-updated">Synthesized from 7 sources · Updated 2h ago</div>
+  </div>
+
+  <!-- Full Coverage -->
+  <div class="section-label">Full Coverage</div>
+
+  <div class="sources-list">
+    <a class="source-item" href="#" onclick="return false;">
+      <div class="source-pub-mark espn">ESPN</div>
+      <div class="source-text">
+        <div class="source-pub-name">ESPN</div>
+        <div class="source-title">Celtics take Sarr at No. 2 in a pick that stunned the room</div>
+      </div>
+      <div class="source-arrow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+      </div>
+    </a>
+
+    <a class="source-item" href="#" onclick="return false;">
+      <div class="source-pub-mark athletic">THE<br>ATH</div>
+      <div class="source-text">
+        <div class="source-pub-name">The Athletic</div>
+        <div class="source-title">Inside Boston's decision to go big — literally</div>
+      </div>
+      <div class="source-arrow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+      </div>
+    </a>
+
+    <a class="source-item" href="#" onclick="return false;">
+      <div class="source-pub-mark globe">BOS<br>GLB</div>
+      <div class="source-text">
+        <div class="source-pub-name">Boston Globe</div>
+        <div class="source-title">Sarr gives Celtics the center they've needed — in two years</div>
+      </div>
+      <div class="source-arrow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+      </div>
+    </a>
+
+    <a class="source-item" href="#" onclick="return false;">
+      <div class="source-pub-mark ap">AP</div>
+      <div class="source-text">
+        <div class="source-pub-name">Associated Press</div>
+        <div class="source-title">NBA Draft results: Full list of picks and analysis</div>
+      </div>
+      <div class="source-arrow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+      </div>
+    </a>
+  </div>
+
+  <!-- Track this story -->
+  <div class="divider"></div>
+  <div class="track-prompt" onclick="trackStory()">
+    <div class="track-icon-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-2)">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <div class="track-text">
+      <div class="track-title">Track this story</div>
+      <div class="track-sub">Get alerted when something significant happens</div>
+    </div>
+    <div style="color: var(--text-3);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- More from Sports -->
+  <div class="section-label" style="margin-top: 28px;">More from Sports Zone</div>
+
+  <div class="related-list">
+    <div class="related-item">
+      <img
+        class="related-thumb"
+        src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=200&q=75"
+        alt="Red Sox"
+        onerror="this.style.background='var(--surface-3)'; this.removeAttribute('src')"
+      />
+      <div class="related-text">
+        <div class="related-zone">Sports Zone</div>
+        <div class="related-headline">Sox hold on 3–2 in tense ninth, Crawford locks down save</div>
+      </div>
+    </div>
+
+    <div class="related-item">
+      <img
+        class="related-thumb"
+        src="https://images.unsplash.com/photo-1540747913346-19212a4de3d3?w=200&q=75"
+        alt="NFL"
+        onerror="this.style.background='var(--surface-3)'; this.removeAttribute('src')"
+      />
+      <div class="related-text">
+        <div class="related-zone">Sports Zone</div>
+        <div class="related-headline">Patriots open camp with two roster surprises at linebacker</div>
+      </div>
+    </div>
+
+    <div class="related-item">
+      <img
+        class="related-thumb"
+        src="https://images.unsplash.com/photo-1551958219-acbc27bca9ce?w=200&q=75"
+        alt="World Cup"
+        onerror="this.style.background='var(--surface-3)'; this.removeAttribute('src')"
+      />
+      <div class="related-text">
+        <div class="related-zone">Sports Zone · Local Zone</div>
+        <div class="related-headline">World Cup at Gillette: What fans should know before Saturday</div>
+      </div>
+    </div>
+  <!-- Prev / Next navigation -->
+  <div class="story-nav">
+    <button class="story-nav-btn" onclick="history.back()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Previous
+    </button>
+    <button class="story-nav-btn" onclick="showToast('Next story')">
+      Next
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </button>
+  </div>
+
+  </div>
+
+</div>
+
+<script>
+  let bookmarked = false;
+  let tracked = false;
+
+  function toggleBookmark() {
+    bookmarked = !bookmarked;
+    const btn = document.getElementById('bookmarkBtn');
+    if (bookmarked) {
+      btn.classList.add('bookmarked');
+      btn.querySelector('svg').setAttribute('fill', 'currentColor');
+      showToast('Added to Read Later');
+    } else {
+      btn.classList.remove('bookmarked');
+      btn.querySelector('svg').setAttribute('fill', 'none');
+      showToast('Removed from Read Later');
+    }
+  }
+
+  function trackStory() {
+    const prompt = document.querySelector('.track-prompt');
+    prompt.innerHTML = `
+      <div class="track-icon-wrap" style="background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.22);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:#eeeef2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div class="track-text">
+        <div class="track-title" style="color: #eeeef2;">Tracking this story</div>
+        <div class="track-sub">You'll be alerted when something significant happens</div>
+      </div>
+    `;
+    showToast('Story added to Tracking');
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    let existing = document.getElementById('toast');
+    if (existing) existing.remove();
+    clearTimeout(toastTimer);
+
+    const toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.textContent = msg;
+    Object.assign(toast.style, {
+      position: 'fixed',
+      bottom: '110px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(30,30,40,0.95)',
+      border: '1px solid rgba(255,255,255,0.14)',
+      color: '#eeeef2',
+      fontSize: '13.5px',
+      fontWeight: '500',
+      padding: '9px 18px',
+      borderRadius: '20px',
+      zIndex: '200',
+      backdropFilter: 'blur(16px)',
+      whiteSpace: 'nowrap',
+      transition: 'opacity 0.2s',
+      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+    });
+    document.body.appendChild(toast);
+    toastTimer = setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 200);
+    }, 2000);
+  }
+</script>
+
+</body>
+</html>

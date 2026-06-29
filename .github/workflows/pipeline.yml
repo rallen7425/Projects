@@ -1,0 +1,17 @@
+name: Content Pipeline
+
+on:
+  schedule:
+    - cron: '0 * * * *'           # every hour
+  workflow_dispatch:               # manual trigger from GitHub UI
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger pipeline
+        run: |
+          curl -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            https://distilled-news.vercel.app/api/pipeline/trigger

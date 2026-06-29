@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Distilled — Sports Zone</title>
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box; margin: 0; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :root {
+    --bg:         #09090e;
+    --surface:    #111117;
+    --surface-2:  #17171f;
+    --surface-3:  #1e1e28;
+    --border:     rgba(255,255,255,0.06);
+    --border-mid: rgba(255,255,255,0.11);
+    --text:       #eeeef2;
+    --text-2:     rgba(238,238,242,0.58);
+    --text-3:     rgba(238,238,242,0.30);
+    --sports:     #52C97A;
+    --local:      #5B9CF6;
+    --maine:      #EF9F27;
+    --tech:       #A78BFA;
+    --finance:    #34D399;
+    --primary:        #ffffff;
+    --primary-text:   #0a0a0f;
+    --primary-subtle: rgba(255,255,255,0.08);
+    --primary-border: rgba(255,255,255,0.18);
+
+    /* active zone color — JS sets this */
+    --zone-color: var(--sports);
+    --zone-bg:    rgba(82,201,122,0.12);
+    --zone-border: rgba(82,201,122,0.25);
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex; justify-content: center;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    width: 100%; max-width: 430px;
+    min-height: 100vh;
+    padding-bottom: 120px;
+  }
+
+  /* ── HEADER ── */
+  .app-header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(9,9,14,0.94);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--border);
+    padding: 52px 20px 0;
+  }
+  .header-top {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 13px; font-weight: 600; color: var(--text-3);
+    cursor: pointer; text-decoration: none;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .back-btn:active { color: var(--text); }
+  .zone-title-row {
+    display: flex; align-items: center; gap: 8px; flex: 1;
+  }
+  .zone-pill {
+    font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 3px 9px; border-radius: 5px;
+    color: var(--zone-color); background: var(--zone-bg);
+    border: 1px solid var(--zone-border);
+    white-space: nowrap;
+  }
+  .story-count-badge {
+    font-size: 11px; font-weight: 600; color: var(--text-3);
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 2px 9px;
+  }
+
+  /* ── SUB-NAV — two-line, flex fill, no scroll ── */
+  .zone-subnav {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .subnav-item {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 7px 2px 9px; text-align: center;
+    color: var(--text-3);
+    border-bottom: 2px solid transparent;
+    position: relative; top: 1px;
+    cursor: pointer; text-decoration: none;
+    transition: all 0.16s;
+  }
+  .subnav-item:active { opacity: 0.7; }
+  .snl1 { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; line-height: 1.2; }
+  .snl2 { display: block; font-size: 9px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.2; margin-top: 1px; }
+
+  .subnav-item.active-sports  { color: var(--sports);  border-bottom-color: var(--sports);  }
+  .subnav-item.active-local   { color: var(--local);   border-bottom-color: var(--local);   }
+  .subnav-item.active-maine   { color: var(--maine);   border-bottom-color: var(--maine);   }
+  .subnav-item.active-tech    { color: var(--tech);    border-bottom-color: var(--tech);    }
+  .subnav-item.active-finance { color: var(--finance); border-bottom-color: var(--finance); }
+
+  /* ── QUICK LOOK ── */
+  .quick-look {
+    padding: 16px 0 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .quick-look-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--text-3); text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .quick-look-scroll {
+    display: flex; gap: 8px;
+    overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+    padding-right: 20px;
+  }
+  .quick-look-scroll::-webkit-scrollbar { display: none; }
+  .ql-chip {
+    flex-shrink: 0; min-width: 90px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-mid);
+    border-left: 2px solid var(--zone-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .ql-chip-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 4px;
+    color: var(--text-3);
+  }
+  .ql-chip-value {
+    font-size: 15px; font-weight: 700; line-height: 1.1;
+    color: var(--text);
+  }
+  .ql-chip-sub {
+    font-size: 10px; margin-top: 2px;
+    color: var(--text-3); line-height: 1.3;
+  }
+
+  /* ── GROUP LABEL ── */
+  .group-label {
+    padding: 14px 20px 8px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-3);
+  }
+
+  /* ── STORY ITEM ── */
+  .story-item {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.12s;
+    display: block; text-decoration: none;
+  }
+  .story-item:active { background: var(--surface-2); }
+
+  .story-meta {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 8px;
+    flex-wrap: nowrap;
+  }
+  .zpill {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+    padding: 2px 7px; border-radius: 4px;
+    text-transform: uppercase; flex-shrink: 0;
+    white-space: nowrap;
+    color: var(--zone-color); background: var(--zone-bg);
+  }
+  .story-tag {
+    font-size: 11px; font-weight: 600; color: var(--text-3); flex-shrink: 0;
+  }
+  .new-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #E24B4A; flex-shrink: 0;
+  }
+  .urgent-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #EF9F27; flex-shrink: 0;
+  }
+  .story-time {
+    font-size: 11px; color: var(--text-3);
+    margin-left: auto; flex-shrink: 0;
+  }
+  .story-meta-actions {
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .meta-btn {
+    background: none; border: none; padding: 0;
+    color: var(--text-3); cursor: pointer;
+    display: flex; align-items: center;
+    transition: color 0.15s;
+  }
+  .meta-btn:active { color: var(--text); }
+  .meta-btn.saved { color: var(--primary); }
+
+  .story-hl {
+    font-size: 16px; font-weight: 650; line-height: 1.35;
+    color: var(--text); margin-bottom: 7px;
+  }
+  .story-summary {
+    font-size: 13px; line-height: 1.55; color: var(--text-2);
+    display: -webkit-box; -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical; overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .story-sources { display: flex; gap: 8px; flex-wrap: wrap; }
+  .source-chip {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.03em;
+    color: var(--text-3); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 2px 7px;
+  }
+
+  /* Zone panels */
+  .zone-panel { display: none; }
+  .zone-panel.active { display: block; }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed; bottom: 24px;
+    left: 50%; transform: translateX(-50%);
+    width: calc(100% - 48px); max-width: 382px;
+    background: rgba(20,20,28,0.94);
+    backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+    border: 1px solid var(--border-mid);
+    border-radius: 24px;
+    display: flex; align-items: stretch;
+    padding: 6px 4px; z-index: 100;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px; padding: 8px 4px;
+    cursor: pointer; border-radius: 18px;
+    transition: background 0.15s; text-decoration: none;
+    color: var(--text); opacity: 0.62;
+  }
+  .nav-item:active { background: rgba(255,255,255,0.06); }
+  .nav-item.active { background: var(--primary-subtle); opacity: 1; }
+  .nav-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: var(--text); }
+  .nav-item.active .nav-icon { color: var(--primary); }
+  .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.03em; white-space: nowrap; }
+  .nav-item.active .nav-label { color: var(--primary); }
+
+  /* ── TRACK MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.6);
+    align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet {
+    width: 100%; max-width: 430px;
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    border: 1px solid var(--border-mid);
+    padding: 20px 20px 48px;
+    animation: slideUp 0.28s cubic-bezier(0.32,0.72,0,1) both;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); margin: 0 auto 20px; }
+  .modal-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .modal-subtitle { font-size: 13px; color: var(--text-3); margin-bottom: 18px; }
+  .modal-input-wrap {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface-2); border: 1px solid var(--border-mid);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+  .modal-input-wrap.thinking { border-color: rgba(167,139,250,0.35); }
+  .modal-hash { font-size: 18px; font-weight: 700; color: var(--text-3); flex-shrink: 0; }
+  .modal-input {
+    flex: 1; background: none; border: none; outline: none;
+    font-size: 15px; font-weight: 600; color: var(--text); font-family: inherit;
+  }
+  .modal-input::placeholder { color: var(--text-3); font-weight: 400; }
+  .modal-ai-tag { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; color: var(--tech); opacity: 0; transition: opacity 0.3s; flex-shrink: 0; }
+  .modal-ai-tag.visible { opacity: 1; }
+  .modal-zone-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); margin-bottom: 10px; }
+  .modal-zone-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .modal-zone-chip {
+    font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text-3); transition: all 0.15s;
+  }
+  .modal-zone-chip.none.selected    { background: var(--primary-subtle); border-color: var(--primary-border); color: var(--primary); }
+  .modal-zone-chip.sports.selected  { color: var(--sports);  background: rgba(82,201,122,0.12);  border-color: rgba(82,201,122,0.30);  }
+  .modal-zone-chip.local.selected   { color: var(--local);   background: rgba(91,156,246,0.12);  border-color: rgba(91,156,246,0.30);  }
+  .modal-zone-chip.maine.selected   { color: var(--maine);   background: rgba(239,159,39,0.12);  border-color: rgba(239,159,39,0.30);  }
+  .modal-zone-chip.tech.selected    { color: var(--tech);    background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.30); }
+  .modal-zone-chip.finance.selected { color: var(--finance); background: rgba(52,211,153,0.12);  border-color: rgba(52,211,153,0.30);  }
+  .modal-deadline-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--border); margin-bottom: 20px; }
+  .modal-deadline-label { font-size: 14px; color: var(--text-2); }
+  .toggle-switch { width: 42px; height: 24px; border-radius: 12px; background: var(--surface-3); border: 1px solid var(--border-mid); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+  .toggle-switch.on { background: var(--primary); }
+  .toggle-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--text-3); transition: all 0.2s; }
+  .toggle-switch.on .toggle-knob { left: 20px; background: var(--primary-text); }
+  .modal-btn { width: 100%; padding: 14px; background: var(--primary); color: var(--primary-text); font-size: 15px; font-weight: 700; border-radius: 14px; border: none; cursor: pointer; transition: opacity 0.15s; }
+  .modal-btn:disabled { opacity: 0.35; cursor: default; }
+  .modal-btn:active:not(:disabled) { opacity: 0.85; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); background: var(--surface-3); border: 1px solid var(--border-mid); color: var(--text); font-size: 13px; font-weight: 500; padding: 10px 20px; border-radius: 20px; z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="app-header" id="appHeader">
+    <div class="header-top">
+      <a class="back-btn" href="distilled-zones.html">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Zones
+      </a>
+      <div class="zone-title-row">
+        <span class="zone-pill" id="headerZonePill">Sports Zone</span>
+        <span class="story-count-badge" id="headerCount">3 stories</span>
+      </div>
+    </div>
+
+    <!-- SUB-NAV -->
+    <div class="zone-subnav" id="zoneSubnav">
+      <a class="subnav-item" href="distilled-zones.html"><span class="snl1">All</span><span class="snl2">Zones</span></a>
+      <span class="subnav-item" data-zone="sports"  onclick="selectZone('sports')"><span class="snl1">Sports</span><span class="snl2">Zone</span></span>
+      <span class="subnav-item" data-zone="local"   onclick="selectZone('local')"><span class="snl1">Local</span><span class="snl2">Zone</span></span>
+      <span class="subnav-item" data-zone="maine"   onclick="selectZone('maine')"><span class="snl1">Maine</span><span class="snl2">Zone</span></span>
+      <span class="subnav-item" data-zone="tech"    onclick="selectZone('tech')"><span class="snl1">Tech</span><span class="snl2">Zone</span></span>
+      <span class="subnav-item" data-zone="finance" onclick="selectZone('finance')"><span class="snl1">Finance</span><span class="snl2">Zone</span></span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SPORTS ZONE PANEL
+  ════════════════════════════════════════ -->
+  <div class="zone-panel active" id="panel-sports">
+    <div class="quick-look">
+      <div class="quick-look-label">Quick Look</div>
+      <div class="quick-look-scroll">
+        <div class="ql-chip"><div class="ql-chip-label">Last Series</div><div class="ql-chip-value">Sox swept</div><div class="ql-chip-sub">Toronto 3-0 at Fenway</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Tonight</div><div class="ql-chip-value">Sox 10:10p</div><div class="ql-chip-sub">at Mariners (SEA)</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Celtics</div><div class="ql-chip-value">Draft Tue</div><div class="ql-chip-sub">June 23 · Barclays Ctr</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Patriots</div><div class="ql-chip-value">Camp July 24</div><div class="ql-chip-sub">First practice July 25</div></div>
+      </div>
+    </div>
+    <div class="group-label">Latest</div>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Sports Zone</span>
+        <span class="story-tag">Celtics</span>
+        <span class="new-dot"></span><span class="urgent-dot"></span>
+        <span class="story-time">Now</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'sp1')" id="save-sp1" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'Celtics offseason moves','sports')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">Celtics draft is Tuesday — Stevens has four days and one of the biggest decisions of his tenure</div>
+      <div class="story-summary">The 2026 NBA Draft is June 23–24 at Barclays Center. Brad Stevens enters it holding picks 27 and 40, a $27M trade exception, and roughly $13M in mid-level spending room. The Giannis conversation remains live, and the Bucks want a decision before the draft.</div>
+      <div class="story-sources"><span class="source-chip">Spotrac</span><span class="source-chip">Bleacher Report</span><span class="source-chip">NBC Sports Boston</span></div>
+    </a>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Sports Zone</span>
+        <span class="story-tag">Red Sox</span>
+        <span class="story-time">1h ago</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'sp2')" id="save-sp2" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'Red Sox trade deadline','sports')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">Sox swept at home by Toronto, fall to 29–43 — at Mariners tonight 10:10 PM</div>
+      <div class="story-summary">The Blue Jays completed a home sweep at Fenway before the Sox flew west. At 29–43, Boston is firmly in last place in the AL East. The trade deadline is six weeks away and roster questions are mounting.</div>
+      <div class="story-sources"><span class="source-chip">ESPN</span><span class="source-chip">Baseball Reference</span></div>
+    </a>
+    <div class="group-label">On Radar</div>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Sports Zone</span>
+        <span class="story-tag">Patriots</span>
+        <span class="story-time">2d ago</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'sp3')" id="save-sp3" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'Gronkowski Patriots HOF','sports')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">Gronkowski voted into the Patriots Hall of Fame — 38th inductee</div>
+      <div class="story-summary">Rob Gronkowski has been voted into the Patriots Hall of Fame as the 38th inductee. Already enshrined in Canton in 2023, this is the local recognition. No ceremony date announced yet.</div>
+      <div class="story-sources"><span class="source-chip">Patriots.com</span></div>
+    </a>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       LOCAL ZONE PANEL
+  ════════════════════════════════════════ -->
+  <div class="zone-panel" id="panel-local">
+    <div class="quick-look">
+      <div class="quick-look-label">Quick Look</div>
+      <div class="quick-look-scroll">
+        <div class="ql-chip"><div class="ql-chip-label">Right Now</div><div class="ql-chip-value">81°F ☀</div><div class="ql-chip-sub">Intervals of clouds</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Winds</div><div class="ql-chip-value">W 10–20</div><div class="ql-chip-sub">mph</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Tonight</div><div class="ql-chip-value">Sox 10:10p</div><div class="ql-chip-sub">at Mariners, Seattle</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Tomorrow</div><div class="ql-chip-value">82°F ☀</div><div class="ql-chip-sub">Sunny, low humidity</div></div>
+      </div>
+    </div>
+    <div class="group-label">Today</div>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Local Zone</span>
+        <span class="story-tag">World Cup</span>
+        <span class="new-dot"></span><span class="urgent-dot"></span>
+        <span class="story-time">Now</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'lo1')" id="save-lo1" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'World Cup at Gillette','local')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">World Cup at Gillette today — Scotland vs. Morocco, 6pm kick-off, heavy traffic expected</div>
+      <div class="story-summary">Gillette Stadium hosts its fifth World Cup group stage match today. Authorities are warning of major congestion from up to four hours before kick-off — Route 1 and I-95 south should be avoided between 3–10pm.</div>
+      <div class="story-sources"><span class="source-chip">Gillette Stadium</span><span class="source-chip">CBS Boston</span></div>
+    </a>
+    <div class="group-label">Community</div>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Local Zone</span>
+        <span class="story-tag">North Andover</span>
+        <span class="story-time">Today</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'lo2')" id="save-lo2" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'Juneteenth local events','local')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">Juneteenth — federal holiday, markets and banks closed across the country</div>
+      <div class="story-summary">June 19 is Juneteenth, a federal holiday. NYSE and Nasdaq are closed for trading, bond markets are paused, and most banks are closed. The next full trading session is Monday, June 22.</div>
+      <div class="story-sources"><span class="source-chip">Yahoo Finance</span></div>
+    </a>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       MAINE ZONE PANEL
+  ════════════════════════════════════════ -->
+  <div class="zone-panel" id="panel-maine">
+    <div class="quick-look">
+      <div class="quick-look-label">Quick Look</div>
+      <div class="quick-look-scroll">
+        <div class="ql-chip"><div class="ql-chip-label">This Weekend</div><div class="ql-chip-value">Mid-70s ☀</div><div class="ql-chip-sub">Low humidity, sunny</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Saturday</div><div class="ql-chip-value">76°F ☀</div><div class="ql-chip-sub">Great beach day</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Sunday</div><div class="ql-chip-value">74°F ⛅</div><div class="ql-chip-sub">Mostly sunny</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Next Event</div><div class="ql-chip-value">July 9</div><div class="ql-chip-sub">World Cup QF · Gillette</div></div>
+      </div>
+    </div>
+    <div class="group-label">This Weekend</div>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Maine House Zone</span>
+        <span class="story-tag">Maine Weather</span>
+        <span class="new-dot"></span>
+        <span class="story-time">Today</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'ma1')" id="save-ma1" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'Maine coastal weekend','maine')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">Great summer weekend ahead in southern Maine — mid-70s, sunny, low humidity</div>
+      <div class="story-summary">The weekend looks ideal for the summer house. Mid-70s Saturday and Sunday with low humidity and plenty of sunshine. No significant rain in the forecast through Sunday evening.</div>
+      <div class="story-sources"><span class="source-chip">AccuWeather</span><span class="source-chip">Maine Turnpike</span></div>
+    </a>
+    <div class="group-label">Planning</div>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Maine House Zone</span>
+        <span class="story-tag">Events</span>
+        <span class="story-time">This week</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'ma2')" id="save-ma2" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'World Cup quarter-final July','maine')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">World Cup quarter-final at Gillette is July 9 — worth the trip from Maine</div>
+      <div class="story-summary">The drive from southern Maine to Foxborough is roughly 90 minutes. Tickets are still available. Foxborough has specific parking and access plans for World Cup games that differ significantly from a normal Patriots game day.</div>
+      <div class="story-sources"><span class="source-chip">Foxborough</span><span class="source-chip">CBS Boston</span></div>
+    </a>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Maine House Zone</span>
+        <span class="story-tag">Maine Weekend</span>
+        <span class="story-time">This week</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'ma3')" id="save-ma3" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'Maine coastal openings','maine')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">Southern Maine coastal openings — summer season now in full swing</div>
+      <div class="story-summary">Most restaurants, shops, and attractions in Kennebunkport, Ogunquit, and Portland are operating on full summer hours. Ogunquit Beach is open. The Kennebunk Farmers Market runs Saturdays 8am–1pm.</div>
+      <div class="story-sources"><span class="source-chip">Visit Maine</span></div>
+    </a>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       TECH ZONE PANEL
+  ════════════════════════════════════════ -->
+  <div class="zone-panel" id="panel-tech">
+    <div class="quick-look">
+      <div class="quick-look-label">Quick Look</div>
+      <div class="quick-look-scroll">
+        <div class="ql-chip"><div class="ql-chip-label">This Week</div><div class="ql-chip-value">OpenAI+Astral</div><div class="ql-chip-sub">uv and ruff acquired</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Anthropic</div><div class="ql-chip-value">Claude Corps</div><div class="ql-chip-sub">National fellowship live</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Big Shift</div><div class="ql-chip-value">Agentic AI</div><div class="ql-chip-sub">Chat → task completion</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Next Up</div><div class="ql-chip-value">IPO season</div><div class="ql-chip-sub">OpenAI filing Sept</div></div>
+      </div>
+    </div>
+    <div class="group-label">Latest</div>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Tech &amp; AI Zone</span>
+        <span class="story-tag">OpenAI</span>
+        <span class="new-dot"></span>
+        <span class="story-time">Today</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'te1')" id="save-te1" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'OpenAI Astral acquisition','tech')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">OpenAI acquires Astral — the company behind Python tools uv and ruff</div>
+      <div class="story-summary">OpenAI is acquiring Astral, the company that built uv (Python package manager) and ruff (Python linter/formatter). What happens to the open-source commitments and governance is the key question for the millions of developers who rely on these tools.</div>
+      <div class="story-sources"><span class="source-chip">Build Fast with AI</span></div>
+    </a>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Tech &amp; AI Zone</span>
+        <span class="story-tag">Anthropic</span>
+        <span class="story-time">Today</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'te2')" id="save-te2" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'Anthropic Claude Corps','tech')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">Anthropic launches Claude Corps — national fellowship for early-career Americans</div>
+      <div class="story-summary">Anthropic has launched Claude Corps, a national fellowship program for early-career Americans providing structured access to Claude, mentorship, and community programs to help fellows build AI-era skills.</div>
+      <div class="story-sources"><span class="source-chip">Anthropic</span></div>
+    </a>
+    <div class="group-label">On Radar</div>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Tech &amp; AI Zone</span>
+        <span class="story-tag">AI Trends</span>
+        <span class="story-time">This week</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'te3')" id="save-te3" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'Agentic AI systems','tech')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">AI is shifting from chat to tasks — what agentic systems actually mean</div>
+      <div class="story-summary">The real change in AI right now is not better chat — it's AI completing tasks autonomously in research, coding, legal work, support, and commerce. Big tech is pushing AI into infrastructure across every major vertical.</div>
+      <div class="story-sources"><span class="source-chip">Multiple sources</span></div>
+    </a>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       FINANCE ZONE PANEL
+  ════════════════════════════════════════ -->
+  <div class="zone-panel" id="panel-finance">
+    <div class="quick-look">
+      <div class="quick-look-label">Quick Look</div>
+      <div class="quick-look-scroll">
+        <div class="ql-chip"><div class="ql-chip-label">Today</div><div class="ql-chip-value">CLOSED</div><div class="ql-chip-sub">Juneteenth holiday</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">S&amp;P 500</div><div class="ql-chip-value">7,473</div><div class="ql-chip-sub">+0.37% (Thu close)</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Dow</div><div class="ql-chip-value">50,579</div><div class="ql-chip-sub">Record high (Thu)</div></div>
+        <div class="ql-chip"><div class="ql-chip-label">Next Open</div><div class="ql-chip-value">Mon Jun 22</div><div class="ql-chip-sub">Full session resumes</div></div>
+      </div>
+    </div>
+    <div class="group-label">Markets</div>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Finance Zone</span>
+        <span class="story-tag">Markets</span>
+        <span class="story-time">Today</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'fi1')" id="save-fi1" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'Market closures and holidays','finance')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">Markets closed for Juneteenth — NYSE and Nasdaq dark today</div>
+      <div class="story-summary">NYSE and Nasdaq are closed today for Juneteenth. Bond markets, Fed payment rails, and DTC settlement also pause. The Dow closed at a record 50,579 on Thursday. The S&P 500 closed at 7,473 (+0.37%).</div>
+      <div class="story-sources"><span class="source-chip">Yahoo Finance</span></div>
+    </a>
+    <div class="group-label">To Watch</div>
+    <a class="story-item" href="distilled-story-detail.html">
+      <div class="story-meta">
+        <span class="zpill">Finance Zone</span>
+        <span class="story-tag">Markets</span>
+        <span class="story-time">Today</span>
+        <div class="story-meta-actions">
+          <button class="meta-btn" onclick="toggleSave(event,'fi2')" id="save-fi2" aria-label="Save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          <button class="meta-btn" onclick="openTrack(event,'Triple witching market volatility','finance')" aria-label="Track"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="story-hl">Triple Witching was Thursday — volatility possible when markets reopen Monday</div>
+      <div class="story-summary">Thursday was Triple Witching day — moved up from Friday because of today's Juneteenth closure. Options, futures, and index contracts all expired simultaneously. This can create unusual price action when markets reopen Monday.</div>
+      <div class="story-sources"><span class="source-chip">Multiple sources</span></div>
+    </a>
+  </div>
+
+</div><!-- /app -->
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="distilled-v3-concept.html">
+    <div class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+    <span class="nav-label">Today</span>
+  </a>
+  <a class="nav-item active" href="distilled-zones.html">
+    <div class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+    <span class="nav-label">Zones</span>
+  </a>
+  <a class="nav-item" href="distilled-tracking.html">
+    <div class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg></div>
+    <span class="nav-label">Tracking</span>
+  </a>
+  <a class="nav-item" href="distilled-read-later.html">
+    <div class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></div>
+    <span class="nav-label">Read Later</span>
+  </a>
+</nav>
+
+<!-- TRACK MODAL -->
+<div class="modal-overlay" id="trackModal" onclick="handleModalOverlay(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Track a topic</div>
+    <div class="modal-subtitle">Get updates whenever there's new signal on this topic.</div>
+    <div class="modal-input-wrap" id="modalInputWrap">
+      <span class="modal-hash">#</span>
+      <input class="modal-input" id="trackInput" type="text" placeholder="Topic name…"/>
+      <span class="modal-ai-tag" id="modalAiTag">✦ AI</span>
+    </div>
+    <div class="modal-zone-label">Zone (optional)</div>
+    <div class="modal-zone-chips">
+      <button class="modal-zone-chip none selected" onclick="selectModalZone('none',this)">No zone</button>
+      <button class="modal-zone-chip sports" onclick="selectModalZone('sports',this)">Sports Zone</button>
+      <button class="modal-zone-chip local"  onclick="selectModalZone('local',this)">Local Zone</button>
+      <button class="modal-zone-chip maine"  onclick="selectModalZone('maine',this)">Maine House Zone</button>
+      <button class="modal-zone-chip tech"   onclick="selectModalZone('tech',this)">Tech &amp; AI Zone</button>
+      <button class="modal-zone-chip finance" onclick="selectModalZone('finance',this)">Finance Zone</button>
+    </div>
+    <div class="modal-deadline-row">
+      <span class="modal-deadline-label">Set a deadline</span>
+      <div class="toggle-switch" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
+    </div>
+    <button class="modal-btn" id="trackConfirmBtn" onclick="confirmTrack()">Start tracking</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ── ZONE CONFIG ── */
+  const ZONE_CONFIG = {
+    sports:  { label: 'Sports Zone',       count: '3 stories', color: '#52C97A', bg: 'rgba(82,201,122,0.12)',  border: 'rgba(82,201,122,0.25)',  cssVar: 'sports'  },
+    local:   { label: 'Local Zone',        count: '2 stories', color: '#5B9CF6', bg: 'rgba(91,156,246,0.12)',  border: 'rgba(91,156,246,0.25)',  cssVar: 'local'   },
+    maine:   { label: 'Maine House Zone',  count: '3 stories', color: '#EF9F27', bg: 'rgba(239,159,39,0.12)',  border: 'rgba(239,159,39,0.25)',  cssVar: 'maine'   },
+    tech:    { label: 'Tech & AI Zone',    count: '3 stories', color: '#A78BFA', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.25)', cssVar: 'tech'    },
+    finance: { label: 'Finance Zone',      count: '2 stories', color: '#34D399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.25)',  cssVar: 'finance' },
+  };
+
+  let currentZone = 'sports';
+
+  function selectZone(zone) {
+    // Hide all panels
+    document.querySelectorAll('.zone-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + zone).classList.add('active');
+
+    // Update subnav
+    document.querySelectorAll('.subnav-item[data-zone]').forEach(el => {
+      el.className = 'subnav-item';
+      el.setAttribute('data-zone', el.getAttribute('data-zone'));
+    });
+    const activeTab = document.querySelector(`.subnav-item[data-zone="${zone}"]`);
+    if (activeTab) activeTab.classList.add('active-' + zone);
+
+    // Update CSS vars for zone color
+    const cfg = ZONE_CONFIG[zone];
+    const root = document.documentElement;
+    root.style.setProperty('--zone-color', cfg.color);
+    root.style.setProperty('--zone-bg',    cfg.bg);
+    root.style.setProperty('--zone-border', cfg.border);
+
+    // Update header pill + count
+    document.getElementById('headerZonePill').textContent = cfg.label;
+    document.getElementById('headerCount').textContent = cfg.count;
+
+    // Scroll subnav tab into view
+    activeTab && activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
+    currentZone = zone;
+  }
+
+  /* ── INIT: read zone from URL param, default sports ── */
+  (function init() {
+    const params = new URLSearchParams(location.search);
+    const z = params.get('zone') || 'sports';
+    if (ZONE_CONFIG[z]) selectZone(z);
+  })();
+
+  /* ── SAVE ── */
+  const savedSet = new Set();
+  function toggleSave(e, id) {
+    e.preventDefault(); e.stopPropagation();
+    const btn = document.getElementById('save-' + id);
+    const svg = btn.querySelector('svg');
+    if (savedSet.has(id)) {
+      savedSet.delete(id); btn.classList.remove('saved');
+      svg.setAttribute('fill','none'); showToast('Removed from Read Later');
+    } else {
+      savedSet.add(id); btn.classList.add('saved');
+      svg.setAttribute('fill','currentColor'); showToast('Saved to Read Later');
+    }
+  }
+
+  /* ── TRACK MODAL ── */
+  let aiThinkTimer = null;
+  function openTrack(e, topic, zone) {
+    e.preventDefault(); e.stopPropagation();
+    clearTimeout(aiThinkTimer);
+    const input = document.getElementById('trackInput');
+    const wrap  = document.getElementById('modalInputWrap');
+    const aiTag = document.getElementById('modalAiTag');
+    const btn   = document.getElementById('trackConfirmBtn');
+    wrap.classList.add('thinking');
+    input.value = ''; input.placeholder = '✦ Analyzing article…'; input.readOnly = true;
+    aiTag.classList.remove('visible'); btn.disabled = true;
+    document.querySelectorAll('.modal-zone-chip').forEach(c => c.classList.remove('selected'));
+    document.querySelector('.modal-zone-chip.none').classList.add('selected');
+    document.getElementById('trackModal').classList.add('open');
+    aiThinkTimer = setTimeout(() => {
+      input.value = topic; input.placeholder = 'Topic name…'; input.readOnly = false;
+      wrap.classList.remove('thinking'); aiTag.classList.add('visible'); btn.disabled = false;
+      const chip = document.querySelector('.modal-zone-chip.' + zone);
+      if (chip) {
+        document.querySelectorAll('.modal-zone-chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+      }
+    }, 750);
+  }
+  function handleModalOverlay(e) { if (e.target === document.getElementById('trackModal')) closeTrack(); }
+  function closeTrack() { clearTimeout(aiThinkTimer); document.getElementById('trackModal').classList.remove('open'); }
+  function selectModalZone(z, el) { document.querySelectorAll('.modal-zone-chip').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); }
+  function confirmTrack() {
+    const t = document.getElementById('trackInput').value.trim();
+    if (!t) return; closeTrack(); showToast('Tracking #' + t);
+  }
+
+  /* ── TOAST ── */
+  let toastTimer;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+</script>
+</body>
+</html>

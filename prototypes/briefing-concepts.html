@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distilled — Briefing Concepts</title>
+<style>
+  :root {
+    --bg: #0f0f11;
+    --surface: #18181c;
+    --surface2: #222228;
+    --border: rgba(255,255,255,0.07);
+    --border-mid: rgba(255,255,255,0.12);
+    --text: #f0f0f2;
+    --text-dim: rgba(240,240,242,0.55);
+    --text-muted: rgba(240,240,242,0.35);
+    --accent-red: #E24B4A;
+    --accent-amber: #EF9F27;
+    --accent-blue: #5B9CF6;
+    --accent-green: #52C97A;
+
+    /* Zone colors */
+    --sports-bg: #1b4332; --sports-label: #9FE1CB;
+    --local-bg: #0c2d5e; --local-label: #85B7EB;
+    --maine-bg: #5c3208; --maine-label: #FAC775;
+    --tech-bg: #2a1d6e; --tech-label: #AFA9EC;
+    --finance-bg: #1a2e1a; --finance-label: #8FD4A0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+    background: #0a0a0e;
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ─── CONCEPT SWITCHER ─── */
+  .switcher {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,14,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 16px;
+    height: 48px;
+  }
+  .switcher-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-right: 16px;
+    white-space: nowrap;
+  }
+  .switcher-tabs {
+    display: flex;
+    gap: 2px;
+  }
+  .tab-btn {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+  .tab-btn.active {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.15);
+    color: var(--text);
+  }
+  .concept-view { display: none; }
+  .concept-view.active { display: block; }
+
+  /* ─── SHARED COMPONENTS ─── */
+  .zone-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+  .zone-pill.sports { background: var(--sports-bg); color: var(--sports-label); }
+  .zone-pill.local  { background: var(--local-bg);  color: var(--local-label);  }
+  .zone-pill.maine  { background: var(--maine-bg);  color: var(--maine-label);  }
+  .zone-pill.tech   { background: var(--tech-bg);   color: var(--tech-label);   }
+  .zone-pill.finance{ background: var(--finance-bg); color: var(--finance-label);}
+
+  .urgency-bar { width: 3px; flex-shrink: 0; border-radius: 2px; }
+  .urgency-bar.critical { background: var(--accent-red); }
+  .urgency-bar.watch    { background: var(--accent-amber); }
+
+  /* ─── BOTTOM NAV (shared) ─── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(18,18,22,0.96);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 20px;
+    z-index: 50;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.15s;
+    text-decoration: none;
+  }
+  .nav-item.active { opacity: 1; }
+  .nav-item:hover { opacity: 0.75; }
+  .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-label { font-size: 9px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dim); }
+  .nav-item.active .nav-label { color: var(--text); }
+
+
+  /* ═══════════════════════════════════════════
+     CONCEPT A — THE EXECUTIVE BRIEF
+     Clean, memo-style. Structured like a real
+     morning briefing document from a CoS.
+  ═══════════════════════════════════════════ */
+  #concept-a {
+    max-width: 430px;
+    margin: 0 auto;
+    padding-bottom: 90px;
+  }
+
+  .brief-header {
+    padding: 28px 20px 20px;
+  }
+  .brief-date-line {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .brief-greeting {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+  .brief-greeting span { color: var(--accent-blue); }
+
+  /* Situation summary card */
+  .situation-card {
+    margin: 0 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border-mid);
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .situation-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-blue), transparent);
+  }
+  .situation-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent-blue);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .situation-eyebrow::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(91,156,246,0.2);
+  }
+  .situation-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(240,240,242,0.82);
+  }
+  .situation-text strong { color: var(--text); font-weight: 600; }
+
+  /* Section header */
+  .brief-section-header {
+    padding: 0 20px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brief-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .brief-section-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .brief-section-count {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  /* Alert items (breaking/watch) */
+  .alert-list { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 8px; }
+  .alert-item {
+    display: flex;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    align-items: flex-start;
+  }
+  .alert-meta { flex: 1; }
+  .alert-tag-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+  }
+  .alert-type {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .alert-type.critical { color: var(--accent-red); }
+  .alert-type.watch    { color: var(--accent-amber); }
+  .alert-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+  .alert-headline {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text);
+  }
+
+  /* Intelligence items (tracking) */
+  .intel-list { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 1px; }
+  .intel-item {
+    display: flex;
+    gap: 12px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+  .intel-item:last-child { border-bottom: none; }
+  .intel-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .intel-icon.new { background: rgba(82,201,122,0.15); }
+  .intel-icon.update { background: rgba(239,159,39,0.12); }
+  .intel-icon.active { background: rgba(91,156,246,0.12); }
+  .intel-meta { flex: 1; }
+  .intel-topic {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .intel-status {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: auto;
+  }
+  .intel-status.new { background: rgba(82,201,122,0.15); color: var(--accent-green); }
+  .intel-status.update { background: rgba(239,159,39,0.12); color: var(--accent-amber); }
+  .intel-update {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--text-dim);
+  }
+
+  /* Zone briefings */
+  .zone-brief-list { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .zone-brief-card {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .zone-brief-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+  .zone-brief-name {
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .zone-brief-count {
+    font-size: 11px;
+    margin-left: auto;
+    opacity: 0.6;
+  }
+  .zone-brief-arrow { font-size: 12px; opacity: 0.4; }
+  .zone-brief-stories { border-top: 1px solid rgba(255,255,255,0.06); }
+  .zone-story-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .zone-story-row:last-child { border-bottom: none; }
+  .zone-story-row:hover { background: rgba(255,255,255,0.03); }
+  .zone-story-dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.25); flex-shrink: 0; }
+  .zone-story-hl { font-size: 13px; line-height: 1.4; color: rgba(240,240,242,0.8); flex: 1; }
+
+  /* Trending in brief */
+  .trend-list { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 8px; }
+  .trend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .trend-rank {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-muted);
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .trend-text { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
+  .trend-momentum {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent-green);
+  }
+
+
+  /* ═══════════════════════════════════════════
+     CONCEPT B — INTELLIGENCE BOARD
+     Dark command-center aesthetic. Zone-colored
+     panels. Status indicators. Feels like a
+     situation room, not a newsletter.
+  ═══════════════════════════════════════════ */
+  #concept-b {
+    max-width: 430px;
+    margin: 0 auto;
+    padding-bottom: 90px;
+    background: #080a0d;
+    min-height: 100vh;
+  }
+
+  /* Status bar */
+  .ib-status-bar {
+    background: #080a0d;
+    padding: 14px 16px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .ib-app-tag {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent-blue);
+  }
+  .ib-live-dot {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .pulse-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* Command header */
+  .ib-command-header {
+    padding: 8px 16px 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ib-greeting {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+  }
+  .ib-context {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ib-context-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border-mid); }
+
+  /* Alert banner */
+  .ib-alert-banner {
+    margin: 16px 16px 0;
+    border-radius: 8px;
+    border: 1px solid rgba(226,75,74,0.3);
+    background: rgba(226,75,74,0.08);
+    overflow: hidden;
+  }
+  .ib-alert-label-bar {
+    background: rgba(226,75,74,0.15);
+    padding: 5px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ib-alert-label-text {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-red);
+  }
+  .ib-alert-row {
+    padding: 10px 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(226,75,74,0.1);
+  }
+  .ib-alert-row:last-child { border-bottom: none; }
+  .ib-alert-urgency {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-red);
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .ib-alert-urgency.watch { color: var(--accent-amber); }
+  .ib-alert-hl { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.4; flex: 1; }
+  .ib-alert-time { font-size: 10px; color: var(--text-muted); flex-shrink: 0; margin-top: 3px; }
+
+  /* Zone board grid */
+  .ib-section-header {
+    padding: 20px 16px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ib-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .ib-section-divider {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  .ib-zone-grid {
+    padding: 0 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .ib-zone-card {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+    transition: transform 0.1s, border-color 0.15s;
+  }
+  .ib-zone-card:hover { transform: scale(0.99); }
+  .ib-zone-card.sports { background: linear-gradient(135deg, #1b4332, #122d22); }
+  .ib-zone-card.local  { background: linear-gradient(135deg, #0c2d5e, #091e40); }
+  .ib-zone-card.maine  { background: linear-gradient(135deg, #5c3208, #3d2005); }
+  .ib-zone-card.tech   { background: linear-gradient(135deg, #2a1d6e, #1c1349); }
+  .ib-zone-card.finance{ background: linear-gradient(135deg, #1a2e1a, #111e11); }
+
+  .ib-zone-top {
+    padding: 12px 12px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .ib-zone-name {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .ib-zone-card.sports .ib-zone-name { color: var(--sports-label); }
+  .ib-zone-card.local  .ib-zone-name { color: var(--local-label); }
+  .ib-zone-card.maine  .ib-zone-name { color: var(--maine-label); }
+  .ib-zone-card.tech   .ib-zone-name { color: var(--tech-label); }
+  .ib-zone-card.finance .ib-zone-name { color: var(--finance-label); }
+
+  .ib-zone-update-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent-green);
+  }
+  .ib-zone-lead {
+    padding: 0 12px 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.88);
+    line-height: 1.4;
+  }
+  .ib-zone-secondaries {
+    padding: 6px 12px 10px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .ib-zone-secondary {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.35;
+    padding-left: 8px;
+    position: relative;
+  }
+  .ib-zone-secondary::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 6px;
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+  }
+  .ib-zone-footer {
+    padding: 8px 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .ib-zone-count { font-size: 10px; color: rgba(255,255,255,0.35); }
+  .ib-zone-open { font-size: 10px; color: rgba(255,255,255,0.35); }
+
+  /* Tracking intelligence panel */
+  .ib-tracking-list {
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .ib-track-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 13px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .ib-track-status-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding-top: 2px;
+  }
+  .ib-track-indicator {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .ib-track-indicator.active { background: var(--accent-green); box-shadow: 0 0 6px rgba(82,201,122,0.5); }
+  .ib-track-indicator.update { background: var(--accent-amber); }
+  .ib-track-indicator.idle   { background: var(--border-mid); }
+  .ib-track-line { width: 1px; flex: 1; background: var(--border); min-height: 20px; }
+  .ib-track-content { flex: 1; }
+  .ib-track-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ib-new-badge {
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: rgba(82,201,122,0.15);
+    color: var(--accent-green);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .ib-track-update {
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--text-dim);
+  }
+  .ib-track-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Trending */
+  .ib-trending-scroll {
+    padding: 0 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .ib-trend-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .ib-trend-num {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-muted);
+    width: 16px;
+  }
+  .ib-trend-topic { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
+  .ib-trend-vel {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent-green);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+
+  /* ═══════════════════════════════════════════
+     CONCEPT C — THE NARRATIVE DIGEST
+     Conversational, editorial voice. Chief of
+     Staff is "talking" to you. Stories are
+     connected by synthesis, not just listed.
+     More human, more contextual.
+  ═══════════════════════════════════════════ */
+  #concept-c {
+    max-width: 430px;
+    margin: 0 auto;
+    padding-bottom: 90px;
+  }
+
+  /* Masthead */
+  .nd-masthead {
+    padding: 20px 20px 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .nd-app-name {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .nd-edition {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* CoS voice block */
+  .nd-voice-block {
+    margin: 16px 20px 0;
+    position: relative;
+    padding-left: 44px;
+  }
+  .nd-avatar {
+    position: absolute;
+    left: 0; top: 0;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b5fcf, #7c3af5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .nd-voice-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+  .nd-voice-text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text);
+    font-weight: 400;
+  }
+  .nd-voice-text strong { font-weight: 600; }
+  .nd-voice-text .z-sports { color: var(--sports-label); font-weight: 600; }
+  .nd-voice-text .z-local  { color: var(--local-label);  font-weight: 600; }
+  .nd-voice-text .z-maine  { color: var(--maine-label);  font-weight: 600; }
+  .nd-voice-text .z-tech   { color: var(--tech-label);   font-weight: 600; }
+  .nd-voice-text .z-finance{ color: var(--finance-label);font-weight: 600; }
+
+  /* Section labels in narrative style */
+  .nd-section-break {
+    margin: 24px 20px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nd-section-icon { font-size: 14px; }
+  .nd-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .nd-section-rule { flex: 1; height: 1px; background: var(--border); }
+
+  /* Alert cards — narrative style */
+  .nd-alert-cards { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+  .nd-alert-card {
+    border-radius: 10px;
+    border: 1px solid rgba(226,75,74,0.2);
+    background: rgba(226,75,74,0.05);
+    padding: 14px;
+    display: flex;
+    gap: 12px;
+  }
+  .nd-alert-card.watch {
+    border-color: rgba(239,159,39,0.2);
+    background: rgba(239,159,39,0.05);
+  }
+  .nd-alert-left { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .nd-alert-type-label {
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    color: var(--accent-red);
+  }
+  .nd-alert-card.watch .nd-alert-type-label { color: var(--accent-amber); }
+  .nd-alert-vbar { width: 2px; flex: 1; background: var(--accent-red); border-radius: 2px; }
+  .nd-alert-card.watch .nd-alert-vbar { background: var(--accent-amber); }
+  .nd-alert-body { flex: 1; }
+  .nd-alert-headline {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .nd-alert-context {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-dim);
+  }
+  .nd-alert-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  /* Narrative story thread */
+  .nd-story-thread { padding: 0 20px; display: flex; flex-direction: column; gap: 0; }
+  .nd-thread-item {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .nd-thread-item:last-child { border-bottom: none; }
+  .nd-thread-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 36px;
+    flex-shrink: 0;
+  }
+  .nd-thread-zone-chip {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .nd-thread-zone-chip.sports { background: var(--sports-bg); }
+  .nd-thread-zone-chip.local  { background: var(--local-bg); }
+  .nd-thread-zone-chip.maine  { background: var(--maine-bg); }
+  .nd-thread-zone-chip.tech   { background: var(--tech-bg); }
+  .nd-thread-connector {
+    width: 1px;
+    flex: 1;
+    background: var(--border);
+    margin: 6px 0;
+    min-height: 12px;
+  }
+  .nd-thread-body { flex: 1; }
+  .nd-thread-zone-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .nd-thread-zone-label.sports { color: var(--sports-label); }
+  .nd-thread-zone-label.local  { color: var(--local-label); }
+  .nd-thread-zone-label.maine  { color: var(--maine-label); }
+  .nd-thread-zone-label.tech   { color: var(--tech-label); }
+  .nd-thread-headline {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text);
+    margin-bottom: 5px;
+  }
+  .nd-thread-synthesis {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .nd-thread-secondaries {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 0 0;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+  .nd-thread-secondary {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .nd-thread-secondary::before { content: '→'; font-size: 10px; margin-top: 2px; flex-shrink: 0; }
+  .nd-thread-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .nd-action-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .nd-action-btn:hover { border-color: var(--border-mid); color: var(--text); }
+  .nd-action-btn.primary {
+    background: rgba(91,156,246,0.12);
+    border-color: rgba(91,156,246,0.2);
+    color: var(--accent-blue);
+  }
+
+  /* Tracking updates — narrative style */
+  .nd-tracking-list { padding: 0 20px; display: flex; flex-direction: column; gap: 8px; }
+  .nd-track-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px;
+    display: flex;
+    gap: 10px;
+  }
+  .nd-track-indicator-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding-top: 3px;
+  }
+  .nd-track-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .nd-track-dot.active { background: var(--accent-green); box-shadow: 0 0 8px rgba(82,201,122,0.4); }
+  .nd-track-dot.update { background: var(--accent-amber); }
+  .nd-track-dot.watching { background: rgba(255,255,255,0.2); }
+  .nd-track-content { flex: 1; }
+  .nd-track-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .nd-track-body { font-size: 12px; line-height: 1.5; color: var(--text-dim); }
+  .nd-track-timestamp { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+
+  /* Rising section */
+  .nd-rising-list { padding: 0 20px 8px; }
+  .nd-rising-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .nd-rising-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .nd-rising-rank {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--border-mid);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .nd-rising-topic {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .nd-rising-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nd-rising-vel {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent-green);
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── CONCEPT SWITCHER ─── -->
+<nav class="switcher">
+  <span class="switcher-label">Concept</span>
+  <div class="switcher-tabs">
+    <button class="tab-btn active" onclick="switchConcept('a')">A — Executive Brief</button>
+    <button class="tab-btn" onclick="switchConcept('b')">B — Intel Board</button>
+    <button class="tab-btn" onclick="switchConcept('c')">C — Narrative Digest</button>
+  </div>
+</nav>
+
+
+<!-- ══════════════════════════════════════
+     CONCEPT A — THE EXECUTIVE BRIEF
+══════════════════════════════════════ -->
+<div id="concept-a" class="concept-view active">
+
+  <div class="brief-header">
+    <div class="brief-date-line">Saturday, May 24 · Memorial Day Weekend · North Andover, MA</div>
+    <div class="brief-greeting">Good morning,<br><span>Rick.</span></div>
+  </div>
+
+  <!-- Situation Summary -->
+  <div class="situation-card">
+    <div class="situation-eyebrow">Situation Summary</div>
+    <p class="situation-text">
+      It's a <strong>holiday weekend</strong> with low breaking news pressure. Your biggest developing story is the <strong>AJ Brown trade</strong>—official after June 1. In Tech, <strong>Google I/O</strong> wrapped with key Gemini announcements worth reviewing. Locally, <strong>weather is clear</strong> with a warm holiday weekend ahead. Markets are closed today.
+    </p>
+  </div>
+
+  <!-- Alerts -->
+  <div class="brief-section-header">
+    <span class="brief-section-label">Alerts</span>
+    <div class="brief-section-line"></div>
+    <span class="brief-section-count">2</span>
+  </div>
+  <div class="alert-list">
+    <div class="alert-item">
+      <div class="urgency-bar watch"></div>
+      <div class="alert-meta">
+        <div class="alert-tag-row">
+          <span class="alert-type watch">Watch</span>
+          <span class="zone-pill sports">Sports</span>
+          <span class="alert-time">2h ago</span>
+        </div>
+        <div class="alert-headline">AJ Brown deal: agreement in principle, official after June 1 post-designation</div>
+      </div>
+    </div>
+    <div class="alert-item">
+      <div class="urgency-bar watch"></div>
+      <div class="alert-meta">
+        <div class="alert-tag-row">
+          <span class="alert-type watch">Watch</span>
+          <span class="zone-pill tech">Tech &amp; AI</span>
+          <span class="alert-time">5h ago</span>
+        </div>
+        <div class="alert-headline">Google I/O: Gemini 2.5 Pro officially GA, Project Astra demoed broadly</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Your Intelligence (Tracking) -->
+  <div class="brief-section-header">
+    <span class="brief-section-label">Your Intelligence</span>
+    <div class="brief-section-line"></div>
+    <span class="brief-section-count">3 tracked</span>
+  </div>
+  <div class="intel-list" style="padding: 0 20px 20px;">
+    <div class="intel-item">
+      <div class="intel-icon new">🏈</div>
+      <div class="intel-meta">
+        <div class="intel-topic">
+          AJ Brown Trade
+          <span class="intel-status new">New</span>
+        </div>
+        <div class="intel-update">Agreement in principle reached. Trade becomes official after June 1 to handle cap implications. Eagles receiving 2026 first-round pick.</div>
+      </div>
+    </div>
+    <div class="intel-item">
+      <div class="intel-icon update">🤖</div>
+      <div class="intel-meta">
+        <div class="intel-topic">
+          Gemini / Google AI
+          <span class="intel-status update">Updated</span>
+        </div>
+        <div class="intel-update">Google I/O confirmed Gemini 2.5 Pro general availability. Flash model pricing dropped 50%. NotebookLM now with audio.</div>
+      </div>
+    </div>
+    <div class="intel-item">
+      <div class="intel-icon active">🌦</div>
+      <div class="intel-meta">
+        <div class="intel-topic">Maine Weather</div>
+        <div class="intel-update">Holiday weekend looking clear. Highs near 74°F Saturday–Sunday. Slight chance of showers by Monday evening.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zone Briefings -->
+  <div class="brief-section-header">
+    <span class="brief-section-label">Zone Briefings</span>
+    <div class="brief-section-line"></div>
+  </div>
+  <div class="zone-brief-list">
+
+    <div class="zone-brief-card">
+      <div class="zone-brief-header" style="background: var(--sports-bg);">
+        <span class="zone-brief-name" style="color: var(--sports-label);">🏀 Sports</span>
+        <span class="zone-brief-count" style="color: rgba(159,225,203,0.5);">4 stories</span>
+        <span class="zone-brief-arrow" style="color: rgba(159,225,203,0.4);">→</span>
+      </div>
+      <div class="zone-brief-stories" style="background: rgba(27,67,50,0.4);">
+        <div class="zone-story-row"><div class="zone-story-dot"></div><div class="zone-story-hl">AJ Brown trade details emerge — cap implications detailed</div></div>
+        <div class="zone-story-row"><div class="zone-story-dot"></div><div class="zone-story-hl">Celtics–Heat Game 4 preview: Boston looks to take 3-1 series lead</div></div>
+        <div class="zone-story-row"><div class="zone-story-dot"></div><div class="zone-story-hl">Red Sox drop third straight, bullpen struggles continue</div></div>
+      </div>
+    </div>
+
+    <div class="zone-brief-card">
+      <div class="zone-brief-header" style="background: var(--tech-bg);">
+        <span class="zone-brief-name" style="color: var(--tech-label);">💻 Tech &amp; AI</span>
+        <span class="zone-brief-count" style="color: rgba(175,169,236,0.5);">3 stories</span>
+        <span class="zone-brief-arrow" style="color: rgba(175,169,236,0.4);">→</span>
+      </div>
+      <div class="zone-brief-stories" style="background: rgba(42,29,110,0.4);">
+        <div class="zone-story-row"><div class="zone-story-dot"></div><div class="zone-story-hl">Google I/O: Gemini 2.5 Pro GA, pricing drops across fleet</div></div>
+        <div class="zone-story-row"><div class="zone-story-dot"></div><div class="zone-story-hl">Apple intelligence updates teased ahead of WWDC</div></div>
+        <div class="zone-story-row"><div class="zone-story-dot"></div><div class="zone-story-hl">OpenAI secures $40B at $300B valuation — largest private round</div></div>
+      </div>
+    </div>
+
+    <div class="zone-brief-card">
+      <div class="zone-brief-header" style="background: var(--local-bg);">
+        <span class="zone-brief-name" style="color: var(--local-label);">🌍 Local</span>
+        <span class="zone-brief-count" style="color: rgba(133,183,235,0.5);">2 stories</span>
+        <span class="zone-brief-arrow" style="color: rgba(133,183,235,0.4);">→</span>
+      </div>
+      <div class="zone-brief-stories" style="background: rgba(12,45,94,0.4);">
+        <div class="zone-story-row"><div class="zone-story-dot"></div><div class="zone-story-hl">Memorial Day weekend: I-93 expects heaviest travel Sat morning</div></div>
+        <div class="zone-story-row"><div class="zone-story-dot"></div><div class="zone-story-hl">N. Andover Farmers Market opens for 2025 season this weekend</div></div>
+      </div>
+    </div>
+
+    <div class="zone-brief-card">
+      <div class="zone-brief-header" style="background: var(--maine-bg);">
+        <span class="zone-brief-name" style="color: var(--maine-label);">🏠 Maine</span>
+        <span class="zone-brief-count" style="color: rgba(250,199,117,0.5);">3 stories</span>
+        <span class="zone-brief-arrow" style="color: rgba(250,199,117,0.4);">→</span>
+      </div>
+      <div class="zone-brief-stories" style="background: rgba(92,50,8,0.4);">
+        <div class="zone-story-row"><div class="zone-story-dot"></div><div class="zone-story-hl">Coastal weekend forecast: sun through Sunday, watch Monday PM</div></div>
+        <div class="zone-story-row"><div class="zone-story-dot"></div><div class="zone-story-hl">Memorial Day weekend: ferry reservations, bridge traffic notes</div></div>
+        <div class="zone-story-row"><div class="zone-story-dot"></div><div class="zone-story-hl">Maine house rental market: prices up 12% vs 2024 summer</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Trending -->
+  <div class="brief-section-header" style="margin-top:8px;">
+    <span class="brief-section-label">What's Rising</span>
+    <div class="brief-section-line"></div>
+    <span class="brief-section-count">ranked for you</span>
+  </div>
+  <div class="trend-list">
+    <div class="trend-item">
+      <span class="trend-rank">1</span>
+      <span class="trend-text">AJ Brown Trade</span>
+      <span class="zone-pill sports">Sports</span>
+      <span class="trend-momentum">↑ Hot</span>
+    </div>
+    <div class="trend-item">
+      <span class="trend-rank">2</span>
+      <span class="trend-text">Google I/O Recap</span>
+      <span class="zone-pill tech">Tech</span>
+      <span class="trend-momentum">↑ Rising</span>
+    </div>
+    <div class="trend-item">
+      <span class="trend-rank">3</span>
+      <span class="trend-text">Memorial Day Travel</span>
+      <span class="zone-pill local">Local</span>
+      <span class="trend-momentum">↑ Seasonal</span>
+    </div>
+    <div class="trend-item">
+      <span class="trend-rank">4</span>
+      <span class="trend-text">Maine Summer Rentals</span>
+      <span class="zone-pill maine">Maine</span>
+    </div>
+    <div class="trend-item">
+      <span class="trend-rank">5</span>
+      <span class="trend-text">OpenAI Funding Round</span>
+      <span class="zone-pill finance">Finance</span>
+      <span class="trend-momentum">↑ New</span>
+    </div>
+  </div>
+
+</div><!-- /concept-a -->
+
+
+<!-- ══════════════════════════════════════
+     CONCEPT B — INTELLIGENCE BOARD
+══════════════════════════════════════ -->
+<div id="concept-b" class="concept-view">
+
+  <div class="ib-status-bar">
+    <span class="ib-app-tag">Distilled</span>
+    <div class="ib-live-dot">
+      <div class="pulse-dot"></div>
+      Live feed
+    </div>
+  </div>
+
+  <div class="ib-command-header">
+    <div class="ib-greeting">Good morning, Rick</div>
+    <div class="ib-context">
+      Sat, May 24
+      <span class="ib-context-dot"></span>
+      Memorial Day Weekend
+      <span class="ib-context-dot"></span>
+      North Andover
+    </div>
+  </div>
+
+  <!-- Alert Banner -->
+  <div class="ib-alert-banner">
+    <div class="ib-alert-label-bar">
+      <span style="font-size:10px;">⚡</span>
+      <span class="ib-alert-label-text">Watch List</span>
+    </div>
+    <div class="ib-alert-row">
+      <span class="ib-alert-urgency watch">Watch</span>
+      <span class="ib-alert-hl">AJ Brown deal in principle — official after June 1 designation clears</span>
+      <span class="ib-alert-time">2h</span>
+    </div>
+    <div class="ib-alert-row">
+      <span class="ib-alert-urgency watch">Watch</span>
+      <span class="ib-alert-hl">Google I/O: Gemini 2.5 Pro now GA, major pricing changes across fleet</span>
+      <span class="ib-alert-time">5h</span>
+    </div>
+  </div>
+
+  <!-- Zone Board -->
+  <div class="ib-section-header">
+    <span class="ib-section-title">Your Zones</span>
+    <div class="ib-section-divider"></div>
+    <span style="font-size:10px; color: var(--text-muted); white-space:nowrap;">4 active</span>
+  </div>
+  <div class="ib-zone-grid">
+
+    <div class="ib-zone-card sports">
+      <div class="ib-zone-top">
+        <span class="ib-zone-name">🏀 Sports</span>
+        <div class="ib-zone-update-dot"></div>
+      </div>
+      <div class="ib-zone-lead">AJ Brown trade: agreement in principle, official post-June 1</div>
+      <div class="ib-zone-secondaries">
+        <div class="ib-zone-secondary">Celtics–Heat Game 4 preview</div>
+        <div class="ib-zone-secondary">Red Sox bullpen concerns deepen</div>
+      </div>
+      <div class="ib-zone-footer">
+        <span class="ib-zone-count">4 stories</span>
+        <span class="ib-zone-open">Open →</span>
+      </div>
+    </div>
+
+    <div class="ib-zone-card tech">
+      <div class="ib-zone-top">
+        <span class="ib-zone-name">💻 Tech</span>
+        <div class="ib-zone-update-dot"></div>
+      </div>
+      <div class="ib-zone-lead">Google I/O: Gemini 2.5 Pro GA, Flash pricing drops 50%</div>
+      <div class="ib-zone-secondaries">
+        <div class="ib-zone-secondary">Apple Intelligence WWDC preview</div>
+        <div class="ib-zone-secondary">OpenAI $40B round closes</div>
+      </div>
+      <div class="ib-zone-footer">
+        <span class="ib-zone-count">3 stories</span>
+        <span class="ib-zone-open">Open →</span>
+      </div>
+    </div>
+
+    <div class="ib-zone-card local">
+      <div class="ib-zone-top">
+        <span class="ib-zone-name">🌍 Local</span>
+      </div>
+      <div class="ib-zone-lead">I-93 heavy traffic expected Sat AM — holiday travel peak</div>
+      <div class="ib-zone-secondaries">
+        <div class="ib-zone-secondary">N. Andover Farmers Market opens</div>
+      </div>
+      <div class="ib-zone-footer">
+        <span class="ib-zone-count">2 stories</span>
+        <span class="ib-zone-open">Open →</span>
+      </div>
+    </div>
+
+    <div class="ib-zone-card maine">
+      <div class="ib-zone-top">
+        <span class="ib-zone-name">🏠 Maine</span>
+        <div class="ib-zone-update-dot"></div>
+      </div>
+      <div class="ib-zone-lead">Weekend clear through Sunday, watch Monday PM for showers</div>
+      <div class="ib-zone-secondaries">
+        <div class="ib-zone-secondary">Ferry & bridge traffic: Memorial Day notes</div>
+        <div class="ib-zone-secondary">Rental market up 12% vs 2024</div>
+      </div>
+      <div class="ib-zone-footer">
+        <span class="ib-zone-count">3 stories</span>
+        <span class="ib-zone-open">Open →</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tracking -->
+  <div class="ib-section-header">
+    <span class="ib-section-title">Tracking</span>
+    <div class="ib-section-divider"></div>
+    <span style="font-size:10px; color: var(--text-muted); white-space:nowrap;">3 active</span>
+  </div>
+  <div class="ib-tracking-list">
+    <div class="ib-track-item">
+      <div class="ib-track-status-col">
+        <div class="ib-track-indicator active"></div>
+        <div class="ib-track-line"></div>
+      </div>
+      <div class="ib-track-content">
+        <div class="ib-track-label">
+          AJ Brown Trade
+          <span class="ib-new-badge">New</span>
+          <span class="zone-pill sports" style="margin-left:auto;">Sports</span>
+        </div>
+        <div class="ib-track-update">Agreement in principle. Trade official after June 1. Eagles land 2026 first-round pick.</div>
+        <div class="ib-track-time">Updated 2h ago</div>
+      </div>
+    </div>
+    <div class="ib-track-item">
+      <div class="ib-track-status-col">
+        <div class="ib-track-indicator update"></div>
+        <div class="ib-track-line"></div>
+      </div>
+      <div class="ib-track-content">
+        <div class="ib-track-label">
+          Gemini / Google AI
+          <span class="zone-pill tech" style="margin-left:auto;">Tech</span>
+        </div>
+        <div class="ib-track-update">Gemini 2.5 Pro GA confirmed at I/O. Flash model pricing down 50%. NotebookLM gets audio mode.</div>
+        <div class="ib-track-time">Updated 5h ago</div>
+      </div>
+    </div>
+    <div class="ib-track-item">
+      <div class="ib-track-status-col">
+        <div class="ib-track-indicator idle"></div>
+      </div>
+      <div class="ib-track-content">
+        <div class="ib-track-label">
+          Maine Weather
+          <span class="zone-pill maine" style="margin-left:auto;">Maine</span>
+        </div>
+        <div class="ib-track-update">Weekend clear. Highs near 74°F. Showers possible Monday evening.</div>
+        <div class="ib-track-time">Updated 3h ago</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trending -->
+  <div class="ib-section-header">
+    <span class="ib-section-title">Trending — Ranked for You</span>
+    <div class="ib-section-divider"></div>
+  </div>
+  <div class="ib-trending-scroll">
+    <div class="ib-trend-row">
+      <span class="ib-trend-num">1</span>
+      <span class="ib-trend-topic">AJ Brown Trade</span>
+      <span class="zone-pill sports">Sports</span>
+      <span class="ib-trend-vel">↑ Hot</span>
+    </div>
+    <div class="ib-trend-row">
+      <span class="ib-trend-num">2</span>
+      <span class="ib-trend-topic">Google I/O Recap</span>
+      <span class="zone-pill tech">Tech</span>
+      <span class="ib-trend-vel">↑ Rising</span>
+    </div>
+    <div class="ib-trend-row">
+      <span class="ib-trend-num">3</span>
+      <span class="ib-trend-topic">Memorial Day Travel</span>
+      <span class="zone-pill local">Local</span>
+      <span class="ib-trend-vel" style="color: var(--accent-amber);">→ Steady</span>
+    </div>
+    <div class="ib-trend-row">
+      <span class="ib-trend-num">4</span>
+      <span class="ib-trend-topic">Maine Summer Rentals</span>
+      <span class="zone-pill maine">Maine</span>
+    </div>
+    <div class="ib-trend-row">
+      <span class="ib-trend-num">5</span>
+      <span class="ib-trend-topic">OpenAI $40B Funding</span>
+      <span class="zone-pill finance">Finance</span>
+      <span class="ib-trend-vel">↑ New</span>
+    </div>
+  </div>
+
+</div><!-- /concept-b -->
+
+
+<!-- ══════════════════════════════════════
+     CONCEPT C — NARRATIVE DIGEST
+══════════════════════════════════════ -->
+<div id="concept-c" class="concept-view">
+
+  <div class="nd-masthead">
+    <span class="nd-app-name">Distilled</span>
+    <span class="nd-edition">Sat, May 24 · Memorial Day Weekend</span>
+  </div>
+
+  <!-- Chief of Staff voice -->
+  <div class="nd-voice-block" style="margin-top: 20px;">
+    <div class="nd-avatar">🧠</div>
+    <div class="nd-voice-label">Your morning briefing</div>
+    <div class="nd-voice-text">
+      Good morning, Rick. It's a quieter holiday Saturday — no hard news breaking. The story worth watching is the
+      <span class="z-sports">AJ Brown trade</span>, which cleared last night and becomes official after June 1.
+      In <span class="z-tech">Tech</span>, Google I/O wrapped with real substance:
+      Gemini 2.5 Pro is generally available and pricing dropped across the board.
+      Your <span class="z-maine">Maine</span> weekend looks good through Sunday — keep an eye on Monday evening.
+    </div>
+  </div>
+
+  <!-- Alerts section -->
+  <div class="nd-section-break">
+    <span class="nd-section-icon">⚡</span>
+    <span class="nd-section-title">Watch</span>
+    <div class="nd-section-rule"></div>
+  </div>
+  <div class="nd-alert-cards">
+    <div class="nd-alert-card">
+      <div class="nd-alert-left">
+        <span class="nd-alert-type-label">Watch</span>
+        <div class="nd-alert-vbar"></div>
+      </div>
+      <div class="nd-alert-body">
+        <div class="nd-alert-headline">AJ Brown agreement in principle — official post June 1</div>
+        <div class="nd-alert-context">Trade to become official after the June 1 designation passes for cap purposes. Eagles acquiring 2026 first-round pick from Titans.</div>
+        <div class="nd-alert-meta">
+          <span class="zone-pill sports">Sports</span>
+          <span style="font-size: 11px; color: var(--text-muted);">2h ago</span>
+        </div>
+      </div>
+    </div>
+    <div class="nd-alert-card watch">
+      <div class="nd-alert-left">
+        <span class="nd-alert-type-label" style="color: var(--accent-amber);">Watch</span>
+        <div class="nd-alert-vbar" style="background: var(--accent-amber);"></div>
+      </div>
+      <div class="nd-alert-body">
+        <div class="nd-alert-headline">Google I/O: Gemini 2.5 Pro generally available, pricing overhauled</div>
+        <div class="nd-alert-context">Flash model drops 50% in price. NotebookLM adds audio mode. Project Astra shown to broader audience.</div>
+        <div class="nd-alert-meta">
+          <span class="zone-pill tech">Tech &amp; AI</span>
+          <span style="font-size: 11px; color: var(--text-muted);">5h ago</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zone stories with narrative synthesis -->
+  <div class="nd-section-break">
+    <span class="nd-section-icon">📡</span>
+    <span class="nd-section-title">From Your Zones</span>
+    <div class="nd-section-rule"></div>
+  </div>
+  <div class="nd-story-thread">
+
+    <div class="nd-thread-item">
+      <div class="nd-thread-left">
+        <div class="nd-thread-zone-chip sports">🏀</div>
+        <div class="nd-thread-connector"></div>
+      </div>
+      <div class="nd-thread-body">
+        <div class="nd-thread-zone-label sports">Sports</div>
+        <div class="nd-thread-headline">AJ Brown clears — and the Eagles are now very interesting</div>
+        <div class="nd-thread-synthesis">The trade restructures Philadelphia's receiving corps. Cap analysts say it sets up a run at another WR this summer. Worth watching how it ripples into your Fantasy Finance tracking.</div>
+        <div class="nd-thread-secondaries">
+          <div class="nd-thread-secondary">Celtics–Heat Game 4 on tap tonight, Boston up 2-1</div>
+          <div class="nd-thread-secondary">Red Sox lose third straight — rotation questions emerge</div>
+        </div>
+        <div class="nd-thread-actions">
+          <button class="nd-action-btn primary">Open Sports →</button>
+          <button class="nd-action-btn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="nd-thread-item">
+      <div class="nd-thread-left">
+        <div class="nd-thread-zone-chip tech">💻</div>
+        <div class="nd-thread-connector"></div>
+      </div>
+      <div class="nd-thread-body">
+        <div class="nd-thread-zone-label tech">Tech &amp; AI</div>
+        <div class="nd-thread-headline">Google I/O delivered — Gemini is now a serious platform</div>
+        <div class="nd-thread-synthesis">2.5 Pro GA is the headline, but the pricing drop is what matters long-term. Flash model is now aggressively priced against Claude and GPT-4o. Worth reviewing if you use any AI APIs.</div>
+        <div class="nd-thread-secondaries">
+          <div class="nd-thread-secondary">Apple Intelligence features previewed ahead of WWDC</div>
+          <div class="nd-thread-secondary">OpenAI closes $40B round at $300B valuation</div>
+        </div>
+        <div class="nd-thread-actions">
+          <button class="nd-action-btn primary">Open Tech →</button>
+          <button class="nd-action-btn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="nd-thread-item">
+      <div class="nd-thread-left">
+        <div class="nd-thread-zone-chip maine">🏠</div>
+      </div>
+      <div class="nd-thread-body">
+        <div class="nd-thread-zone-label maine">Maine House</div>
+        <div class="nd-thread-headline">Weekend looks good — protect Monday evening</div>
+        <div class="nd-thread-synthesis">Clear through Sunday with highs in the low 70s. Showers possible Monday PM as you're likely heading back. Ferry reservations and coastal bridge traffic advisories in effect.</div>
+        <div class="nd-thread-secondaries">
+          <div class="nd-thread-secondary">Rental market: prices up 12% vs 2024 summer bookings</div>
+        </div>
+        <div class="nd-thread-actions">
+          <button class="nd-action-btn primary">Open Maine →</button>
+          <button class="nd-action-btn">Save</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tracking Updates -->
+  <div class="nd-section-break">
+    <span class="nd-section-icon">👁</span>
+    <span class="nd-section-title">What You're Tracking</span>
+    <div class="nd-section-rule"></div>
+  </div>
+  <div class="nd-tracking-list">
+    <div class="nd-track-card">
+      <div class="nd-track-indicator-col">
+        <div class="nd-track-dot active"></div>
+      </div>
+      <div class="nd-track-content">
+        <div class="nd-track-title">AJ Brown Trade <span class="zone-pill sports" style="margin-left:auto;">Sports</span></div>
+        <div class="nd-track-body">Agreement in principle overnight. Official after June 1 post-designation. Eagles receiving 2026 first.</div>
+        <div class="nd-track-timestamp">New · 2h ago</div>
+      </div>
+    </div>
+    <div class="nd-track-card">
+      <div class="nd-track-indicator-col">
+        <div class="nd-track-dot update"></div>
+      </div>
+      <div class="nd-track-content">
+        <div class="nd-track-title">Gemini / Google AI <span class="zone-pill tech" style="margin-left:auto;">Tech</span></div>
+        <div class="nd-track-body">2.5 Pro GA confirmed. Flash drops 50%. NotebookLM audio mode launches.</div>
+        <div class="nd-track-timestamp">Updated · 5h ago</div>
+      </div>
+    </div>
+    <div class="nd-track-card">
+      <div class="nd-track-indicator-col">
+        <div class="nd-track-dot watching"></div>
+      </div>
+      <div class="nd-track-content">
+        <div class="nd-track-title">Maine Weather <span class="zone-pill maine" style="margin-left:auto;">Maine</span></div>
+        <div class="nd-track-body">Clear weekend. 74°F Sat–Sun. Watch Monday PM showers.</div>
+        <div class="nd-track-timestamp">Watching · 3h ago</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trending — Rising section -->
+  <div class="nd-section-break">
+    <span class="nd-section-icon">📈</span>
+    <span class="nd-section-title">Rising Now</span>
+    <div class="nd-section-rule"></div>
+  </div>
+  <div class="nd-rising-list">
+    <div class="nd-rising-grid">
+      <div class="nd-rising-item">
+        <div class="nd-rising-rank">01</div>
+        <div class="nd-rising-topic">AJ Brown Trade</div>
+        <div class="nd-rising-bottom">
+          <span class="zone-pill sports">Sports</span>
+          <span class="nd-rising-vel">↑ Hot</span>
+        </div>
+      </div>
+      <div class="nd-rising-item">
+        <div class="nd-rising-rank">02</div>
+        <div class="nd-rising-topic">Google I/O Recap</div>
+        <div class="nd-rising-bottom">
+          <span class="zone-pill tech">Tech</span>
+          <span class="nd-rising-vel">↑ Rising</span>
+        </div>
+      </div>
+      <div class="nd-rising-item">
+        <div class="nd-rising-rank">03</div>
+        <div class="nd-rising-topic">Memorial Day Travel</div>
+        <div class="nd-rising-bottom">
+          <span class="zone-pill local">Local</span>
+          <span class="nd-rising-vel" style="color: var(--accent-amber);">→ Steady</span>
+        </div>
+      </div>
+      <div class="nd-rising-item">
+        <div class="nd-rising-rank">04</div>
+        <div class="nd-rising-topic">Maine Rentals</div>
+        <div class="nd-rising-bottom">
+          <span class="zone-pill maine">Maine</span>
+        </div>
+      </div>
+    </div>
+    <div style="padding: 10px 0 8px; text-align: center;">
+      <button style="background: none; border: 1px solid var(--border); color: var(--text-muted); font-size: 12px; padding: 7px 20px; border-radius: 20px; cursor: pointer;">See all trending →</button>
+    </div>
+  </div>
+
+</div><!-- /concept-c -->
+
+
+<!-- ─── BOTTOM NAV (shown in all concepts) ─── -->
+<nav class="bottom-nav">
+  <a class="nav-item active" href="#">
+    <span class="nav-icon">📋</span>
+    <span class="nav-label">Briefing</span>
+  </a>
+  <a class="nav-item" href="#">
+    <span class="nav-icon">⬡</span>
+    <span class="nav-label">Zones</span>
+  </a>
+  <a class="nav-item" href="#">
+    <span class="nav-icon">📈</span>
+    <span class="nav-label">Trending</span>
+  </a>
+  <a class="nav-item" href="#">
+    <span class="nav-icon">👁</span>
+    <span class="nav-label">Tracking</span>
+  </a>
+  <a class="nav-item" href="#">
+    <span class="nav-icon">♡</span>
+    <span class="nav-label">Saved</span>
+  </a>
+</nav>
+
+<script>
+  function switchConcept(key) {
+    document.querySelectorAll('.concept-view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('concept-' + key).classList.add('active');
+    event.target.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Greeting based on time
+  function getGreeting() {
+    const h = new Date().getHours();
+    if (h >= 4 && h < 12) return "Good morning";
+    if (h >= 12 && h < 17) return "Good afternoon";
+    if (h >= 17 && h < 21) return "Good evening";
+    return "Good night";
+  }
+
+  // Apply greeting
+  const greeting = getGreeting();
+  document.querySelectorAll('.brief-greeting').forEach(el => {
+    el.innerHTML = greeting + ',<br><span>Rick.</span>';
+  });
+  document.querySelectorAll('.ib-greeting').forEach(el => {
+    el.textContent = greeting + ', Rick';
+  });
+  // Narrative voice block greeting is baked in as "Good morning" for demo
+</script>
+</body>
+</html>

@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Distilled — Zones</title>
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box; margin: 0; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :root {
+    --bg:         #09090e;
+    --surface:    #111117;
+    --surface-2:  #17171f;
+    --surface-3:  #1e1e28;
+    --border:     rgba(255,255,255,0.06);
+    --border-mid: rgba(255,255,255,0.11);
+    --text:       #eeeef2;
+    --text-2:     rgba(238,238,242,0.58);
+    --text-3:     rgba(238,238,242,0.30);
+    --sports:     #52C97A;
+    --local:      #5B9CF6;
+    --maine:      #EF9F27;
+    --tech:       #A78BFA;
+    --finance:    #34D399;
+    --primary:        #ffffff;
+    --primary-text:   #0a0a0f;
+    --primary-subtle: rgba(255,255,255,0.08);
+    --primary-border: rgba(255,255,255,0.18);
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex; justify-content: center;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    width: 100%; max-width: 430px;
+    min-height: 100vh;
+    padding-bottom: 120px;
+  }
+
+  /* ══════════════════════════════
+     HEADER
+  ══════════════════════════════ */
+  .app-header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(9,9,14,0.94);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--border);
+    padding: 52px 20px 0;
+  }
+  .header-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .wordmark { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+  .manage-btn {
+    font-size: 12px; font-weight: 600;
+    color: var(--text-3); background: var(--surface-2);
+    border: 1px solid var(--border-mid);
+    padding: 5px 12px; border-radius: 8px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .manage-btn:active { color: var(--text); border-color: var(--primary-border); }
+
+  /* ══════════════════════════════
+     SUB-NAV  — two-line, no scroll
+  ══════════════════════════════ */
+  .zone-subnav {
+    display: flex; /* fills full width, no overflow */
+    border-bottom: 1px solid var(--border);
+  }
+  .subnav-item {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 7px 2px 9px;
+    text-align: center;
+    cursor: pointer; text-decoration: none;
+    border-bottom: 2px solid transparent;
+    position: relative; top: 1px;
+    transition: all 0.16s;
+  }
+  .subnav-item:active { opacity: 0.7; }
+  /* Both lines inherit color from .subnav-item — no separate shading */
+  .snl1 {
+    display: block;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+    white-space: nowrap; line-height: 1.2;
+  }
+  .snl2 {
+    display: block;
+    font-size: 9px; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; line-height: 1.2;
+    margin-top: 1px;
+  }
+
+  /* Active states — color set on item, both spans inherit */
+  .subnav-item         { color: var(--text-3); }
+  .subnav-item.active  { border-bottom-color: var(--primary); color: var(--primary); }
+  .subnav-item.s-sports  { border-bottom-color: var(--sports);  color: var(--sports);  }
+  .subnav-item.s-local   { border-bottom-color: var(--local);   color: var(--local);   }
+  .subnav-item.s-maine   { border-bottom-color: var(--maine);   color: var(--maine);   }
+  .subnav-item.s-tech    { border-bottom-color: var(--tech);    color: var(--tech);    }
+  .subnav-item.s-finance { border-bottom-color: var(--finance); color: var(--finance); }
+
+  /* ══════════════════════════════
+     ZONE CARDS
+  ══════════════════════════════ */
+  .zones-list { padding: 14px 16px 4px; display: flex; flex-direction: column; gap: 10px; }
+
+  .zone-card {
+    border-radius: 16px; overflow: hidden;
+    border: 1px solid var(--border-mid);
+    background: var(--surface);
+    cursor: pointer; text-decoration: none; display: block;
+    transition: transform 0.14s;
+  }
+  .zone-card:active { transform: scale(0.987); }
+
+  /* Colored gradient header */
+  .zone-card-header {
+    padding: 14px 16px 13px;
+    position: relative; overflow: hidden;
+  }
+  /* Watermark initial */
+  .zone-card-header::before {
+    content: attr(data-initial);
+    position: absolute; right: -4px; bottom: -20px;
+    font-size: 100px; font-weight: 900;
+    color: rgba(255,255,255,0.045);
+    line-height: 1; letter-spacing: -0.04em;
+    pointer-events: none; user-select: none;
+  }
+  .zone-card.sports  .zone-card-header { background: linear-gradient(140deg, rgba(82,201,122,0.21) 0%, rgba(82,201,122,0.06) 100%); border-bottom: 1px solid rgba(82,201,122,0.14); }
+  .zone-card.local   .zone-card-header { background: linear-gradient(140deg, rgba(91,156,246,0.21) 0%, rgba(91,156,246,0.06) 100%); border-bottom: 1px solid rgba(91,156,246,0.14); }
+  .zone-card.maine   .zone-card-header { background: linear-gradient(140deg, rgba(239,159,39,0.21) 0%, rgba(239,159,39,0.06) 100%); border-bottom: 1px solid rgba(239,159,39,0.14); }
+  .zone-card.tech    .zone-card-header { background: linear-gradient(140deg, rgba(167,139,250,0.21) 0%, rgba(167,139,250,0.06) 100%); border-bottom: 1px solid rgba(167,139,250,0.14); }
+  .zone-card.finance .zone-card-header { background: linear-gradient(140deg, rgba(52,211,153,0.21) 0%, rgba(52,211,153,0.06) 100%); border-bottom: 1px solid rgba(52,211,153,0.14); }
+
+  /* Zone label + story dots row */
+  .zone-card-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 11px;
+  }
+  .zone-name-pill {
+    font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 3px 9px; border-radius: 5px;
+  }
+  .zone-card.sports  .zone-name-pill { color: var(--sports);  background: rgba(82,201,122,0.16);  }
+  .zone-card.local   .zone-name-pill { color: var(--local);   background: rgba(91,156,246,0.16);  }
+  .zone-card.maine   .zone-name-pill { color: var(--maine);   background: rgba(239,159,39,0.16);  }
+  .zone-card.tech    .zone-name-pill { color: var(--tech);    background: rgba(167,139,250,0.16); }
+  .zone-card.finance .zone-name-pill { color: var(--finance); background: rgba(52,211,153,0.16);  }
+
+  .story-dots { display: flex; align-items: center; gap: 4px; }
+  .story-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.18); }
+  .story-dot.new    { background: #E24B4A; }
+  .story-dot.urgent { background: #EF9F27; }
+  .story-dots-label { font-size: 10px; font-weight: 600; color: var(--text-3); margin-left: 3px; }
+
+  /* ─── TEMPLATE A: Schedule / Score (Sports) ─── */
+  .hero-schedule { display: flex; flex-direction: column; gap: 7px; }
+  .sched-row {
+    display: flex; align-items: center; gap: 9px;
+  }
+  .sched-sport-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+  .sched-sport-dot.mlb  { background: #E24B4A; }
+  .sched-sport-dot.nba  { background: var(--sports); }
+  .sched-matchup {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sched-time {
+    font-size: 11px; color: var(--text-2); flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .sched-divider {
+    height: 1px; background: rgba(255,255,255,0.06); margin: 1px 0;
+  }
+
+  /* ─── TEMPLATE B: Big Stat (Local weather / Finance markets) ─── */
+  .hero-stat {
+    display: flex; align-items: flex-end; gap: 12px;
+  }
+  .hero-stat-value {
+    font-size: 28px; font-weight: 750; line-height: 1;
+    letter-spacing: -0.02em; color: var(--text);
+  }
+  .hero-stat-meta { padding-bottom: 2px; }
+  .hero-stat-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.09em;
+    text-transform: uppercase; color: var(--text-3); margin-bottom: 3px;
+  }
+  .hero-stat-sub { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+
+  /* ─── TEMPLATE C: Featured Headline (Tech / Maine / Entertainment) ─── */
+  .hero-headline { }
+  .hero-hl-text {
+    font-size: 14px; font-weight: 650; line-height: 1.4; color: var(--text);
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden; margin-bottom: 8px;
+  }
+  .hero-hl-meta { display: flex; align-items: center; gap: 7px; }
+  .hero-hl-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .zone-card.tech  .hero-hl-tag { color: var(--tech);  }
+  .zone-card.maine .hero-hl-tag { color: var(--maine); }
+  .hero-hl-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-3); }
+  .hero-hl-time { font-size: 10px; color: var(--text-3); }
+
+  /* ── Card body: story rows ── */
+  .zone-card-body { }
+  .zone-story-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .zone-story-row:last-of-type { border-bottom: none; }
+  .zone-story-bar { width: 3px; border-radius: 2px; flex-shrink: 0; align-self: stretch; min-height: 14px; margin-top: 3px; }
+  .zone-card.sports  .zone-story-bar { background: var(--sports);  }
+  .zone-card.local   .zone-story-bar { background: var(--local);   }
+  .zone-card.maine   .zone-story-bar { background: var(--maine);   }
+  .zone-card.tech    .zone-story-bar { background: var(--tech);    }
+  .zone-card.finance .zone-story-bar { background: var(--finance); }
+
+  .zone-story-content { flex: 1; min-width: 0; }
+  .zone-story-hl {
+    font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--text);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; margin-bottom: 3px;
+  }
+  .zone-story-meta { display: flex; align-items: center; gap: 5px; }
+  .zone-story-tag  { font-size: 10px; font-weight: 700; letter-spacing: 0.03em; color: var(--text-3); }
+  .zone-story-time { font-size: 10px; color: var(--text-3); }
+  .new-badge { width: 5px; height: 5px; border-radius: 50%; background: #E24B4A; flex-shrink: 0; }
+
+  /* Card footer */
+  .zone-card-footer {
+    padding: 10px 16px 11px;
+    display: flex; align-items: center; justify-content: flex-end;
+    border-top: 1px solid var(--border);
+  }
+  .zone-view-link { font-size: 12px; font-weight: 600; }
+  .zone-card.sports  .zone-view-link { color: var(--sports);  }
+  .zone-card.local   .zone-view-link { color: var(--local);   }
+  .zone-card.maine   .zone-view-link { color: var(--maine);   }
+  .zone-card.tech    .zone-view-link { color: var(--tech);    }
+  .zone-card.finance .zone-view-link { color: var(--finance); }
+
+  /* ══════════════════════════════
+     BOTTOM NAV
+  ══════════════════════════════ */
+  .bottom-nav {
+    position: fixed; bottom: 24px;
+    left: 50%; transform: translateX(-50%);
+    width: calc(100% - 48px); max-width: 382px;
+    background: rgba(20,20,28,0.94);
+    backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+    border: 1px solid var(--border-mid); border-radius: 24px;
+    display: flex; align-items: stretch;
+    padding: 6px 4px; z-index: 100;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px; padding: 8px 4px;
+    cursor: pointer; border-radius: 18px;
+    transition: background 0.15s; text-decoration: none;
+    color: var(--text); opacity: 0.62;
+  }
+  .nav-item:active { background: rgba(255,255,255,0.06); }
+  .nav-item.active { background: var(--primary-subtle); opacity: 1; }
+  .nav-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: var(--text); }
+  .nav-item.active .nav-icon { color: var(--primary); }
+  .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.03em; white-space: nowrap; color: var(--text); }
+  .nav-item.active .nav-label { color: var(--primary); }
+
+  /* ══════════════════════════════
+     MANAGE ZONES SHEET
+  ══════════════════════════════ */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.65);
+    align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet {
+    width: 100%; max-width: 430px;
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    border: 1px solid var(--border-mid);
+    padding: 20px 0 48px;
+    animation: slideUp 0.28s cubic-bezier(0.32,0.72,0,1) both;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); margin: 0 auto 20px; }
+  .modal-title   { font-size: 17px; font-weight: 700; color: var(--text); padding: 0 20px; margin-bottom: 3px; }
+  .modal-subtitle { font-size: 13px; color: var(--text-3); padding: 0 20px; margin-bottom: 18px; }
+
+  .manage-zone-list { border-top: 1px solid var(--border); }
+  .manage-zone-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .drag-handle { display: flex; flex-direction: column; gap: 3.5px; flex-shrink: 0; opacity: 0.28; cursor: grab; }
+  .drag-handle span { display: block; width: 16px; height: 1.5px; background: var(--text); border-radius: 1px; }
+  .manage-zone-pill { font-size: 9px; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; }
+  .manage-zone-row.sports  .manage-zone-pill { color: var(--sports);  background: rgba(82,201,122,0.12);  }
+  .manage-zone-row.local   .manage-zone-pill { color: var(--local);   background: rgba(91,156,246,0.12);  }
+  .manage-zone-row.maine   .manage-zone-pill { color: var(--maine);   background: rgba(239,159,39,0.12);  }
+  .manage-zone-row.tech    .manage-zone-pill { color: var(--tech);    background: rgba(167,139,250,0.12); }
+  .manage-zone-row.finance .manage-zone-pill { color: var(--finance); background: rgba(52,211,153,0.12);  }
+  .manage-zone-name { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; }
+  .manage-zone-count { font-size: 11px; color: var(--text-3); flex-shrink: 0; }
+
+  /* Toggle */
+  .toggle-sw { width: 42px; height: 24px; border-radius: 12px; background: var(--sports); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+  .toggle-sw.off { background: var(--surface-3); border: 1px solid var(--border-mid); }
+  .toggle-kn { position: absolute; top: 3px; left: 22px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .toggle-sw.off .toggle-kn { left: 3px; background: var(--text-3); }
+
+  .manage-add-row { display: flex; align-items: center; gap: 12px; padding: 13px 20px; cursor: pointer; opacity: 0.48; }
+  .manage-add-icon { width: 32px; height: 32px; border-radius: 8px; border: 1.5px dashed var(--border-mid); display: flex; align-items: center; justify-content: center; color: var(--text-3); font-size: 18px; font-weight: 300; }
+  .manage-add-label { font-size: 14px; color: var(--text-2); }
+
+  .manage-note { padding: 14px 20px 18px; font-size: 12px; color: var(--text-3); line-height: 1.5; }
+  .manage-note a { color: var(--text-2); text-decoration: underline; text-decoration-color: rgba(238,238,242,0.2); cursor: pointer; }
+
+  .manage-done-btn { width: calc(100% - 40px); margin: 0 20px; padding: 14px; background: var(--primary); color: var(--primary-text); font-size: 15px; font-weight: 700; border-radius: 14px; border: none; cursor: pointer; }
+  .manage-done-btn:active { opacity: 0.88; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="app-header">
+    <div class="header-top">
+      <div class="wordmark">Zones</div>
+      <button class="manage-btn" onclick="openManage()">Manage zones</button>
+    </div>
+
+    <!-- SUB-NAV: two-line labels, flex fill, no scroll -->
+    <div class="zone-subnav">
+      <a class="subnav-item active" href="#">
+        <span class="snl1">All</span><span class="snl2">Zones</span>
+      </a>
+      <a class="subnav-item" href="distilled-zone-detail.html?zone=sports">
+        <span class="snl1">Sports</span><span class="snl2">Zone</span>
+      </a>
+      <a class="subnav-item" href="distilled-zone-detail.html?zone=local">
+        <span class="snl1">Local</span><span class="snl2">Zone</span>
+      </a>
+      <a class="subnav-item" href="distilled-zone-detail.html?zone=maine">
+        <span class="snl1">Maine</span><span class="snl2">Zone</span>
+      </a>
+      <a class="subnav-item" href="distilled-zone-detail.html?zone=tech">
+        <span class="snl1">Tech</span><span class="snl2">Zone</span>
+      </a>
+      <a class="subnav-item" href="distilled-zone-detail.html?zone=finance">
+        <span class="snl1">Finance</span><span class="snl2">Zone</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ZONE CARDS -->
+  <div class="zones-list">
+
+    <!-- ══ SPORTS: Template A — Schedule ══ -->
+    <a class="zone-card sports" href="distilled-zone-detail.html?zone=sports">
+      <div class="zone-card-header" data-initial="S">
+        <div class="zone-card-top">
+          <span class="zone-name-pill">Sports Zone</span>
+          <div class="story-dots">
+            <div class="story-dot new"></div>
+            <div class="story-dot urgent"></div>
+            <div class="story-dot"></div>
+            <span class="story-dots-label">3 stories</span>
+          </div>
+        </div>
+        <!-- Schedule template -->
+        <div class="hero-schedule">
+          <div class="sched-row">
+            <div class="sched-sport-dot mlb"></div>
+            <span class="sched-matchup">Sox at Mariners</span>
+            <span class="sched-time">Tonight · 10:10p</span>
+          </div>
+          <div class="sched-divider"></div>
+          <div class="sched-row">
+            <div class="sched-sport-dot nba"></div>
+            <span class="sched-matchup">Celtics Draft</span>
+            <span class="sched-time">Tue · Barclays Ctr</span>
+          </div>
+          <div class="sched-divider"></div>
+          <div class="sched-row">
+            <div class="sched-sport-dot" style="background:var(--text-3)"></div>
+            <span class="sched-matchup" style="color:var(--text-2);font-weight:500">Patriots camp opens</span>
+            <span class="sched-time">July 24</span>
+          </div>
+        </div>
+      </div>
+      <div class="zone-card-body">
+        <div class="zone-story-row">
+          <div class="zone-story-bar"></div>
+          <div class="zone-story-content">
+            <div class="zone-story-hl">Celtics draft is Tuesday — Stevens has four days and one of the biggest decisions of his tenure</div>
+            <div class="zone-story-meta"><span class="zone-story-tag">Celtics</span><div class="new-badge"></div><span class="zone-story-time">Now</span></div>
+          </div>
+        </div>
+        <div class="zone-story-row">
+          <div class="zone-story-bar"></div>
+          <div class="zone-story-content">
+            <div class="zone-story-hl">Sox swept at home by Toronto, fall to 29–43 — at Mariners tonight 10:10 PM</div>
+            <div class="zone-story-meta"><span class="zone-story-tag">Red Sox</span><span class="zone-story-time">1h ago</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="zone-card-footer">
+        <span class="zone-view-link">View Sports Zone →</span>
+      </div>
+    </a>
+
+    <!-- ══ LOCAL: Template B — Big Stat (Weather) ══ -->
+    <a class="zone-card local" href="distilled-zone-detail.html?zone=local">
+      <div class="zone-card-header" data-initial="L">
+        <div class="zone-card-top">
+          <span class="zone-name-pill">Local Zone</span>
+          <div class="story-dots">
+            <div class="story-dot new"></div>
+            <div class="story-dot urgent"></div>
+            <span class="story-dots-label">2 stories</span>
+          </div>
+        </div>
+        <!-- Stat template: weather -->
+        <div class="hero-stat">
+          <div class="hero-stat-value">81°F ☀</div>
+          <div class="hero-stat-meta">
+            <div class="hero-stat-label">Right now · North Andover</div>
+            <div class="hero-stat-sub">Tomorrow 82°F · Sunny, low humidity</div>
+          </div>
+        </div>
+      </div>
+      <div class="zone-card-body">
+        <div class="zone-story-row">
+          <div class="zone-story-bar"></div>
+          <div class="zone-story-content">
+            <div class="zone-story-hl">World Cup at Gillette today — Scotland vs. Morocco, 6pm kick-off, heavy traffic expected</div>
+            <div class="zone-story-meta"><span class="zone-story-tag">World Cup</span><div class="new-badge"></div><span class="zone-story-time">Now</span></div>
+          </div>
+        </div>
+        <div class="zone-story-row">
+          <div class="zone-story-bar"></div>
+          <div class="zone-story-content">
+            <div class="zone-story-hl">Juneteenth — federal holiday, markets and banks closed across the country</div>
+            <div class="zone-story-meta"><span class="zone-story-tag">North Andover</span><span class="zone-story-time">Today</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="zone-card-footer">
+        <span class="zone-view-link">View Local Zone →</span>
+      </div>
+    </a>
+
+    <!-- ══ MAINE HOUSE: Template C — Featured Headline ══ -->
+    <a class="zone-card maine" href="distilled-zone-detail.html?zone=maine">
+      <div class="zone-card-header" data-initial="M">
+        <div class="zone-card-top">
+          <span class="zone-name-pill">Maine House Zone</span>
+          <div class="story-dots">
+            <div class="story-dot new"></div>
+            <div class="story-dot"></div>
+            <div class="story-dot"></div>
+            <span class="story-dots-label">3 stories</span>
+          </div>
+        </div>
+        <!-- Headline template -->
+        <div class="hero-headline">
+          <div class="hero-hl-text">Great summer weekend ahead in southern Maine — mid-70s, sunny, low humidity all the way through Sunday</div>
+          <div class="hero-hl-meta">
+            <span class="hero-hl-tag">Maine Weather</span>
+            <div class="hero-hl-dot"></div>
+            <span class="hero-hl-time">Today</span>
+          </div>
+        </div>
+      </div>
+      <div class="zone-card-body">
+        <div class="zone-story-row">
+          <div class="zone-story-bar"></div>
+          <div class="zone-story-content">
+            <div class="zone-story-hl">World Cup quarter-final at Gillette July 9 — worth the trip from Maine</div>
+            <div class="zone-story-meta"><span class="zone-story-tag">Events</span><span class="zone-story-time">This week</span></div>
+          </div>
+        </div>
+        <div class="zone-story-row">
+          <div class="zone-story-bar"></div>
+          <div class="zone-story-content">
+            <div class="zone-story-hl">Southern Maine coastal openings — summer season now in full swing</div>
+            <div class="zone-story-meta"><span class="zone-story-tag">Maine Weekend</span><span class="zone-story-time">This week</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="zone-card-footer">
+        <span class="zone-view-link">View Maine House Zone →</span>
+      </div>
+    </a>
+
+    <!-- ══ TECH & AI: Template C — Featured Headline ══ -->
+    <a class="zone-card tech" href="distilled-zone-detail.html?zone=tech">
+      <div class="zone-card-header" data-initial="T">
+        <div class="zone-card-top">
+          <span class="zone-name-pill">Tech &amp; AI Zone</span>
+          <div class="story-dots">
+            <div class="story-dot new"></div>
+            <div class="story-dot"></div>
+            <div class="story-dot"></div>
+            <span class="story-dots-label">3 stories</span>
+          </div>
+        </div>
+        <!-- Headline template -->
+        <div class="hero-headline">
+          <div class="hero-hl-text">OpenAI acquires Astral — the company behind Python tools uv and ruff, used by millions of developers</div>
+          <div class="hero-hl-meta">
+            <span class="hero-hl-tag">OpenAI</span>
+            <div class="hero-hl-dot"></div>
+            <span class="hero-hl-time">Today</span>
+          </div>
+        </div>
+      </div>
+      <div class="zone-card-body">
+        <div class="zone-story-row">
+          <div class="zone-story-bar"></div>
+          <div class="zone-story-content">
+            <div class="zone-story-hl">Anthropic launches Claude Corps — national fellowship for early-career Americans</div>
+            <div class="zone-story-meta"><span class="zone-story-tag">Anthropic</span><span class="zone-story-time">Today</span></div>
+          </div>
+        </div>
+        <div class="zone-story-row">
+          <div class="zone-story-bar"></div>
+          <div class="zone-story-content">
+            <div class="zone-story-hl">AI is shifting from chat to tasks — what agentic systems actually mean</div>
+            <div class="zone-story-meta"><span class="zone-story-tag">AI Trends</span><span class="zone-story-time">This week</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="zone-card-footer">
+        <span class="zone-view-link">View Tech &amp; AI Zone →</span>
+      </div>
+    </a>
+
+    <!-- ══ FINANCE: Template B — Big Stat (Market) ══ -->
+    <a class="zone-card finance" href="distilled-zone-detail.html?zone=finance">
+      <div class="zone-card-header" data-initial="F">
+        <div class="zone-card-top">
+          <span class="zone-name-pill">Finance Zone</span>
+          <div class="story-dots">
+            <div class="story-dot"></div>
+            <div class="story-dot"></div>
+            <span class="story-dots-label">2 stories</span>
+          </div>
+        </div>
+        <!-- Stat template: market -->
+        <div class="hero-stat">
+          <div class="hero-stat-value">7,473</div>
+          <div class="hero-stat-meta">
+            <div class="hero-stat-label">S&amp;P 500 · Thu close</div>
+            <div class="hero-stat-sub">+0.37% · Dow record 50,579<br>Markets closed today — Juneteenth</div>
+          </div>
+        </div>
+      </div>
+      <div class="zone-card-body">
+        <div class="zone-story-row">
+          <div class="zone-story-bar"></div>
+          <div class="zone-story-content">
+            <div class="zone-story-hl">Markets closed for Juneteenth — NYSE and Nasdaq dark today</div>
+            <div class="zone-story-meta"><span class="zone-story-tag">Markets</span><span class="zone-story-time">Today</span></div>
+          </div>
+        </div>
+        <div class="zone-story-row">
+          <div class="zone-story-bar"></div>
+          <div class="zone-story-content">
+            <div class="zone-story-hl">Triple Witching was Thursday — volatility possible when markets reopen Monday</div>
+            <div class="zone-story-meta"><span class="zone-story-tag">Markets</span><span class="zone-story-time">Today</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="zone-card-footer">
+        <span class="zone-view-link">View Finance Zone →</span>
+      </div>
+    </a>
+
+  </div><!-- /zones-list -->
+</div><!-- /app -->
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="distilled-v3-concept.html">
+    <div class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+    <span class="nav-label">Today</span>
+  </a>
+  <a class="nav-item active" href="#">
+    <div class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+    <span class="nav-label">Zones</span>
+  </a>
+  <a class="nav-item" href="distilled-tracking.html">
+    <div class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg></div>
+    <span class="nav-label">Tracking</span>
+  </a>
+  <a class="nav-item" href="distilled-read-later.html">
+    <div class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></div>
+    <span class="nav-label">Read Later</span>
+  </a>
+</nav>
+
+<!-- MANAGE ZONES SHEET -->
+<div class="modal-overlay" id="manageModal" onclick="if(event.target===this)closeManage()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Manage Zones</div>
+    <div class="modal-subtitle">Reorder or turn off zones you don't need.</div>
+    <div class="manage-zone-list">
+      <div class="manage-zone-row sports">
+        <div class="drag-handle"><span></span><span></span><span></span></div>
+        <span class="manage-zone-pill">Sports</span>
+        <span class="manage-zone-name">Sports Zone</span>
+        <span class="manage-zone-count">3 stories</span>
+        <div class="toggle-sw" onclick="this.classList.toggle('off')"><div class="toggle-kn"></div></div>
+      </div>
+      <div class="manage-zone-row local">
+        <div class="drag-handle"><span></span><span></span><span></span></div>
+        <span class="manage-zone-pill">Local</span>
+        <span class="manage-zone-name">Local Zone</span>
+        <span class="manage-zone-count">2 stories</span>
+        <div class="toggle-sw" onclick="this.classList.toggle('off')"><div class="toggle-kn"></div></div>
+      </div>
+      <div class="manage-zone-row maine">
+        <div class="drag-handle"><span></span><span></span><span></span></div>
+        <span class="manage-zone-pill">Maine</span>
+        <span class="manage-zone-name">Maine House Zone</span>
+        <span class="manage-zone-count">3 stories</span>
+        <div class="toggle-sw" onclick="this.classList.toggle('off')"><div class="toggle-kn"></div></div>
+      </div>
+      <div class="manage-zone-row tech">
+        <div class="drag-handle"><span></span><span></span><span></span></div>
+        <span class="manage-zone-pill">Tech</span>
+        <span class="manage-zone-name">Tech &amp; AI Zone</span>
+        <span class="manage-zone-count">3 stories</span>
+        <div class="toggle-sw" onclick="this.classList.toggle('off')"><div class="toggle-kn"></div></div>
+      </div>
+      <div class="manage-zone-row finance">
+        <div class="drag-handle"><span></span><span></span><span></span></div>
+        <span class="manage-zone-pill">Finance</span>
+        <span class="manage-zone-name">Finance Zone</span>
+        <span class="manage-zone-count">2 stories</span>
+        <div class="toggle-sw" onclick="this.classList.toggle('off')"><div class="toggle-kn"></div></div>
+      </div>
+    </div>
+    <div class="manage-add-row">
+      <div class="manage-add-icon">+</div>
+      <span class="manage-add-label">Add a zone</span>
+    </div>
+    <div class="manage-note">You can also manage zones from your <a>Profile settings</a>.</div>
+    <button class="manage-done-btn" onclick="closeManage()">Done</button>
+  </div>
+</div>
+
+<script>
+  function openManage()  { document.getElementById('manageModal').classList.add('open'); }
+  function closeManage() { document.getElementById('manageModal').classList.remove('open'); }
+</script>
+</body>
+</html>
