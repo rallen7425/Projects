@@ -1,0 +1,32 @@
+:root {
+  /* Backgrounds */
+  --bg:         #09090e;
+  --surface:    #111117;
+  --surface-2:  #17171f;
+  --surface-3:  #1e1e28;
+
+  /* Borders */
+  --border:     rgba(255,255,255,0.06);
+  --border-mid: rgba(255,255,255,0.11);
+
+  /* Text */
+  --text:   #eeeef2;
+  --text-2: rgba(238,238,242,0.58);
+  --text-3: rgba(238,238,242,0.30);
+
+  /* Zone colors */
+  --sports:  #52C97A;
+  --local:   #5B9CF6;
+  --maine:   #EF9F27;
+  --tech:    #A78BFA;
+  --finance: #34D399;
+
+  /* Critical */
+  --critical: #E24B4A;
+
+  /* Primary — interactive elements (buttons, toggles, active states) — always white */
+  --primary:        #ffffff;
+  --primary-text:   #0a0a0f;
+  --primary-subtle: rgba(255,255,255,0.08);
+  --primary-border: rgba(255,255,255,0.18);
+}

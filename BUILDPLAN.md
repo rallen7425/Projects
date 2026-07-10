@@ -36,10 +36,10 @@ This session is Phase 1: design system and core UI components. We are NOT touchi
 ## Step 1: Read the design prototypes
 
 Read these files in full before writing any code. They are the authoritative design spec:
-- ../Distilled News App (1)/distilled-v3-concept.html
-- ../Distilled News App (1)/distilled-zones.html
-- ../Distilled News App (1)/distilled-tracking.html
-- ../Distilled News App (1)/distilled-read-later.html
+- prototypes/distilled-v3-concept.html
+- prototypes/distilled-zones.html
+- prototypes/distilled-tracking.html
+- prototypes/distilled-read-later.html
 
 ## Step 2: Design tokens
 
@@ -659,7 +659,7 @@ We're building Distilled, a mobile-first AI-powered news app. Read CLAUDE.md fir
 
 This session is Phase 5: connecting all pages to live Supabase data. The component library (Phase 1) and database layer (Phase 2) are complete. Use them — do not rebuild what already exists.
 
-Before writing any page, re-read the corresponding HTML prototype file from ../Distilled News App (1)/ to confirm the layout.
+Before writing any page, re-read the corresponding HTML prototype file from prototypes/ to confirm the layout.
 
 Build pages in this order. Each is a Next.js Server Component that fetches data and passes it to a client component for interactivity.
 
@@ -729,7 +729,7 @@ Server component:
 - Pass to `StoryDetailClient`
 
 Client component:
-- Reference `../Distilled News App (1)/distilled-story-detail.html` for exact layout
+- Reference `prototypes/distilled-story-detail.html` for exact layout
 - Hero image (if imageUrl exists), zone pill, headline, summary
 - Source links
 - Related articles section
@@ -747,7 +747,7 @@ Server component:
 - Pass to `TrackingClient`
 
 Client component:
-- Reference `../Distilled News App (1)/distilled-tracking.html` for exact layout
+- Reference `prototypes/distilled-tracking.html` for exact layout
 - `AppHeader` "Tracking" + topic count badge + add button
 - Zone filter pills (All, No zone, each zone)
 - For each tracked topic: two-line header (zone pill on line 1, #Topic on line 2), horizontal scroll of story cards
@@ -764,7 +764,7 @@ Server component:
 - Pass to `SavedClient`
 
 Client component:
-- Reference `../Distilled News App (1)/distilled-read-later.html` for exact layout
+- Reference `prototypes/distilled-read-later.html` for exact layout
 - `AppHeader` "Read Later" + count badge + "Clear all" button
 - Zone filter pills
 - Each article as a `StoryItem` with bookmark toggle behavior (unsave keeps item visible, dimmed)

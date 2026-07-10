@@ -195,7 +195,7 @@ GitHub Actions (cron: every hour)
 |---|---|---|
 | All news | The Guardian | Guardian API (free, images included) |
 | All news | Curated RSS | RSS parser (`rss-parser` npm package) |
-| Local weather | NWS | `api.weather.gov` — no key, zip → coordinates via Census geocoding API |
+| Local weather | NWS | `api.weather.gov` — no key, zip → coordinates via `api.zippopotam.us` (Census API was broken) |
 | Sports | ESPN + team RSS | Public RSS feeds (no API key) |
 | Finance | Alpha Vantage | Free tier (25 calls/day — sufficient for indices) |
 | Images (fallback) | OG extraction | `cheerio` scrapes `og:image` from article URL |
@@ -263,7 +263,7 @@ tech      → type: 'tech'    // Guardian tech + HN RSS
 sports    → type: 'sports'  // ESPN RSS (requiresZip)
 local     → type: 'local'   // NWS weather + local RSS (requiresZip)
 finance   → type: 'finance' // Alpha Vantage + Guardian finance
-work      → type: 'work'    // Guardian business (requiresIndustry)
+work      → type: 'work'    // Guardian money/careers (requiresIndustry) — NOT 'business'; finance uses that section
 entertainment → type: 'entertainment' // Guardian culture
 ```
 
@@ -291,7 +291,7 @@ All V2 code has been deleted. The full V3 app is deployed at https://distilled-n
 ```
 /                          Today page — top 30 articles, urgency buckets
 /zones                     Zones hub — user's zones as cards with live hero data
-/zones/[zoneId]            Zone detail — 15 articles grouped by urgency (zoneId = zone UUID)
+/zones/[zoneId]            Zone detail — "Top Stories" sorted by recency (zoneId = zone UUID)
 /zones/[zoneId]/story/[storyId]  Story detail (zoneId = zone TYPE string e.g. 'sports')
 /tracking                  Tracked topics with article carousels
 /saved                     Read Later with zone filter pills
@@ -308,12 +308,30 @@ All V2 code has been deleted. The full V3 app is deployed at https://distilled-n
 
 - **Supabase project:** `qyjkqfgodgnjlvjdyuci` (us-east-1)
 - **All env vars set** in Vercel and `.env.local` (SUPABASE_URL, SUPABASE_ANON_KEY, SERVICE_ROLE_KEY, GUARDIAN_API_KEY, ANTHROPIC_API_KEY, ALPHA_VANTAGE_KEY, CRON_SECRET)
-- **Pipeline has run** — 90+ articles across 7 zones in the database
+- **Pipeline is running hourly** via GitHub Actions — ~90–95 articles per day across 7 zones
 - **`zone_quicklook` unique constraint** added: `unique(zone_type, label)` ✅
 
 ---
 
 ## Session log
+
+### Session 2026-07-06 — Pipeline fixes, stale article filters, tracking persistence, zone detail redesign
+
+**What was fixed:**
+
+1. **Stale articles on zone pages** (`lib/db/articles.ts`) — `getArticlesByZone` had no time filter; old high-urgency articles (e.g. a 2-week-old tech article with score 5) permanently topped zone pages. Fixed by adding a `days = 14` cutoff. `getTopArticles` (Today page) already had a 72h window. `searchArticlesByTopic` (Tracking page) now has a `days = 30` window.
+
+2. **Work zone had zero articles** (`scripts/pipeline/index.ts`) — Both `work` and `finance` fetched from Guardian `'business'` section. Finance ran first, claimed all articles via dedup hash, leaving work with 0 new articles every run. Fixed by switching work to Guardian `'money'` section (careers/personal finance content). **Important:** Never change work back to `'business'` — it collides with finance.
+
+3. **Weather geocoding failure** (`scripts/pipeline/sources/weather.ts`) — Census API geocoder was broken (invalid `benchmark=2020` URL param). Switched to `api.zippopotam.us/us/{zip}` which is free, no key, returns lat/lng directly.
+
+4. **Tracking topic removal not persisting** (`lib/actions.ts`, `app/tracking/TrackingClient.tsx`) — Root cause was the Next.js router cache (client-side, 30s TTL for dynamic routes). The DB delete was working correctly all along — the cache was serving the old page on navigate-back. Fix: `removeTrack` now calls `revalidatePath('/tracking')` server-side (purges data cache), and `handleDelete` calls `router.refresh()` client-side after success (purges router cache). Both are needed — `revalidatePath` alone doesn't clear the router cache.
+
+5. **Zone detail urgency sections removed** (`app/zones/[zoneId]/ZoneDetailClient.tsx`) — Zone detail was using the same urgency bucketing as Today (`Breaking` / `Your Day` / `On Your Radar`). This was wrong: urgency scores are set at ingestion and never decay, so a 6-day-old score-5 sports story sat in "Breaking" above fresh score-4 stories from an hour ago. Replaced with a single "Top Stories" section sorted by `publishedAt DESC`. Urgency bucketing is intentional and correct on the Today page (where recency is constrained to 72h), but wrong on zone detail pages.
+
+**Key insight documented:** urgency_score is a static label assigned at ingest time. It is only meaningful for ranking when ALSO filtered by recency. The Today page does this correctly (72h window + urgency sort). Zone detail now uses pure recency within a 14-day window.
+
+---
 
 ### Session 2026-06-29 — Product vision + design critique
 
@@ -367,6 +385,9 @@ When any React component throws during render, React's error recovery cycle runs
 ### Not built yet
 - **Onboarding flow** (`/onboarding`) — page does not exist. New users get default zones (maine + tech) auto-created silently. There is no zone customization, zip code collection, or zone picker. The middleware allows `/onboarding` but the route 404s.
 
+### Unconfirmed fix
+- **Tracking topic removal persistence** — fix was applied (2026-07-06) but not yet confirmed working on production. The delete itself works (DB shows 0 tracks after testing). The issue was the router cache. Fix: `revalidatePath('/tracking')` in server action + `router.refresh()` in client handler. If topics still reappear after navigating away and back, the next thing to check is whether `removeTrack` is actually completing before navigation (add a console.log to confirm).
+
 ### Design gaps (from 2026-06-29 critique — to address in future sessions)
 - **Track cards lack urgency state** — nothing communicates "something changed on this story" or "this track closes in 4h." All tracks look the same regardless of urgency or deadline.
 - **Time-bounded tracking has no design language** — deadline badges, countdowns, and expiry indicators don't exist anywhere in the UI.
@@ -374,16 +395,16 @@ When any React component throws during render, React's error recovery cycle runs
 - **Zone cards feel like preview tiles, not status panels** — no new-story count, no urgency signal, no indication of whether a zone is "buzzing" or quiet today.
 - **Tracking vs. Zones distinction unclear** — new users can't tell from the UI why these are fundamentally different things (domain vs. specific story).
 
-### Pending manual step
-- **GitHub Actions secret** — `CRON_SECRET=b78dd9a2fbbf30be25fb05dae118a6c8` must be added manually: GitHub repo → Settings → Secrets and variables → Actions → New repository secret. Until this is done, the hourly pipeline cron will fail (the trigger endpoint rejects requests without the secret).
-
 ### Auth edge cases
-- `initializeNewUser` uses service role client and can fail silently if the `users` table FK is not satisfied (e.g. if the `users` upsert in the callback failed first). Zones page handles empty zones gracefully (renders empty state) rather than redirecting.
-- Google OAuth not yet tested end-to-end (Supabase Google OAuth provider may not be fully configured).
+- `initializeNewUser` uses service role client and can fail silently if the `users` table FK is not satisfied. Zones page handles empty zones gracefully rather than redirecting.
+- Google OAuth not yet tested end-to-end.
 
 ---
 
 ## Next session: where to pick up
+
+### Priority 0 — Confirm tracking fix
+If the user reports topics still reappearing after navigating away and back, the router cache fix may not be enough. Next step: add a `console.log` inside `removeTrack` on the server and `handleDelete` on the client to confirm the delete is completing before navigation. If it is, the issue is purely the router cache and `router.push('/tracking')` (hard navigation) instead of `router.refresh()` may be needed.
 
 ### Priority 1 — Build Phase 6: Onboarding
 3-step flow at `app/onboarding/page.tsx` (see `BUILDPLAN.md` Phase 6 prompt for full spec):
@@ -398,9 +419,6 @@ Address the highest-impact gaps from `prototypes/distilled-design-critique.md`:
 1. **Track card urgency state** — add "something changed" indicator and deadline countdown badge to track cards (read `prototypes/briefing-concepts.html` for new layout concepts)
 2. **AI synthesis in feed** — add 1-sentence AI prose below headline on each signal item in TodayClient
 3. **Zone card status signal** — add new-story count or urgency ring to ZoneCard header
-
-### Pending manual step
-- **Add `CRON_SECRET` to GitHub Actions** — GitHub repo → Settings → Secrets → Actions → New repository secret → `CRON_SECRET` = `b78dd9a2fbbf30be25fb05dae118a6c8`. Required for hourly pipeline to run.
 
 ### Deploy reminder
 Always run `npx vercel --prod` after any code change — GitHub auto-deploy is unreliable.

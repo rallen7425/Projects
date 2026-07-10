@@ -1,0 +1,129 @@
+{
+  "dateBar": "Fri, June 19 · Juneteenth · North Andover, MA",
+  "breaking": [
+    {
+      "color": "#E24B4A",
+      "tag": "CELTICS · NBA",
+      "headline": "NBA Draft is Tuesday — Stevens has four days and one of the biggest decisions of his tenure",
+      "time": "Now",
+      "href": "/v2/zones/sports/story/celtics-draft"
+    }
+  ],
+  "zones": [
+    {
+      "id": "sports",
+      "name": "SPORTS",
+      "featured": "Celtics draft Tuesday — Giannis decision, picks 27 & 40, $27M exception",
+      "featuredHref": "/v2/zones/sports/story/celtics-draft",
+      "stories": [
+        { "text": "Sox swept by Toronto, fall to 29–43 — at Mariners tonight 10:10p", "href": "/v2/zones/sports/story/sox-mariners" },
+        { "text": "Gronkowski voted into Patriots Hall of Fame — 38th inductee",       "href": "/v2/zones/sports/story/gronk-hof" }
+      ],
+      "count": 3,
+      "bg": "#1b4332",
+      "nameColor": "#9FE1CB",
+      "bodyBg": "#f3faf6",
+      "label": "Sports"
+    },
+    {
+      "id": "local",
+      "name": "LOCAL",
+      "featured": "World Cup at Gillette today — Scotland vs. Morocco, 6pm, heavy traffic",
+      "featuredHref": "/v2/zones/local/story/world-cup-gillette",
+      "stories": [
+        { "text": "Juneteenth — markets closed, banks closed, Sox at 10:10 PM", "href": "/v2/zones/local/story/juneteenth-day" }
+      ],
+      "count": 2,
+      "bg": "#0c2d5e",
+      "nameColor": "#85B7EB",
+      "bodyBg": "#f2f6fc",
+      "label": "Local"
+    },
+    {
+      "id": "maine",
+      "name": "MAINE HOUSE",
+      "featured": "Great summer weekend ahead — mid-70s, sunny, low humidity",
+      "featuredHref": "/v2/zones/maine/story/maine-summer-weekend",
+      "stories": [
+        { "text": "World Cup quarter-final at Gillette July 9 — worth making the trip?", "href": "/v2/zones/maine/story/maine-july-plans" },
+        { "text": "Southern Maine coastal openings — summer season in full swing",       "href": "/v2/zones/maine/story/maine-summer-open" }
+      ],
+      "count": 3,
+      "bg": "#5c3208",
+      "nameColor": "#FAC775",
+      "bodyBg": "#fdf8f2",
+      "label": "Maine House"
+    },
+    {
+      "id": "tech",
+      "name": "TECH & AI",
+      "featured": "OpenAI acquires Astral — the company behind Python tools uv and ruff",
+      "featuredHref": "/v2/zones/tech/story/openai-astral",
+      "stories": [
+        { "text": "Anthropic launches Claude Corps — national fellowship for early-career Americans", "href": "/v2/zones/tech/story/anthropic-claude-corps" },
+        { "text": "AI is shifting from chat to tasks — what agentic systems actually mean",          "href": "/v2/zones/tech/story/agentic-shift" }
+      ],
+      "count": 3,
+      "bg": "#2a1d6e",
+      "nameColor": "#AFA9EC",
+      "bodyBg": "#f6f5fd",
+      "label": "Tech & AI"
+    },
+    {
+      "id": "finance",
+      "name": "FINANCE",
+      "featured": "Markets closed for Juneteenth — NYSE and Nasdaq dark today",
+      "featuredHref": "/v2/zones/finance/story/juneteenth-markets",
+      "stories": [
+        { "text": "Triple Witching was Thursday — expect volatility when markets reopen Monday", "href": "/v2/zones/finance/story/markets-monday" }
+      ],
+      "count": 2,
+      "bg": "#0c3322",
+      "nameColor": "#6EDCB8",
+      "bodyBg": "#f3faf5",
+      "label": "Finance"
+    }
+  ],
+  "trending": [
+    {
+      "topic": "Celtics draft Tuesday — Stevens' biggest decision",
+      "sub": "Picks 27 & 40, $27M exception, Giannis window closing",
+      "href": "/v2/zones/sports/story/celtics-draft",
+      "pillLabel": "Sports",
+      "pillBg": "#EAF3DE",
+      "pillColor": "#3B6D11"
+    },
+    {
+      "topic": "World Cup at Gillette today — 6pm kick-off",
+      "sub": "Scotland vs. Morocco · Route 1 and I-95 south avoid 3–10pm",
+      "href": "/v2/zones/local/story/world-cup-gillette",
+      "pillLabel": "Local",
+      "pillBg": "#E6F1FB",
+      "pillColor": "#185FA5"
+    },
+    {
+      "topic": "Sox swept by Toronto, fall to 29–43",
+      "sub": "At Mariners tonight 10:10 PM — trade deadline in 6 weeks",
+      "href": "/v2/zones/sports/story/sox-mariners",
+      "pillLabel": "Sports",
+      "pillBg": "#EAF3DE",
+      "pillColor": "#3B6D11"
+    },
+    {
+      "topic": "OpenAI acquires Astral — uv and ruff",
+      "sub": "Open-source Python tools going to OpenAI; terms undisclosed",
+      "href": "/v2/zones/tech/story/openai-astral",
+      "pillLabel": "Tech",
+      "pillBg": "#EEEDFE",
+      "pillColor": "#534AB7"
+    },
+    {
+      "topic": "Markets closed — Juneteenth federal holiday",
+      "sub": "NYSE and Nasdaq dark today; reopen Monday June 22",
+      "href": "/v2/zones/finance/story/juneteenth-markets",
+      "pillLabel": "Finance",
+      "pillBg": "#E1F5EE",
+      "pillColor": "#0F6E56"
+    }
+  ]
+}

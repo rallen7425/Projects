@@ -83,7 +83,7 @@ const ZONE_RUNNERS: ZoneRunner[] = [
   },
   {
     zone: 'work',
-    fetch: () => fetchGuardian('business', 'work'),
+    fetch: () => fetchGuardian('money', 'work'),
   },
 ]
 

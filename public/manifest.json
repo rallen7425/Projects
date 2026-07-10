@@ -2,10 +2,10 @@
   "name": "Distilled",
   "short_name": "Distilled",
   "description": "Your personal news briefing",
-  "start_url": "/briefing",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2d59a6",
+  "background_color": "#09090e",
+  "theme_color": "#09090e",
   "orientation": "portrait",
   "icons": [
     {
