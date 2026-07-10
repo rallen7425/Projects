@@ -424,10 +424,12 @@ When any React component throws during render, React's error recovery cycle runs
 
 **Reordered 2026-07-10** after a full-session infrastructure push (see Session log below and `rocky-coast-labs/ARCHITECTURE.md`). The user explicitly asked to hold off on all Distilled product work until the shared-platform migration was solid, and — once it resumes — to reorder the roadmap below (previously onboarding was Priority 1; it's now last).
 
-### Priority 0 — Manually test the new infrastructure (mostly done)
+### Priority 0 — Manually test the new infrastructure (done)
 Distilled now runs on the shared `rocky-coast-labs` Supabase project (`distilled` schema), migrated 2026-07-10. **Follow-up same-day testing (via `DEV_BYPASS_USER_ID` local dev, matching actual daily usage):** drove the full navigation depth — Today → Zones → Zone Detail → Story Detail (including the AI synthesis/"Distilled AI" section and Full Coverage sources) — plus Tracking and Saved and Profile pages. All render real migrated data correctly, zero console/page errors, zero failed requests.
 
-**Still not covered by any testing so far:** the tracking-topic-removal fix specifically (there were 0 tracked topics in the migrated data, so nothing to click "remove" on) — still needs a real add-then-remove-then-navigate-away-and-back cycle to confirm. Also not covered: real Supabase Auth sign-in on production (nothing there uses `DEV_BYPASS_USER_ID`, so production still just redirects to `/auth/signin` — untested since there's no real test account on the new project, unlike Rocky Coast Guide which got one).
+**Real production sign-in also now verified.** A real account exists on the shared project for this: `rallen7425+distilled@gmail.com` (password in `rocky-coast-labs/.secrets/distilled-test-password.txt`, gitignored). Created with the same ID as the already-migrated `distilled.users` row / `DEV_BYPASS_USER_ID` value, so signing in on production shows the same zones and saved article as local dev — confirmed working via a real sign-in on `distilled-news.vercel.app`, not just the bypass. (Note: a plain `rallen7425@gmail.com` account already exists on the shared project too, created for Rocky Coast Guide's admin — Supabase Auth logins are shared project-wide, not per-app, so a distinct `+distilled` address was used to avoid collision. Don't try to create `rallen7425@gmail.com` again here, it'll fail.)
+
+**Still not covered by any testing:** the tracking-topic-removal fix specifically (there were 0 tracked topics in the migrated data, so nothing to click "remove" on) — still needs a real add-then-remove-then-navigate-away-and-back cycle to confirm.
 
 ### Priority 1 — Resolve outstanding UI issues
 User has flagged there are UI issues to fix, not yet itemized in this doc — ask for specifics at the start of the session rather than assuming which ones.
