@@ -1,7 +1,7 @@
 import type { ArticleDisplay, ZoneType } from '@/types'
 import type { Database } from '@/types/supabase'
 
-type ArticleRow = Database['public']['Tables']['articles']['Row']
+type ArticleRow = Database['distilled']['Tables']['articles']['Row']
 
 export function toArticleDisplay(row: ArticleRow, nowMs = Date.now()): ArticleDisplay {
   const publishedMs = row.published_at ? new Date(row.published_at).getTime() : nowMs

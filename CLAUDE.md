@@ -306,10 +306,13 @@ All V2 code has been deleted. The full V3 app is deployed at https://distilled-n
 
 ### Infrastructure
 
-- **Supabase project:** `qyjkqfgodgnjlvjdyuci` (us-east-1)
-- **All env vars set** in Vercel and `.env.local` (SUPABASE_URL, SUPABASE_ANON_KEY, SERVICE_ROLE_KEY, GUARDIAN_API_KEY, ANTHROPIC_API_KEY, ALPHA_VANTAGE_KEY, CRON_SECRET)
+- **Supabase project:** `rocky-coast-labs` (ref `kywdezqgrtpzuecxxvfc`, us-east-1) — shared across the Rocky Coast Labs portfolio, one schema per app. Distilled's data lives in the **`distilled` schema**, not `public`. Migrated 2026-07-10 from a standalone project (`qyjkqfgodgnjlvjdyuci`, kept paused as a dormant backup, not in use).
+- All three Supabase clients (`lib/supabase/client.ts`, `server.ts`, `service.ts`) target the schema explicitly via `db: { schema: 'distilled' }` — don't remove that or queries silently hit (nonexistent) `public.*` instead.
+- `types/supabase.ts` is generated against the `distilled` schema: `supabase gen types typescript --project-id kywdezqgrtpzuecxxvfc --schema distilled`. Regenerate after any schema change.
+- **All env vars set** in Vercel and `.env.local` (SUPABASE_URL, SUPABASE_ANON_KEY, SERVICE_ROLE_KEY, GUARDIAN_API_KEY, ANTHROPIC_API_KEY, ALPHA_VANTAGE_KEY, CRON_SECRET, DEV_BYPASS_USER_ID) — URL/keys now point at the shared project
 - **Pipeline is running hourly** via GitHub Actions — ~90–95 articles per day across 7 zones
 - **`zone_quicklook` unique constraint** added: `unique(zone_type, label)` ✅
+- No real end users exist yet — `DEV_BYPASS_USER_ID` is a fixed test user, not real Supabase Auth. Don't build real auth-migration logic in until onboarding is rebuilt.
 
 ---
 

@@ -9,6 +9,7 @@ const createAnonClient = () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      db: { schema: 'distilled' },
       cookies: {
         getAll: () => cookieStore.getAll(),
         setAll: (cookiesToSet) => {
@@ -27,6 +28,7 @@ export const createServerSupabase = () => {
     return createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { db: { schema: 'distilled' } }
     )
   }
   return createAnonClient()
