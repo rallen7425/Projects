@@ -271,9 +271,9 @@ entertainment → type: 'entertainment' // Guardian culture
 
 ## Current status
 
-**Phase 5 complete — app is live and functional.**
+**Phase 5 complete — app is live and functional. Infrastructure migration also complete and fully tested (2026-07-10).**
 
-All V2 code has been deleted. The full V3 app is deployed at https://distilled-news.vercel.app.
+All V2 code has been deleted. The full V3 app is deployed at https://distilled-news.vercel.app, now running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below).
 
 ### What's been built
 
@@ -284,7 +284,8 @@ All V2 code has been deleted. The full V3 app is deployed at https://distilled-n
 | 3 | Content pipeline — Guardian, RSS, NWS weather, ESPN, Alpha Vantage, Claude Haiku summarization | ✅ Done |
 | 4 | Auth — email/password sign-up/sign-in, OAuth callback, `middleware.ts`, `initializeNewUser` | ✅ Done |
 | 5 | All 6 pages wired to live Supabase: Today, Zones hub, Zone detail, Story detail, Tracking, Read Later | ✅ Done |
-| 6 | Onboarding flow | ❌ Not built |
+| 6 | Onboarding flow | ❌ Not built — deliberately last priority, see "Next session" |
+| — | Migrate onto shared Rocky Coast Labs Supabase platform, verify end-to-end | ✅ Done 2026-07-10 |
 
 ### Route inventory
 
@@ -313,6 +314,7 @@ All V2 code has been deleted. The full V3 app is deployed at https://distilled-n
 - **Pipeline is running hourly** via GitHub Actions — ~90–95 articles per day across 7 zones
 - **`zone_quicklook` unique constraint** added: `unique(zone_type, label)` ✅
 - No real end users exist yet — `DEV_BYPASS_USER_ID` is a fixed test user, not real Supabase Auth. Don't build real auth-migration logic in until onboarding is rebuilt.
+- **A real production sign-in account now exists** for testing: `rallen7425+distilled@gmail.com` (password in `rocky-coast-labs/.secrets/distilled-test-password.txt`, gitignored — currently a simple 8-digit number, changed 2026-07-10 at the user's request since there's no sensitive data on this test account). Its ID matches `DEV_BYPASS_USER_ID` / the migrated `distilled.users` row, so it shows the same zones and saved article as local dev. Use this to test the real sign-in path (middleware auth, `/auth/signin`) rather than only ever testing via the bypass.
 
 ---
 
@@ -330,7 +332,11 @@ All V2 code has been deleted. The full V3 app is deployed at https://distilled-n
 
 4. **Code changes:** all three Supabase clients (`lib/supabase/client.ts`, `server.ts`, `service.ts`) now pass `db: { schema: 'distilled' }`; `types/supabase.ts` regenerated against the new schema; one hardcoded `Database['public']` reference in `lib/articleUtils.ts` fixed. Several columns tightened to `NOT NULL` (position, enabled, urgency_score, tags, all timestamp columns) to match app-level TS assumptions uncovered by the build — the original standalone project apparently had these constraints even though CLAUDE.md's simplified schema docs didn't mention them.
 
-5. **Verified:** local dev (real article headlines, zone names, personalized greeting all render correctly) and production (`distilled-news.vercel.app`, same checks). Not yet manually tested end-to-end by the user — see "Next session" below.
+5. **Verified:** local dev (real article headlines, zone names, personalized greeting all render correctly) and production (`distilled-news.vercel.app`, same checks).
+
+6. **Follow-up manual/automated testing pass (same day):** drove the full navigation depth via `DEV_BYPASS_USER_ID` local dev (Today → Zones → Zone Detail → Story Detail, including the AI synthesis section and Full Coverage sources, plus Tracking/Saved/Profile) — all real data, zero errors. Also created a real production sign-in account (`rallen7425+distilled@gmail.com`, ID matched to the migrated user so it shows the same data) and confirmed a real sign-in on `distilled-news.vercel.app` works end-to-end, not just the bypass. At the user's request, that account's password was simplified to a plain 8-digit number (no sensitive data on this test account).
+
+7. **Portfolio-wide, not just Distilled:** the same session also fully migrated Sonic Radar and Rocky Coast Guide onto the shared platform (both deployed and tested — Rocky Coast Guide's full onboarding flow in particular, which had never been tested before at all), fixed PM ReArchitected's broken git history and deployed it to Vercel for the first time, and fixed a plaintext-password leak in Rocky Coast Guide's docs. Full detail lives in `rocky-coast-labs/ARCHITECTURE.md` and `rocky-coast-labs/PLATFORM-OVERVIEW.md` (the latter written for a non-technical/PM audience).
 
 **Explicitly deferred:** all Distilled product work (tracking-fix confirmation, onboarding, UI/content/zone fixes) was held off for this entire session per explicit user instruction, to keep infrastructure work and product work from mixing. See "Next session" for the reordered priority list this produced.
 
@@ -405,7 +411,7 @@ When any React component throws during render, React's error recovery cycle runs
 - **Onboarding flow** (`/onboarding`) — page does not exist. New users get default zones (maine + tech) auto-created silently. There is no zone customization, zip code collection, or zone picker. The middleware allows `/onboarding` but the route 404s.
 
 ### Unconfirmed fix
-- **Tracking topic removal persistence** — fix was applied (2026-07-06) but not yet confirmed working on production. The delete itself works (DB shows 0 tracks after testing). The issue was the router cache. Fix: `revalidatePath('/tracking')` in server action + `router.refresh()` in client handler. If topics still reappear after navigating away and back, the next thing to check is whether `removeTrack` is actually completing before navigation (add a console.log to confirm).
+- **Tracking topic removal persistence** — fix was applied (2026-07-06) but still not confirmed working, on production or otherwise. The delete itself works (DB shows 0 tracks after testing). The issue was the router cache. Fix: `revalidatePath('/tracking')` in server action + `router.refresh()` in client handler. As of 2026-07-10 there were 0 tracked topics in the (migrated) data, so this couldn't be exercised during that session's testing pass either — still needs an actual add-then-remove-then-navigate-away-and-back cycle. A real production sign-in account now exists (see Infrastructure above) making this testable at any time. If topics still reappear after navigating away and back, the next thing to check is whether `removeTrack` is actually completing before navigation (add a console.log to confirm).
 
 ### Design gaps (from 2026-06-29 critique — to address in future sessions)
 - **Track cards lack urgency state** — nothing communicates "something changed on this story" or "this track closes in 4h." All tracks look the same regardless of urgency or deadline.
@@ -422,14 +428,9 @@ When any React component throws during render, React's error recovery cycle runs
 
 ## Next session: where to pick up
 
-**Reordered 2026-07-10** after a full-session infrastructure push (see Session log below and `rocky-coast-labs/ARCHITECTURE.md`). The user explicitly asked to hold off on all Distilled product work until the shared-platform migration was solid, and — once it resumes — to reorder the roadmap below (previously onboarding was Priority 1; it's now last).
+**Reordered 2026-07-10** after a full-session infrastructure push (see Session log and `rocky-coast-labs/ARCHITECTURE.md`). The user asked to hold off on all Distilled product work until the shared-platform migration was solid; now that it is, the roadmap below is reordered from what it used to be (onboarding was Priority 1; it's now last).
 
-### Priority 0 — Manually test the new infrastructure (done)
-Distilled now runs on the shared `rocky-coast-labs` Supabase project (`distilled` schema), migrated 2026-07-10. **Follow-up same-day testing (via `DEV_BYPASS_USER_ID` local dev, matching actual daily usage):** drove the full navigation depth — Today → Zones → Zone Detail → Story Detail (including the AI synthesis/"Distilled AI" section and Full Coverage sources) — plus Tracking and Saved and Profile pages. All render real migrated data correctly, zero console/page errors, zero failed requests.
-
-**Real production sign-in also now verified.** A real account exists on the shared project for this: `rallen7425+distilled@gmail.com` (password in `rocky-coast-labs/.secrets/distilled-test-password.txt`, gitignored). Created with the same ID as the already-migrated `distilled.users` row / `DEV_BYPASS_USER_ID` value, so signing in on production shows the same zones and saved article as local dev — confirmed working via a real sign-in on `distilled-news.vercel.app`, not just the bypass. (Note: a plain `rallen7425@gmail.com` account already exists on the shared project too, created for Rocky Coast Guide's admin — Supabase Auth logins are shared project-wide, not per-app, so a distinct `+distilled` address was used to avoid collision. Don't try to create `rallen7425@gmail.com` again here, it'll fail.)
-
-**Still not covered by any testing:** the tracking-topic-removal fix specifically (there were 0 tracked topics in the migrated data, so nothing to click "remove" on) — still needs a real add-then-remove-then-navigate-away-and-back cycle to confirm.
+**Infrastructure migration and testing are DONE** (see Infrastructure section and Session log above) — that's no longer a blocker. **Start with Priority 1 below.** The one specific thing still unconfirmed is the tracking-topic-removal fix (see "Known issues" above) — worth checking early since there's now a real production account to test it with.
 
 ### Priority 1 — Resolve outstanding UI issues
 User has flagged there are UI issues to fix, not yet itemized in this doc — ask for specifics at the start of the session rather than assuming which ones.
@@ -441,7 +442,7 @@ User has flagged ongoing problems/inconsistencies in how content is managed (lik
 Outstanding work on Zones, not yet itemized — ask for specifics.
 
 ### Priority 4 — Build Phase 6: Onboarding (deliberately last)
-Do this only after Priorities 0-3 are solid — the user's reasoning: onboarding is best built/tested against stable surrounding product surfaces (UI, content, zones) rather than a moving target, and is best paired with a fixed/static test user ID rather than rebuilding real signup flows prematurely.
+Do this only after Priorities 1-3 are solid — the user's reasoning: onboarding is best built/tested against stable surrounding product surfaces (UI, content, zones) rather than a moving target, and is best paired with a fixed/static test user ID rather than rebuilding real signup flows prematurely.
 
 3-step flow at `app/onboarding/page.tsx` (see `BUILDPLAN.md` Phase 6 prompt for full spec):
 - Step 1: Zip code (optional, enables Local zone)
