@@ -424,8 +424,10 @@ When any React component throws during render, React's error recovery cycle runs
 
 **Reordered 2026-07-10** after a full-session infrastructure push (see Session log below and `rocky-coast-labs/ARCHITECTURE.md`). The user explicitly asked to hold off on all Distilled product work until the shared-platform migration was solid, and — once it resumes — to reorder the roadmap below (previously onboarding was Priority 1; it's now last).
 
-### Priority 0 — Manually test the new infrastructure
-Distilled now runs on the shared `rocky-coast-labs` Supabase project (`distilled` schema), migrated 2026-07-10. Verified today via build/local-dev/production curl checks only — no hands-on manual testing yet. Before starting product work: actually use the app end-to-end (not just via `DEV_BYPASS_USER_ID`), including re-confirming the tracking-topic-removal fix (router cache fix applied 2026-07-06, still never manually confirmed — see `removeTrack`/`handleDelete` if topics reappear after nav-away-and-back).
+### Priority 0 — Manually test the new infrastructure (mostly done)
+Distilled now runs on the shared `rocky-coast-labs` Supabase project (`distilled` schema), migrated 2026-07-10. **Follow-up same-day testing (via `DEV_BYPASS_USER_ID` local dev, matching actual daily usage):** drove the full navigation depth — Today → Zones → Zone Detail → Story Detail (including the AI synthesis/"Distilled AI" section and Full Coverage sources) — plus Tracking and Saved and Profile pages. All render real migrated data correctly, zero console/page errors, zero failed requests.
+
+**Still not covered by any testing so far:** the tracking-topic-removal fix specifically (there were 0 tracked topics in the migrated data, so nothing to click "remove" on) — still needs a real add-then-remove-then-navigate-away-and-back cycle to confirm. Also not covered: real Supabase Auth sign-in on production (nothing there uses `DEV_BYPASS_USER_ID`, so production still just redirects to `/auth/signin` — untested since there's no real test account on the new project, unlike Rocky Coast Guide which got one).
 
 ### Priority 1 — Resolve outstanding UI issues
 User has flagged there are UI issues to fix, not yet itemized in this doc — ask for specifics at the start of the session rather than assuming which ones.
