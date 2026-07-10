@@ -318,6 +318,22 @@ All V2 code has been deleted. The full V3 app is deployed at https://distilled-n
 
 ## Session log
 
+### Session 2026-07-10 — Rocky Coast Labs shared platform + Distilled cutover
+
+**What was done (mostly outside this repo — full detail in `rocky-coast-labs/ARCHITECTURE.md`):**
+
+1. **Discovered and fixed a major gap unrelated to the main task** — the entire V3 rebuild (everything in "What's been built" above) had been deployed to production via `vercel --prod` directly from disk for months, but never committed to git. Reconciled against this file's own session log, confirmed it matched, committed and pushed (`efd9851`).
+
+2. **Built the "Rocky Coast Labs" shared platform** — one Supabase free-tier project (`rocky-coast-labs`, ref `kywdezqgrtpzuecxxvfc`) shared across the user's whole app portfolio (Distilled, Sonic Radar, Rocky Coast Guide, PM ReArchitected, Is It Offensive), one Postgres schema per app, to stop the sprawl of separate paid-tier-risk Supabase projects per prototype.
+
+3. **Migrated Distilled onto it** — all 6 tables (1680 articles, 6 zones, 1 test user, 1 save) moved into the new `distilled` schema, preserving IDs/FK relationships. Also migrated Sonic Radar and Rocky Coast Guide the same day (see their own repos). Old standalone project (`qyjkqfgodgnjlvjdyuci`) paused as a dormant backup, not deleted.
+
+4. **Code changes:** all three Supabase clients (`lib/supabase/client.ts`, `server.ts`, `service.ts`) now pass `db: { schema: 'distilled' }`; `types/supabase.ts` regenerated against the new schema; one hardcoded `Database['public']` reference in `lib/articleUtils.ts` fixed. Several columns tightened to `NOT NULL` (position, enabled, urgency_score, tags, all timestamp columns) to match app-level TS assumptions uncovered by the build — the original standalone project apparently had these constraints even though CLAUDE.md's simplified schema docs didn't mention them.
+
+5. **Verified:** local dev (real article headlines, zone names, personalized greeting all render correctly) and production (`distilled-news.vercel.app`, same checks). Not yet manually tested end-to-end by the user — see "Next session" below.
+
+**Explicitly deferred:** all Distilled product work (tracking-fix confirmation, onboarding, UI/content/zone fixes) was held off for this entire session per explicit user instruction, to keep infrastructure work and product work from mixing. See "Next session" for the reordered priority list this produced.
+
 ### Session 2026-07-06 — Pipeline fixes, stale article filters, tracking persistence, zone detail redesign
 
 **What was fixed:**
@@ -406,10 +422,23 @@ When any React component throws during render, React's error recovery cycle runs
 
 ## Next session: where to pick up
 
-### Priority 0 — Confirm tracking fix
-If the user reports topics still reappearing after navigating away and back, the router cache fix may not be enough. Next step: add a `console.log` inside `removeTrack` on the server and `handleDelete` on the client to confirm the delete is completing before navigation. If it is, the issue is purely the router cache and `router.push('/tracking')` (hard navigation) instead of `router.refresh()` may be needed.
+**Reordered 2026-07-10** after a full-session infrastructure push (see Session log below and `rocky-coast-labs/ARCHITECTURE.md`). The user explicitly asked to hold off on all Distilled product work until the shared-platform migration was solid, and — once it resumes — to reorder the roadmap below (previously onboarding was Priority 1; it's now last).
 
-### Priority 1 — Build Phase 6: Onboarding
+### Priority 0 — Manually test the new infrastructure
+Distilled now runs on the shared `rocky-coast-labs` Supabase project (`distilled` schema), migrated 2026-07-10. Verified today via build/local-dev/production curl checks only — no hands-on manual testing yet. Before starting product work: actually use the app end-to-end (not just via `DEV_BYPASS_USER_ID`), including re-confirming the tracking-topic-removal fix (router cache fix applied 2026-07-06, still never manually confirmed — see `removeTrack`/`handleDelete` if topics reappear after nav-away-and-back).
+
+### Priority 1 — Resolve outstanding UI issues
+User has flagged there are UI issues to fix, not yet itemized in this doc — ask for specifics at the start of the session rather than assuming which ones.
+
+### Priority 2 — Fix content management inconsistencies
+User has flagged ongoing problems/inconsistencies in how content is managed (likely pipeline/article-display related, not yet itemized) — ask for specifics before diagnosing.
+
+### Priority 3 — Zones work
+Outstanding work on Zones, not yet itemized — ask for specifics.
+
+### Priority 4 — Build Phase 6: Onboarding (deliberately last)
+Do this only after Priorities 0-3 are solid — the user's reasoning: onboarding is best built/tested against stable surrounding product surfaces (UI, content, zones) rather than a moving target, and is best paired with a fixed/static test user ID rather than rebuilding real signup flows prematurely.
+
 3-step flow at `app/onboarding/page.tsx` (see `BUILDPLAN.md` Phase 6 prompt for full spec):
 - Step 1: Zip code (optional, enables Local zone)
 - Step 2: Zone template picker — tap cards, not checkboxes; pre-select Headlines + Local
@@ -417,7 +446,7 @@ If the user reports topics still reappearing after navigating away and back, the
 - Activation screen: calls `addZoneFromTemplate`, triggers pipeline, redirects to `/zones`
 - Middleware guard: users with existing zones who visit `/onboarding` → redirect to `/zones`
 
-### Priority 2 — Design fixes from critique (after onboarding)
+### Priority 5 — Design fixes from critique
 Address the highest-impact gaps from `prototypes/distilled-design-critique.md`:
 1. **Track card urgency state** — add "something changed" indicator and deadline countdown badge to track cards (read `prototypes/briefing-concepts.html` for new layout concepts)
 2. **AI synthesis in feed** — add 1-sentence AI prose below headline on each signal item in TodayClient
