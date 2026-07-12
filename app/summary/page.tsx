@@ -6,7 +6,7 @@ import { getTopArticles, getArticlesByZone, searchArticlesByTopic } from '@/lib/
 import { getUserZones } from '@/lib/db/zones'
 import { getTrackedTopics } from '@/lib/db/tracks'
 import { toArticleDisplay, dedupeStories, selectBreakingStories, selectTopStories } from '@/lib/articleUtils'
-import InDepthClient from './InDepthClient'
+import SummaryClient from './SummaryClient'
 import type { ZoneType } from '@/types'
 
 function getGreeting(): string {
@@ -17,7 +17,7 @@ function getGreeting(): string {
   return 'Still up, Rick?'
 }
 
-export default async function InDepthPage() {
+export default async function SummaryPage() {
   const user = await getEffectiveUser()
   if (!user) redirect('/auth/signin')
 
@@ -79,7 +79,7 @@ export default async function InDepthPage() {
   const greeting = getGreeting()
 
   return (
-    <InDepthClient
+    <SummaryClient
       breakingArticles={breakingArticles}
       topStoryArticles={topStoryArticles}
       remainingArticles={remainingArticles}

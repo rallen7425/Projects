@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/ui/BottomNav'
+import TrackModal from '@/components/ui/TrackModal'
 import Toast from '@/components/ui/Toast'
-import { saveArticle, unsaveArticle } from '@/lib/actions'
+import { addTrack, saveArticle, unsaveArticle } from '@/lib/actions'
 import type { ArticleDisplay } from '@/types'
 import { ZONE_META } from '@/types'
 
@@ -52,6 +53,7 @@ export default function StoryDetailClient({
   const meta = ZONE_META[article.zoneType] ?? ZONE_META.tech
   const [saved, setSaved] = useState(initialSaved)
   const [toast, setToast] = useState({ visible: false, message: '' })
+  const [trackModalOpen, setTrackModalOpen] = useState(false)
 
   const showToast = (message: string) => {
     setToast({ visible: true, message })
@@ -70,6 +72,12 @@ export default function StoryDetailClient({
     }
   }
 
+  const handleTrack = async (topic: string, _zone: string | null) => {
+    const result = await addTrack(topic).catch(() => null)
+    if (result) showToast(`Tracking "${topic}"`)
+    else showToast(`Couldn't save tracking topic`)
+  }
+
   // All source links: main article + coverage
   const allSources = [
     ...(article.sourceUrl ? [article] : []),
@@ -79,11 +87,11 @@ export default function StoryDetailClient({
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100dvh', paddingBottom: '120px' }}>
 
-      {/* Fixed top bar — gradient overlay on hero */}
+      {/* Fixed header — back navigation only, stays fixed while hero scrolls underneath */}
       <div style={{
         position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: '430px', zIndex: 100,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'flex', alignItems: 'center',
         padding: '54px 20px 14px',
         background: 'linear-gradient(to bottom, rgba(9,9,14,0.95) 60%, rgba(9,9,14,0))',
         pointerEvents: 'none',
@@ -100,25 +108,11 @@ export default function StoryDetailClient({
           <svg width="9" height="15" viewBox="0 0 9 15" fill="none">
             <path d="M8 1L1.5 7.5L8 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          {meta.label}
-        </button>
-        <button
-          onClick={handleSave}
-          style={{
-            width: '36px', height: '36px', borderRadius: '50%',
-            background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: saved ? 'var(--primary)' : 'var(--text-2)',
-            pointerEvents: 'auto',
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
-          </svg>
+          Back
         </button>
       </div>
 
-      {/* Hero — full bleed, 260px */}
+      {/* Hero — full bleed, 260px. Zone pill + Save/Track overlay the image and scroll with it. */}
       <div style={{ position: 'relative', width: '100%', height: '260px', overflow: 'hidden', background: ZONE_GRADIENTS[article.zoneType] ?? 'var(--surface)' }}>
         {article.imageUrl && (
           <img
@@ -129,18 +123,52 @@ export default function StoryDetailClient({
         )}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,9,14,0.15) 0%, rgba(9,9,14,0) 35%, rgba(9,9,14,0.6) 70%, rgba(9,9,14,1) 100%)' }} />
 
-        {/* Zone pill — bottom-left, clickable → zone page */}
-        <div
-          onClick={() => router.push(zonePageHref)}
-          style={{
-            position: 'absolute', bottom: '14px', left: '20px',
-            display: 'flex', alignItems: 'center', gap: '6px',
-            fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-            color: meta.color, cursor: 'pointer',
-          }}
-        >
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: meta.color, flexShrink: 0 }} />
-          {meta.label} Zone
+        {/* Top row — zone pill (left) + Save/Track (right). Offset below the fixed header's back button. */}
+        <div style={{ position: 'absolute', top: '96px', left: '18px', right: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div
+            onClick={() => router.push(zonePageHref)}
+            style={{
+              background: 'rgba(9,9,14,0.70)', backdropFilter: 'blur(8px)',
+              borderRadius: '20px', padding: '4px 12px',
+              border: `1px solid ${meta.border}`,
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: meta.color }}>
+              {meta.label}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={handleSave}
+              aria-label={saved ? 'Remove from Read Later' : 'Save to Read Later'}
+              style={{
+                width: '36px', height: '36px', borderRadius: '50%',
+                background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: saved ? 'var(--primary)' : 'var(--text-2)',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+              </svg>
+            </button>
+            <button
+              onClick={() => setTrackModalOpen(true)}
+              aria-label="Track this topic"
+              style={{
+                width: '36px', height: '36px', borderRadius: '50%',
+                background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: 'var(--text-2)',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Time — bottom-right */}
@@ -155,7 +183,7 @@ export default function StoryDetailClient({
         {/* Headline */}
         <h1 style={{
           fontSize: '24px', fontWeight: 700, lineHeight: 1.28, letterSpacing: '-0.3px',
-          color: 'var(--text)', marginTop: '18px', marginBottom: '20px',
+          color: 'var(--text)', marginTop: '10px', marginBottom: '18px',
         }}>
           {article.headline}
         </h1>
@@ -167,21 +195,11 @@ export default function StoryDetailClient({
             border: '1px solid var(--border-mid)',
             borderTop: `2px solid ${meta.color}`,
             borderRadius: '14px',
-            padding: '18px 18px 20px',
+            padding: '16px 18px 18px',
             marginBottom: '8px',
           }}>
-            {/* Distilled AI badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '5px',
-                background: meta.bg, border: `1px solid ${meta.border}`,
-                borderRadius: '20px', padding: '3px 9px 3px 6px',
-              }}>
-                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: meta.color }} />
-                <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: meta.color }}>
-                  Distilled AI
-                </span>
-              </div>
+            <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: meta.color, marginBottom: '8px' }}>
+              Distilled AI
             </div>
             <p style={{ fontSize: '15.5px', lineHeight: 1.65, color: 'var(--text)', margin: 0 }}>
               {article.summary}
@@ -292,6 +310,16 @@ export default function StoryDetailClient({
       </div>
 
       <BottomNav activeTab="today" />
+
+      <TrackModal
+        open={trackModalOpen}
+        onClose={() => setTrackModalOpen(false)}
+        onConfirm={handleTrack}
+        initialTopic={article.tags[0] ?? article.headline.split(' ').slice(0, 4).join(' ')}
+        initialZone={article.zoneType}
+        aiMode
+      />
+
       <Toast message={toast.message} visible={toast.visible} />
     </div>
   )

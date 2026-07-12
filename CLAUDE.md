@@ -24,11 +24,13 @@ Distilled is a mobile-first, AI-powered personal news briefing app. The design g
 
 **Target platforms:** Web (primary), PWA (installable), App Store (future via Expo/React Native). All user data is server-side so the experience is identical on mobile, tablet, and desktop.
 
-**The four core screens:**
-- **Today** (`/`) — urgency-sorted briefing across all zones: Critical, Your Day, On Your Radar, When You Have a Moment
+**Core screens:**
+- **Home / In-Depth View** (`/`) — the default landing page (changed 2026-07-12; previously this was the compact "Today" list). Urgency-tiered briefing: **Breaking** (urgent + ≤12h old, only appears when something qualifies), **Top Stories** (cross-zone, always ≥3), **Your Zones**, **Today** (expanded "Story Card" format — full-bleed hero, AI Snapshot, "Full Coverage →" link — paginated 5 at a time via a "View More" row), **Tracking** (one card per tracked topic).
+- **Summary View** (`/summary`) — the original compact list-style briefing, reachable via the hamburger menu. Shares the same Breaking/Top Stories/Your Zones/Tracking sections as Home, but Today (+ a separate "More" section, not paginated) render as compact `StoryItem` rows instead of expanded Story Cards.
 - **Zones** (`/zones`) — hub showing all user zones as cards with live hero stats/schedules/headlines; tap into any zone for full story list
-- **Tracking** (`/tracking`) — topics the user is actively following, with live article carousels
+- **Tracking** (`/tracking`) — dedicated page listing every tracked topic with live article carousels (distinct from the Tracking *section* that now also appears on Home/Summary)
 - **Read Later** (`/saved`) — bookmarked articles, filterable by zone
+- **Menu** (hamburger icon, 5th item in the bottom nav) — Profile, My Zones, Tracking & Saved, Summary View
 
 ---
 
@@ -271,9 +273,9 @@ entertainment → type: 'entertainment' // Guardian culture
 
 ## Current status
 
-**Phase 5 complete — app is live and functional. Infrastructure migration also complete and fully tested (2026-07-10).**
+**Phase 7 complete — app is live and functional, home page substantially restructured (2026-07-12).**
 
-All V2 code has been deleted. The full V3 app is deployed at https://distilled-news.vercel.app, now running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below).
+All V2 code has been deleted. The full app is deployed at https://distilled-news.vercel.app, running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below).
 
 ### What's been built
 
@@ -285,25 +287,31 @@ All V2 code has been deleted. The full V3 app is deployed at https://distilled-n
 | 4 | Auth — email/password sign-up/sign-in, OAuth callback, `middleware.ts`, `initializeNewUser` | ✅ Done |
 | 5 | All 6 pages wired to live Supabase: Today, Zones hub, Zone detail, Story detail, Tracking, Read Later | ✅ Done |
 | 6 | Onboarding flow | ❌ Not built — deliberately last priority, see "Next session" |
+| 7 | Home page restructure — hamburger menu, Breaking/Top Stories tiers, redesigned Tracking (topic cards), story dedup, In-Depth View promoted to `/`, legacy view moved to `/summary` | ✅ Done 2026-07-12 |
 | — | Migrate onto shared Rocky Coast Labs Supabase platform, verify end-to-end | ✅ Done 2026-07-10 |
 
 ### Route inventory
 
 ```
-/                          Today page — top 30 articles, urgency buckets
+/                          Home / In-Depth View — Breaking, Top Stories, Your Zones, paginated Today, Tracking
+                            (app/page.tsx + app/InDepthClient.tsx)
+/summary                   Summary View — same sections, compact StoryItem rows for Today + a More section
+                            (app/summary/page.tsx + app/summary/SummaryClient.tsx)
 /zones                     Zones hub — user's zones as cards with live hero data
 /zones/[zoneId]            Zone detail — "Top Stories" sorted by recency (zoneId = zone UUID)
-/zones/[zoneId]/story/[storyId]  Story detail (zoneId = zone TYPE string e.g. 'sports')
+/zones/[zoneId]/story/[storyId]  Story detail / "Detailed view" (zoneId = zone TYPE string e.g. 'sports')
 /tracking                  Tracked topics with article carousels
 /saved                     Read Later with zone filter pills
 /auth/signin               Email + Google sign-in
 /auth/signup               Email sign-up → "check your email" confirmation screen
-/auth/callback             OAuth + email confirmation handler
+/auth/callback              OAuth + email confirmation handler
 /profile                   Profile page with sign out
 /api/pipeline/trigger      POST — runs content pipeline (requires x-cron-secret header)
 ```
 
 **URL asymmetry to be aware of:** Zone detail uses the zone's database UUID (`/zones/{uuid}`). Story detail uses zone type string (`/zones/sports/story/{uuid}`). This is intentional — stories link directly without knowing the user's zone UUID.
+
+**`/` and `/summary` are near-duplicates, not two independent implementations.** Both pages call the same server-side selection pipeline (`selectBreakingStories`, `selectTopStories`, `dedupeStories` in `lib/articleUtils.ts`) and share the same Breaking/Top Stories/Your Zones/Tracking sections. The only real difference is how the remaining "Today" articles render: `InDepthClient.tsx` uses the expanded `StoryCard` component (paginated, no separate More section); `SummaryClient.tsx` uses the compact `StoryItem` row (capped at 5 for Today, everything else falls into a separate More section). Keep both files' Breaking/Top Stories/Tracking JSX in sync when changing one — they were deliberately kept as separate files rather than a shared component to match how this app's client components have been built throughout (see design system notes below).
 
 ### Infrastructure
 
@@ -319,6 +327,38 @@ All V2 code has been deleted. The full V3 app is deployed at https://distilled-n
 ---
 
 ## Session log
+
+### Session 2026-07-12 — Hamburger menu, In-Depth View, home page restructure, page swap
+
+**Product work resumed after the 2026-07-10 infrastructure push.** Large, multi-part session — summarized in the order the work happened.
+
+1. **Hamburger menu added to `BottomNav`** (`components/ui/BottomNav.tsx`) — a 5th icon on the right of the bottom nav opens a bottom-sheet menu: Profile, My Zones, Tracking & Saved, (later renamed) Summary View. Fixed a stale `distilled` entry in `~/.claude/launch.json` that pointed at a deleted V2 proxy script.
+
+2. **Built a new "In-Depth View"** as a duplicate of the Today page (initially at `/in-depth`, later promoted to `/` — see #7). Greeting/Tracking/Your Zones sections were kept identical to the original; the Today list was rebuilt as an expanded **"Story Card"** — full-bleed hero image, headline, AI Snapshot summary, and (initially) an in-place "See Full Coverage" expand/collapse accordion fetching coverage via a new `getArticleCoverage` server action.
+
+3. **Zone filter pills added under Today** (and later "More") on both pages — multi-select, unselected = grey/no fill, selected = filled with that zone's color. Iterated twice on bugs: (a) pills were only showing zones that happened to have leftover articles — fixed to always show every zone in `zoneData`; (b) pills were wrapping onto a second line — fixed to a single-row horizontal scroll (`overflowX: 'auto'`, `flexShrink: 0` on each pill).
+
+4. **Major home-page restructure** (`lib/articleUtils.ts` + both `page.tsx` server components + both client components) — replaced the old single "Tracking" section (top stories biased toward tracked topics) with a proper priority pipeline:
+   - **Breaking** — new section, `selectBreakingStories()`: urgent (`urgencyScore >= 4`) stories from the last 12h only. Renders only when something qualifies; uses the same 300px `TrackCard` format as Top Stories.
+   - **Top Stories** — renamed from the old Tracking section, `selectTopStories()`: pure urgency/recency/zone-distribution scoring (no tracked-topic bias), excludes anything already claimed by Breaking, always returns ≥3.
+   - **Your Zones** — unchanged.
+   - **Today** — first 5 (Home: capped, extra overflow into a "More" section; In-Depth: paginated 5-at-a-time via a "View More" row, "More" section removed entirely on In-Depth per explicit request).
+   - **Tracking** — repositioned lower, redefined to mean the user's *actual* tracked topics (previously it meant general top stories). New `TrackingTopicCard` component reuses the `ZoneCard` (172px) visual format; one card per tracked topic showing its best-matching article. Handles 0/≤9/>9 topic counts (Add-topic card always last; a View-More card appears as the 9th slot when there are more than 9 topics, capping the row at 10 cards).
+   - **Story dedup** (`dedupeStories()`) — the pipeline frequently stores several near-duplicate DB rows about the same real-world event (verified via a direct Supabase query: 7 separate rows about one senator's death). A naive "same tag" dedup was rejected after finding tags like "US Senate" and "Politics" shared between genuinely unrelated stories — the shipped heuristic requires **both** a shared tag **and** ≥2 shared significant headline words before treating two rows as duplicates, applied once before the Breaking/Top Stories/Today split.
+
+5. **"Full Coverage" link consistency pass** — Breaking/Top Stories cards originally showed the source name + an "Open in {Zone} →" pill (misleading label; it actually navigated to the story detail page, not the zone page). Replaced across **all four** card types (Breaking, Top Stories, Today, and In-Depth's former accordion) with one consistent treatment: no source name, zone pill + Save/Track icons overlaid top of the image (matching the Story Card pattern), and a plain "Full Coverage →" text link bottom-right in the zone's color — matching `ZoneCard`'s "Open →" link exactly. This removed the in-place expand/collapse accordion entirely (per explicit request for identical behavior across all four sections); `getArticleCoverage` and its related state were deleted as dead code.
+
+6. **Detailed view (`StoryDetailClient.tsx`) brought in line with the new Story Card pattern** — the fixed top bar previously showed a "back to zone" label next to the back chevron, which was genuinely confusing (it actually called `router.back()`, not zone navigation). Split responsibilities: the **fixed** header now only contains "Back"; the zone pill + Save + a **new Track button** (previously missing entirely on this page) now overlay the hero image and scroll away with it, exactly like a Story Card. Also fixed a pre-existing display bug where the zone pill read "Maine Zone Zone" (the zone label already includes the word "Zone"; the template appended it again). "Distilled AI" changed from a pill badge to plain colored text on this page too, and hero→headline spacing was tightened.
+
+7. **Swapped Home and In-Depth View, per explicit request.** `/in-depth` (`InDepthClient.tsx`) is now served at `/` — the app's landing page. The original page moved to `/summary` and its client component was renamed `TodayClient.tsx` → `SummaryClient.tsx`. The hamburger menu's "In-Depth View" entry was renamed **"Summary View"** and now links to `/summary`. The bottom-nav Home/Today icon already pointed at `/`, so no change was needed there — it now opens the new Story-Card-formatted page automatically.
+
+**Files touched:** `lib/articleUtils.ts` (new `selectBreakingStories`, `selectTopStories`, `dedupeStories`; old `scoredArticlesForTracking` removed), `lib/actions.ts` (`getArticleCoverage` added then removed), `app/page.tsx` + `app/InDepthClient.tsx` (new home page, moved from `app/in-depth/`), `app/summary/page.tsx` + `app/summary/SummaryClient.tsx` (legacy view, moved/renamed from `app/page.tsx` + `app/TodayClient.tsx`), `components/ui/BottomNav.tsx`, `app/zones/[zoneId]/story/[storyId]/StoryDetailClient.tsx`.
+
+**Verified in browser throughout** (dev server, both `/` and `/summary`, mobile + desktop viewports): section ordering, dedup correctness (confirmed the 7-row Lindsey Graham case collapsed to 1 per section), shared zone-filter state, pagination on In-Depth, Tracking card Add/View-More logic at 0 and 1 topics (couldn't exercise the >9 overflow case live — the test account had 0–1 tracked topics all session, see Known issues), Full Coverage links navigating to the correct Detailed view via precise ref-based clicks (not just eyeballed coordinates — an earlier eyeballed click missed the target and looked like a bug before this was caught).
+
+**Noticed but out of scope, flagged as a background task:** `relativeTime()` (duplicated in several client components) computes elapsed time from `Date.now()` at render time, causing a React hydration mismatch warning on first load (confirmed pre-existing on the original page too, not introduced today).
+
+---
 
 ### Session 2026-07-10 — Rocky Coast Labs shared platform + Distilled cutover
 
@@ -413,6 +453,12 @@ When any React component throws during render, React's error recovery cycle runs
 ### Unconfirmed fix
 - **Tracking topic removal persistence** — fix was applied (2026-07-06) but still not confirmed working, on production or otherwise. The delete itself works (DB shows 0 tracks after testing). The issue was the router cache. Fix: `revalidatePath('/tracking')` in server action + `router.refresh()` in client handler. As of 2026-07-10 there were 0 tracked topics in the (migrated) data, so this couldn't be exercised during that session's testing pass either — still needs an actual add-then-remove-then-navigate-away-and-back cycle. A real production sign-in account now exists (see Infrastructure above) making this testable at any time. If topics still reappear after navigating away and back, the next thing to check is whether `removeTrack` is actually completing before navigation (add a console.log to confirm).
 
+### Untested at scale
+- **Tracking section overflow states** (2026-07-12 redesign — see Session log) — the 0-topic and 1-topic states were verified live, but the 9-and-10-card overflow behavior (first 8 topics + a "View More" card + the Add card) was only verified by code review, since the test account had at most 1 tracked topic all session. Worth adding ~10 tracked topics to a test account and confirming the card count/ordering live before trusting it in production.
+
+### Cosmetic / non-blocking
+- **`relativeTime()` hydration mismatch** — several client components (`app/InDepthClient.tsx`, `app/summary/SummaryClient.tsx`, `components/ui/StoryItem.tsx`, `StoryDetailClient.tsx`) each define a local `relativeTime()` helper that computes elapsed time from `Date.now()` at render time. Because these are server-rendered once before hydration, the server's and the client's computed strings ("33m ago" vs "34m ago") can differ, producing a React hydration warning in the console on every page load. Confirmed pre-existing on the original page too, not introduced by the 2026-07-12 restructure. A fix (compute the string only after mount) was spawned as a separate background task on 2026-07-12; check whether it landed before re-investigating from scratch.
+
 ### Design gaps (from 2026-06-29 critique — to address in future sessions)
 - **Track cards lack urgency state** — nothing communicates "something changed on this story" or "this track closes in 4h." All tracks look the same regardless of urgency or deadline.
 - **Time-bounded tracking has no design language** — deadline badges, countdowns, and expiry indicators don't exist anywhere in the UI.
@@ -428,21 +474,28 @@ When any React component throws during render, React's error recovery cycle runs
 
 ## Next session: where to pick up
 
-**Reordered 2026-07-10** after a full-session infrastructure push (see Session log and `rocky-coast-labs/ARCHITECTURE.md`). The user asked to hold off on all Distilled product work until the shared-platform migration was solid; now that it is, the roadmap below is reordered from what it used to be (onboarding was Priority 1; it's now last).
+**Reordered 2026-07-12** after the home-page restructure session (see Session log). Priority 1 (UI issues) and a large chunk of Priority 2 (content — story duplication specifically) from the 2026-07-10 plan are now substantially addressed. Onboarding is still deliberately last.
 
-**Infrastructure migration and testing are DONE** (see Infrastructure section and Session log above) — that's no longer a blocker. **Start with Priority 1 below.** The one specific thing still unconfirmed is the tracking-topic-removal fix (see "Known issues" above) — worth checking early since there's now a real production account to test it with.
+### Priority 1 — Verify the 2026-07-12 changes hold up on mobile
+This session's work was verified in the dev browser pane (desktop + mobile viewport widths) but not yet on a real phone. Push to production and do a hands-on pass on an actual device — check the hamburger menu bottom sheet, horizontal-scroll pill row, and Story Card layout for any touch-target or viewport issues that don't show up in emulation.
 
-### Priority 1 — Resolve outstanding UI issues
-User has flagged there are UI issues to fix, not yet itemized in this doc — ask for specifics at the start of the session rather than assuming which ones.
+### Priority 2 — Confirm Tracking section overflow states with real data
+Add ~10 tracked topics to the test account and confirm the 9-and-10-card layout (8 topics + View More + Add) actually renders and behaves as designed — see "Untested at scale" in Known issues.
 
-### Priority 2 — Fix content management inconsistencies
-User has flagged ongoing problems/inconsistencies in how content is managed (likely pipeline/article-display related, not yet itemized) — ask for specifics before diagnosing.
+### Priority 3 — Fix the `relativeTime()` hydration warning
+A background task was already spawned for this on 2026-07-12 (see Known issues) — check whether it landed before redoing the work.
 
-### Priority 3 — Zones work
+### Priority 4 — Confirm tracking-topic-removal persistence fix
+Still unconfirmed since 2026-07-06 (see Known issues) — a real production account now exists, so this is easy to test whenever it comes up.
+
+### Priority 5 — Remaining content-management inconsistencies
+The user's original Priority 2 (2026-07-10 plan) was broader than just story duplication — ask if there are other pipeline/content issues still open before assuming this is fully closed out.
+
+### Priority 6 — Zones work
 Outstanding work on Zones, not yet itemized — ask for specifics.
 
-### Priority 4 — Build Phase 6: Onboarding (deliberately last)
-Do this only after Priorities 1-3 are solid — the user's reasoning: onboarding is best built/tested against stable surrounding product surfaces (UI, content, zones) rather than a moving target, and is best paired with a fixed/static test user ID rather than rebuilding real signup flows prematurely.
+### Priority 7 — Build Phase 6: Onboarding (deliberately last)
+Do this only after the above are solid — the user's reasoning: onboarding is best built/tested against stable surrounding product surfaces rather than a moving target, and is best paired with a fixed/static test user ID rather than rebuilding real signup flows prematurely.
 
 3-step flow at `app/onboarding/page.tsx` (see `BUILDPLAN.md` Phase 6 prompt for full spec):
 - Step 1: Zip code (optional, enables Local zone)
@@ -451,10 +504,10 @@ Do this only after Priorities 1-3 are solid — the user's reasoning: onboarding
 - Activation screen: calls `addZoneFromTemplate`, triggers pipeline, redirects to `/zones`
 - Middleware guard: users with existing zones who visit `/onboarding` → redirect to `/zones`
 
-### Priority 5 — Design fixes from critique
+### Priority 8 — Design fixes from critique
 Address the highest-impact gaps from `prototypes/distilled-design-critique.md`:
 1. **Track card urgency state** — add "something changed" indicator and deadline countdown badge to track cards (read `prototypes/briefing-concepts.html` for new layout concepts)
-2. **AI synthesis in feed** — add 1-sentence AI prose below headline on each signal item in TodayClient
+2. **AI synthesis in feed** — add 1-sentence AI prose below headline on each signal item in the compact `StoryItem` row (Summary View)
 3. **Zone card status signal** — add new-story count or urgency ring to ZoneCard header
 
 ### Deploy reminder
