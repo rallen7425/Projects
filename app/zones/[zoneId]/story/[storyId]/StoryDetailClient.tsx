@@ -224,16 +224,16 @@ export default function StoryDetailClient({
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               {allSources.map((src) => (
-                <a
+                <div
                   key={src.id}
-                  href={src.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={() => router.push(
+                    `/zones/${article.zoneType}/story/${article.id}/read?url=${encodeURIComponent(src.sourceUrl)}&name=${encodeURIComponent(src.sourceName)}`
+                  )}
                   style={{
                     background: 'var(--surface)', border: '1px solid var(--border)',
                     borderRadius: '10px', padding: '13px 14px',
                     display: 'flex', alignItems: 'center', gap: '14px',
-                    textDecoration: 'none',
+                    cursor: 'pointer',
                   }}
                 >
                   {/* Publisher initial badge */}
@@ -258,7 +258,7 @@ export default function StoryDetailClient({
                     <polyline points="15 3 21 3 21 9"/>
                     <line x1="10" y1="14" x2="21" y2="3"/>
                   </svg>
-                </a>
+                </div>
               ))}
             </div>
           </>
