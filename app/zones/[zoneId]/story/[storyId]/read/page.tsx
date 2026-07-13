@@ -22,7 +22,14 @@ async function checkEmbeddable(url: string): Promise<boolean> {
 
     const csp = (res.headers.get('content-security-policy') ?? '').toLowerCase()
     const match = csp.match(/frame-ancestors\s+([^;]+)/)
-    if (match && !match[1].includes('*')) return false
+    if (match) {
+      // Only a bare "*" token means "any origin." Scoped patterns like
+      // "*.espn.com:*" contain the character '*' but only permit that
+      // site's own domain family, not us — a plain substring check on
+      // '*' produced false positives for exactly this case (ESPN).
+      const tokens = match[1].trim().split(/\s+/)
+      if (!tokens.includes('*')) return false
+    }
 
     return true
   } catch {
