@@ -273,9 +273,9 @@ entertainment → type: 'entertainment' // Guardian culture
 
 ## Current status
 
-**Phase 7 complete — app is live and functional, home page substantially restructured (2026-07-12).**
+**Phase 7 complete, Sports Zone personalized — app is live and functional (2026-07-12).**
 
-All V2 code has been deleted. The full app is deployed at https://distilled-news.vercel.app, running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below).
+All V2 code has been deleted. The full app is deployed at https://distilled-news.vercel.app, running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below). Latest deploy: commits `a647bb3` + `e36861c`, pushed and promoted to production the same day, verified live (production correctly redirects unauthenticated requests to `/auth/signin`; build completed with no errors).
 
 ### What's been built
 
@@ -288,6 +288,7 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
 | 5 | All 6 pages wired to live Supabase: Today, Zones hub, Zone detail, Story detail, Tracking, Read Later | ✅ Done |
 | 6 | Onboarding flow | ❌ Not built — deliberately last priority, see "Next session" |
 | 7 | Home page restructure — hamburger menu, Breaking/Top Stories tiers, redesigned Tracking (topic cards), story dedup, In-Depth View promoted to `/`, legacy view moved to `/summary` | ✅ Done 2026-07-12 |
+| 8 | Sports Zone personalization — Scores Card (live scores via ESPN API), Updates (game-specific recaps/previews), team-prioritized Top Stories, sports-filtered Tracking, More section | ✅ Done 2026-07-12 |
 | — | Migrate onto shared Rocky Coast Labs Supabase platform, verify end-to-end | ✅ Done 2026-07-10 |
 
 ### Route inventory
@@ -298,7 +299,9 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
 /summary                   Summary View — same sections, compact StoryItem rows for Today + a More section
                             (app/summary/page.tsx + app/summary/SummaryClient.tsx)
 /zones                     Zones hub — user's zones as cards with live hero data
-/zones/[zoneId]            Zone detail — "Top Stories" sorted by recency, expanded Story Card format matching Home (zoneId = zone UUID)
+/zones/[zoneId]            Zone detail — expanded Story Card format matching Home (zoneId = zone UUID). Sports zone only:
+                            Scores Card, Updates (game-specific), team-prioritized Top Stories, sports-filtered Tracking,
+                            More (general news). Other zones: single "Top Stories" list sorted by recency, unchanged.
 /zones/[zoneId]/story/[storyId]  Story detail / "Detailed view" (zoneId = zone TYPE string e.g. 'sports')
 /tracking                  Tracked topics with article carousels
 /saved                     Read Later with zone filter pills
@@ -494,7 +497,11 @@ When any React component throws during render, React's error recovery cycle runs
 - **Tracking topic removal persistence** — fix was applied (2026-07-06) but still not confirmed working, on production or otherwise. The delete itself works (DB shows 0 tracks after testing). The issue was the router cache. Fix: `revalidatePath('/tracking')` in server action + `router.refresh()` in client handler. As of 2026-07-10 there were 0 tracked topics in the (migrated) data, so this couldn't be exercised during that session's testing pass either — still needs an actual add-then-remove-then-navigate-away-and-back cycle. A real production sign-in account now exists (see Infrastructure above) making this testable at any time. If topics still reappear after navigating away and back, the next thing to check is whether `removeTrack` is actually completing before navigation (add a console.log to confirm).
 
 ### Untested at scale
-- **Tracking section overflow states** (2026-07-12 redesign — see Session log) — the 0-topic and 1-topic states were verified live, but the 9-and-10-card overflow behavior (first 8 topics + a "View More" card + the Add card) was only verified by code review, since the test account had at most 1 tracked topic all session. Worth adding ~10 tracked topics to a test account and confirming the card count/ordering live before trusting it in production.
+- **Tracking section overflow states** (2026-07-12 redesign — see Session log) — the 0-topic and 1-topic states were verified live, but the 9-and-10-card overflow behavior (first 8 topics + a "View More" card + the Add card) was only verified by code review, since the test account had at most 1 tracked topic all session. Worth adding ~10 tracked topics to a test account and confirming the card count/ordering live before trusting it in production. Applies to both Home's Tracking section and the Sports Zone's sports-filtered one — they share the same overflow logic.
+- **Sports Zone personalization not tested on a real phone** (2026-07-12) — Scores Card, Updates, and the Top Stories/Tracking/More restructure were only verified via dev-server emulation and headless-Chrome screenshots at various widths, never a physical device. See "Next session" Priority 1.
+
+### Content precision
+- **Team-name matching is a plain case-insensitive substring check**, not real entity recognition — used both for the Top Stories/More split (does this article mention a Team of Interest?) and, more narrowly, for gating what counts as "game-specific" in Updates (does it name the actual last/next opponent?). Confirmed via live testing this produces false positives: a Detroit Tigers coaching-change article was pulled into Red Sox coverage because its summary happened to mention "former Boston Red Sox manager Alex Cora." This matches the substring-matching approach already used elsewhere in the app (e.g. Tracking's `searchArticlesByTopic`), so it's a pre-existing tradeoff, not a new regression — but it's the first thing to check if Sports Zone content ever looks off-topic.
 
 ### Cosmetic / non-blocking
 - **`relativeTime()` hydration mismatch** — several client components (`app/InDepthClient.tsx`, `app/summary/SummaryClient.tsx`, `components/ui/StoryItem.tsx`, `StoryDetailClient.tsx`) each define a local `relativeTime()` helper that computes elapsed time from `Date.now()` at render time. Because these are server-rendered once before hydration, the server's and the client's computed strings ("33m ago" vs "34m ago") can differ, producing a React hydration warning in the console on every page load. Confirmed pre-existing on the original page too, not introduced by the 2026-07-12 restructure. A fix (compute the string only after mount) was spawned as a separate background task on 2026-07-12; check whether it landed before re-investigating from scratch.
