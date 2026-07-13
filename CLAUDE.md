@@ -514,13 +514,13 @@ When any React component throws during render, React's error recovery cycle runs
 
 ## Next session: where to pick up
 
-**Reordered 2026-07-12** after the home-page restructure session (see Session log). Priority 1 (UI issues) and a large chunk of Priority 2 (content — story duplication specifically) from the 2026-07-10 plan are now substantially addressed. Onboarding is still deliberately last.
+**Reordered 2026-07-12**, then updated again same day after the Sports Zone personalization sub-session (see Session log). Priority 1 (UI issues) and a large chunk of Priority 2 (content — story duplication specifically) from the 2026-07-10 plan are substantially addressed; Priority 6 (Zones work) is now also substantially addressed via the Sports Zone build-out. Onboarding is still deliberately last.
 
 ### Priority 1 — Verify the 2026-07-12 changes hold up on mobile
-This session's work was verified in the dev browser pane (desktop + mobile viewport widths) but not yet on a real phone. Push to production and do a hands-on pass on an actual device — check the hamburger menu bottom sheet, horizontal-scroll pill row, and Story Card layout for any touch-target or viewport issues that don't show up in emulation.
+Covers both the original home-page restructure AND the same-day Sports Zone personalization work (Scores Card, Updates, Top Stories/Tracking/More restructure) — none of it has been checked on a real phone yet, only dev-server emulation + headless-Chrome screenshots at various widths. Check the hamburger menu bottom sheet, horizontal-scroll rows (pill row, Updates, Tracking), and Story Card layout for touch-target or viewport issues that don't show up in emulation. The real production sign-in account (see Infrastructure) now has live Red Sox data to look at, not just placeholder/empty states.
 
 ### Priority 2 — Confirm Tracking section overflow states with real data
-Add ~10 tracked topics to the test account and confirm the 9-and-10-card layout (8 topics + View More + Add) actually renders and behaves as designed — see "Untested at scale" in Known issues.
+Add ~10 tracked topics to the test account and confirm the 9-and-10-card layout (8 topics + View More + Add) actually renders and behaves as designed — see "Untested at scale" in Known issues. This now applies to **two** Tracking sections (Home's and the Sports Zone's sports-filtered one), both share the same overflow logic.
 
 ### Priority 3 — Fix the `relativeTime()` hydration warning
 A background task was already spawned for this on 2026-07-12 (see Known issues) — check whether it landed before redoing the work.
@@ -531,8 +531,12 @@ Still unconfirmed since 2026-07-06 (see Known issues) — a real production acco
 ### Priority 5 — Remaining content-management inconsistencies
 The user's original Priority 2 (2026-07-10 plan) was broader than just story duplication — ask if there are other pipeline/content issues still open before assuming this is fully closed out.
 
-### Priority 6 — Zones work
-Outstanding work on Zones, not yet itemized — ask for specifics.
+### Priority 6 — Zones work (substantially addressed 2026-07-12, follow-ups below)
+The Sports Zone got a full personalization build-out this session (Scores Card, Updates, team-prioritized Top Stories, sports-filtered Tracking, More) — see Session log for the full breakdown. Loose ends from that work, roughly in priority order:
+1. **No UI to manage Teams of Interest** — currently hardcoded for the test user via a one-off script (`zones.config.teams`). A real "edit my teams" flow is onboarding-adjacent; either fold it into Phase 6 (Priority 7) or build a lightweight standalone settings screen first if onboarding stays blocked.
+2. **Scores Card background color churned through 5 values in one session** (`--surface`+border → `#52C97A` → `#2E7D4F` → `#1D8348` → `#0F5727` → `#098533`, the last one an explicit user-supplied hex with no matching design token) — worth adding a proper `--sports-dark` (or similarly named) token to `styles/tokens.css` next time this needs touching, instead of continuing to hand-pick one-off hex values.
+3. **Team-name matching is substring-based (ILIKE-style)** for the Top Stories/More split and the game-specific Updates filter — confirmed false-positive-prone (a Tigers article got pulled in via an incidental "former Red Sox manager" mention). Fine for now, but if content quality complaints come up, this is the first place to look.
+4. **Other zones** (Local, Finance, Work, etc.) got none of this personalization treatment — ask whether any of them want similar treatment before assuming Sports was the only one that needed it.
 
 ### Priority 7 — Build Phase 6: Onboarding (deliberately last)
 Do this only after the above are solid — the user's reasoning: onboarding is best built/tested against stable surrounding product surfaces rather than a moving target, and is best paired with a fixed/static test user ID rather than rebuilding real signup flows prematurely.
