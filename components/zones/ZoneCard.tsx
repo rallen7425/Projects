@@ -1,95 +1,16 @@
 'use client'
 
-import { ZoneConfig, ZoneType, ZONE_META, ArticleDisplay, ScheduleHero, StatHero, HeadlineHero } from '@/types'
-
-type HeroVariant = 'schedule' | 'stat' | 'headline'
-type HeroData = ScheduleHero | StatHero | HeadlineHero
+import type { ReactNode } from 'react'
+import { ZoneConfig, ZoneType, ZONE_META, ArticleDisplay } from '@/types'
 
 interface ZoneCardProps {
   zone: ZoneConfig
-  heroVariant: HeroVariant
-  heroData: HeroData
+  specialCard?: ReactNode // e.g. a Scores Card / Weather Card, rendered below the header
   stories: ArticleDisplay[]
   onClick: () => void
 }
 
-const SPORT_DOT_COLORS: Record<string, string> = {
-  mlb: '#E24B4A',
-  nba: '#52C97A',
-  nfl: '#5B9CF6',
-  other: 'var(--text-3)',
-}
-
-function ScheduleHeroContent({ data }: { data: ScheduleHero }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-      {data.rows.map((row, i) => (
-        <div key={i}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: SPORT_DOT_COLORS[row.sport] ?? 'var(--text-3)', flexShrink: 0 }} />
-            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {row.matchup}
-            </span>
-            <span style={{ fontSize: '11px', color: 'var(--text-2)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
-              {row.time}
-            </span>
-          </div>
-          {i < data.rows.length - 1 && (
-            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 0 0' }} />
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function StatHeroContent({ data }: { data: StatHero }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
-      <div style={{ fontSize: '28px', fontWeight: 750, lineHeight: 1, letterSpacing: '-0.02em', color: 'var(--text)' }}>
-        {data.value}
-      </div>
-      <div style={{ paddingBottom: '2px' }}>
-        <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: '3px' }}>
-          {data.label}
-        </div>
-        <div style={{ fontSize: '12px', color: 'var(--text-2)', lineHeight: 1.4 }}>
-          {data.sub}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function HeadlineHeroContent({ data, zoneType }: { data: HeadlineHero; zoneType: ZoneType }) {
-  const color = ZONE_META[zoneType].color
-  return (
-    <div>
-      <div style={{
-        fontSize: '14px',
-        fontWeight: 650,
-        lineHeight: 1.4,
-        color: 'var(--text)',
-        display: '-webkit-box',
-        WebkitLineClamp: 3,
-        WebkitBoxOrient: 'vertical',
-        overflow: 'hidden',
-        marginBottom: '8px',
-      }}>
-        {data.text}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-        <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color }}>
-          {data.tag}
-        </span>
-        <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'var(--text-3)' }} />
-        <span style={{ fontSize: '10px', color: 'var(--text-3)' }}>{data.time}</span>
-      </div>
-    </div>
-  )
-}
-
-export default function ZoneCard({ zone, heroVariant, heroData, stories, onClick }: ZoneCardProps) {
+export default function ZoneCard({ zone, specialCard, stories, onClick }: ZoneCardProps) {
   const meta = ZONE_META[zone.type]
   const firstInitial = zone.label.charAt(0).toUpperCase()
 
@@ -113,7 +34,7 @@ export default function ZoneCard({ zone, heroVariant, heroData, stories, onClick
     entertainment: 'rgba(244,114,182,0.14)',
   }
 
-  const previewStories = stories.slice(0, 2)
+  const previewStories = stories.slice(0, 3)
 
   return (
     <div
@@ -154,7 +75,7 @@ export default function ZoneCard({ zone, heroVariant, heroData, stories, onClick
         </div>
 
         {/* Zone label + story dots */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '11px', position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
           <span style={{
             fontSize: '10px',
             fontWeight: 800,
@@ -181,14 +102,10 @@ export default function ZoneCard({ zone, heroVariant, heroData, stories, onClick
             </span>
           </div>
         </div>
-
-        {/* Hero content */}
-        <div style={{ position: 'relative' }}>
-          {heroVariant === 'schedule' && <ScheduleHeroContent data={heroData as ScheduleHero} />}
-          {heroVariant === 'stat' && <StatHeroContent data={heroData as StatHero} />}
-          {heroVariant === 'headline' && <HeadlineHeroContent data={heroData as HeadlineHero} zoneType={zone.type} />}
-        </div>
       </div>
+
+      {/* Special card (e.g. Scores Card / Weather Card), if this zone has one */}
+      {specialCard}
 
       {/* Story rows */}
       <div>

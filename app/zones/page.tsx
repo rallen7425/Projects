@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { getUserZones, getZoneQuicklook } from '@/lib/db/zones'
 import { getZoneArticles } from '@/lib/zonePreview'
 import { getWeatherForAreas } from '@/lib/weather/nws'
+import { getScoresForTeams, type TeamOfInterest } from '@/lib/scores/espn'
 import ZonesHubClient from './ZonesHubClient'
 import type { LocalArea, ZoneType } from '@/types'
 
@@ -15,20 +16,24 @@ export default async function ZonesPage() {
   const dbZones = await getUserZones(user.id)
 
   // Fetch articles (team/area-aware, see lib/zonePreview.ts), quicklook, and —
-  // for Local Zone specifically — a live weather stat-hero (mirrors the zone
-  // detail page's Weather Card; the old pipeline-written quicklook stat for
-  // weather was retired when Local Zone moved to live-fetched weather).
+  // for Local/Sports Zones specifically — the same live Weather Card / Scores
+  // Card data their zone detail pages use, so the hub card can show it too.
   const zoneData = await Promise.all(
     dbZones.map(async (z) => {
       const zoneType = z.type as ZoneType
-      const [articles, quicklook, weather] = await Promise.all([
-        getZoneArticles(zoneType, z.config, 2),
+      const teamsOfInterest = (z.config as { teams?: TeamOfInterest[] } | null)?.teams ?? []
+      const localAreas = (z.config as { areas?: LocalArea[] } | null)?.areas ?? []
+      const [articles, quicklook, scores, weather] = await Promise.all([
+        getZoneArticles(zoneType, z.config, 3),
         getZoneQuicklook(z.type),
-        zoneType === 'local'
-          ? getWeatherForAreas((z.config as { areas?: LocalArea[] } | null)?.areas ?? []).catch(() => [])
+        zoneType === 'sports' && teamsOfInterest.length > 0
+          ? getScoresForTeams(teamsOfInterest)
+          : Promise.resolve([]),
+        zoneType === 'local' && localAreas.length > 0
+          ? getWeatherForAreas(localAreas).catch(() => [])
           : Promise.resolve([]),
       ])
-      return { zone: z, articles, quicklook, weather: weather[0] ?? null }
+      return { zone: z, articles, quicklook, scores, weather }
     })
   )
 

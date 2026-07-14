@@ -5,61 +5,85 @@ import { useRouter } from 'next/navigation'
 import AppHeader from '@/components/ui/AppHeader'
 import BottomNav from '@/components/ui/BottomNav'
 import ZoneCard from '@/components/zones/ZoneCard'
-import type { ArticleDisplay, ZoneType, ScheduleHero, StatHero, HeadlineHero } from '@/types'
+import type { ArticleDisplay, ZoneType } from '@/types'
 import { ZONE_META } from '@/types'
+import type { TeamScoreCard } from '@/lib/scores/espn'
+import type { WeatherCard as WeatherCardData } from '@/lib/weather/nws'
 
 type QuicklookRow = { label: string; value: string; sub?: string | null }
-type WeatherRow = { city: string; state: string; temp: number; unit: string; shortForecast: string } | null
 type ZoneRow = { id: string; type: string; label?: string | null; position: number; enabled: boolean }
-type ZoneData = { zone: ZoneRow; articles: ArticleDisplay[]; quicklook: QuicklookRow[]; weather: WeatherRow }
-
-function buildHeroData(zoneType: ZoneType, articles: ArticleDisplay[], quicklook: QuicklookRow[], weather: WeatherRow): {
-  variant: 'schedule' | 'stat' | 'headline'
-  data: ScheduleHero | StatHero | HeadlineHero
-} {
-  if (zoneType === 'local' && weather) {
-    return {
-      variant: 'stat',
-      data: { value: `${weather.temp}°${weather.unit}`, label: weather.city, sub: weather.shortForecast } satisfies StatHero,
-    }
-  }
-
-  if (zoneType === 'finance') {
-    const first = quicklook[0]
-    if (first) {
-      return {
-        variant: 'stat',
-        data: { value: first.value, label: first.label, sub: first.sub ?? '' } satisfies StatHero,
-      }
-    }
-  }
-
-  // Default: featured headline from first article
-  const top = articles[0]
-  if (top) {
-    return {
-      variant: 'headline',
-      data: {
-        text: top.headline,
-        tag: (top.tags[0] ?? ZONE_META[zoneType]?.shortLabel ?? zoneType).toUpperCase(),
-        time: relativeTime(top.publishedAt),
-      } satisfies HeadlineHero,
-    }
-  }
-
-  return {
-    variant: 'headline',
-    data: { text: 'No stories yet', tag: '', time: '' } satisfies HeadlineHero,
-  }
+type ZoneData = {
+  zone: ZoneRow
+  articles: ArticleDisplay[]
+  quicklook: QuicklookRow[]
+  scores: TeamScoreCard[]
+  weather: WeatherCardData[]
 }
 
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
+function formatGameTime(iso: string): string {
+  const d = new Date(iso)
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  const daysAway = Math.floor((d.getTime() - Date.now()) / 86400000)
+  if (daysAway > 6) {
+    return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${time}`
+  }
+  return `${d.toLocaleDateString('en-US', { weekday: 'short' })} ${time}`
+}
+
+function ScoresCard({ scores }: { scores: TeamScoreCard[] }) {
+  if (scores.length === 0) return null
+  return (
+    <div style={{ margin: '0', background: 'var(--sports-dark)', borderRadius: '0' }}>
+      <div style={{ padding: '12px 16px 4px', fontSize: '10px', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: '#ffffff' }}>
+        Scores
+      </div>
+      {scores.map((s, i) => (
+        <div key={`${s.team.league}-${s.team.teamId}`} style={{ padding: '10px 16px 14px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.25)' : 'none' }}>
+          {s.lastOrLiveGame ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 26px auto', gridTemplateRows: 'auto auto', columnGap: '10px', rowGap: '2px', alignItems: 'baseline' }}>
+              <span style={{ fontSize: '14.5px', fontWeight: s.lastOrLiveGame.isWin === false ? 400 : 700, color: 'var(--text)' }}>{s.team.shortName}</span>
+              <span style={{ fontSize: '15px', fontWeight: s.lastOrLiveGame.isWin === false ? 400 : 700, color: 'var(--text)' }}>{s.lastOrLiveGame.teamScore}</span>
+              <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: s.lastOrLiveGame.status === 'live' ? '#EF4444' : 'var(--text)' }}>
+                {s.lastOrLiveGame.status === 'live' ? `Live · ${s.lastOrLiveGame.detail}` : s.lastOrLiveGame.detail}
+              </span>
+              <span style={{ fontSize: '13px', fontWeight: s.lastOrLiveGame.isWin === true ? 400 : 700, color: 'var(--text)' }}>{s.lastOrLiveGame.opponent}</span>
+              <span style={{ fontSize: '14px', fontWeight: s.lastOrLiveGame.isWin === true ? 400 : 700, color: 'var(--text)' }}>{s.lastOrLiveGame.opponentScore}</span>
+              <span />
+            </div>
+          ) : (
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>{s.team.shortName}</div>
+          )}
+          {s.nextGame && (
+            <div style={{ fontSize: '12px', color: 'var(--text)', marginTop: '7px' }}>
+              Next: {formatGameTime(s.nextGame.date)} {s.nextGame.isHome ? 'vs' : '@'} {s.nextGame.opponentAbbrev}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function WeatherCard({ weather }: { weather: WeatherCardData[] }) {
+  if (weather.length === 0) return null
+  return (
+    <div style={{ margin: '0', background: 'var(--local-dark)', borderRadius: '0' }}>
+      <div style={{ padding: '12px 16px 4px', fontSize: '10px', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: '#ffffff' }}>
+        Weather
+      </div>
+      {weather.map((w, i) => (
+        <div key={w.area.id} style={{ padding: '10px 16px 14px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.25)' : 'none' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text)' }}>{w.city}, {w.state}</span>
+            <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)' }}>{w.temp}°{w.unit}</span>
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--text)', marginTop: '4px' }}>
+            {w.shortForecast} · Wind {w.windSpeed}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export default function ZonesHubClient({ zoneData }: { zoneData: ZoneData[] }) {
@@ -86,17 +110,19 @@ export default function ZonesHubClient({ zoneData }: { zoneData: ZoneData[] }) {
 
       {/* Zone cards */}
       <div style={{ padding: '14px 16px 4px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {zoneData.map(({ zone, articles, quicklook, weather }) => {
+        {zoneData.map(({ zone, articles, scores, weather }) => {
           const zoneType = zone.type as ZoneType
           const meta = ZONE_META[zoneType]
-          const { variant, data } = buildHeroData(zoneType, articles, quicklook, weather)
+          const specialCard =
+            zoneType === 'sports' ? <ScoresCard scores={scores} /> :
+            zoneType === 'local' ? <WeatherCard weather={weather} /> :
+            undefined
 
           return (
             <ZoneCard
               key={zone.id}
               zone={{ id: zone.id, type: zoneType, label: meta?.label ?? zone.type, enabled: zone.enabled, position: zone.position }}
-              heroVariant={variant}
-              heroData={data}
+              specialCard={specialCard}
               stories={articles}
               onClick={() => router.push(`/zones/${zone.id}`)}
             />
