@@ -184,33 +184,75 @@ create table zone_quicklook (
 
 ### Architecture
 
+Two independent paths supply zone content — don't conflate them:
+
+**1. Batch pipeline (hourly, via GitHub Actions)** — the only path that writes to the shared `articles` table. This is what Today/Top Stories/every zone's story list renders from.
+
 ```
 GitHub Actions (cron: every hour)
   └── calls POST /api/pipeline/trigger (secret-protected)
-        └── for each zone:
-              1. Fetch raw articles from source adapters
-              2. Deduplicate against articles table (skip known external_ids)
-              3. Extract OG images for articles missing imageUrl
-              4. Batch new articles → single Claude Haiku call → summaries + urgency scores + tags
+        └── for each zone runner (see table below):
+              1. Fetch raw articles from that zone's source adapter(s), merge, sort by
+                 recency, cap at 15
+              2. Deduplicate against articles table (skip known external_ids) — both
+                 against existing DB rows and within the batch itself (the same real
+                 story can appear in more than one feed)
+              3. Extract OG images for articles missing imageUrl (cheerio, skipped for
+                 Google News redirect links); Unsplash search as a last-resort fallback
+                 for whatever's still missing, cached by query
+              4. Batch new articles → single Claude Haiku call → summaries + urgency
+                 scores + tags (max 20 articles/call)
               5. Write to Supabase articles table
-              6. Update zone_quicklook stats
+              6. Update zone_quicklook — **Finance only** as of 2026-07-13 (parses the
+                 Alpha Vantage bodySnippet into index-quote rows); Sports/Local no
+                 longer write quicklook rows at all, see path 2 below
 ```
+
+**2. Live, request-time fetches** — never touch the `articles` table, run fresh on every page load of the relevant zone, same free/no-key pattern as the batch sources:
+- **Sports Zone's Scores Card** — `lib/scores/espn.ts`, ESPN's free unauthenticated site API, keyed off the zone's `config.teams` (Teams of Interest).
+- **Local Zone's Weather Card** — `lib/weather/nws.ts`, NWS `api.weather.gov`, keyed off the zone's `config.areas`.
+
+These replaced an earlier design (retired 2026-07-13) where a `weather` pipeline runner wrote a synthetic "article" row and a `zone_quicklook` stat per hourly run — live data doesn't need to be batched or persisted, and per-request freshness is strictly better for scores/weather than an hourly snapshot.
+
+### Zone runners (`scripts/pipeline/index.ts`)
+
+| Zone | Sources | Notes |
+|---|---|---|
+| `sports` | ESPN RSS ×4 (NFL, NBA, MLB, NHL) | `sources/sports.ts`. Live Scores Card is a separate path, see above — not part of this runner. |
+| `local` | Google News RSS search (every configured area) + curated direct RSS/BLOX sources (per-area, where configured) | See "Local Zone sourcing" below. |
+| `news` | Guardian `world` + Guardian `us-news` | National/global — added 2026-07-14, replaced the retired `maine` zone (see Zone templates). |
+| `tech` | Guardian `technology` + Hacker News RSS + TechCrunch + The Verge + Ars Technica + Wired | 6 sources total, each capped at 6 before merging — the last 4 added 2026-07-14 for coverage diversity (Guardian/HN were already producing real images, so this wasn't an image fix). |
+| `finance` | Alpha Vantage (SPY/DIA/QQQ quotes, synthesized into one "Markets: S&P 500 ▲/▼ ..." article) + Guardian `business` | Alpha Vantage's synthetic quote article is prepended ahead of the Guardian articles. |
+| `work` | Guardian `money` | **Never switch this to `business`** — that's Finance's section; using it here previously let Finance's dedup claim every article first and starve Work of new content entirely (fixed 2026-07-06). |
+| `entertainment` | Guardian `culture` | No active zone for the test profile as of 2026-07-14 (deleted, see Zone templates); the runner and template stay valid for a future rebuild. |
+
+Every runner sorts its merged results by recency and caps at 15 (`slice(0, 15)`) — enforced per-zone regardless of how many sources feed into it, so one prolific source can't crowd out the rest.
+
+### Local Zone sourcing (hybrid, per configured area)
+
+Local Zone content is driven by whichever `local` zone(s) have `config.areas` set (see Zone templates below) — `fetchLocalAreaConfigs()` unions areas across all enabled local zones by query text, same shared-article-pool architecture as every other zone (no per-user pipeline runs). For each area:
+- **Google News RSS search** (`sources/googlenews.ts`) always runs — query wrapped in literal quotes for exact-phrase matching (a bare multi-word query is matched as a loose keyword set, which produced a real false positive — see Known issues), 14-day window, browser-like desktop User-Agent. Its item links are Google redirect pages, not the publisher's real URL, so these articles never get a real OG image or true in-app embedding (see Known issues).
+- **Curated direct sources** (`area.directSources`, optional, added Phase 11 / 2026-07-14) run in parallel alongside Google News wherever configured:
+  - `kind: 'blox'` → `sources/blox.ts` — query-scoped search-as-RSS for BLOX/TownNews-CMS papers (Eagle-Tribune, Salem News, Newburyport Daily News, Derry News, Andover Townsman). Requires a mobile Safari User-Agent — a desktop UA got a 429 from eagletribune.com.
+  - `kind: 'rss'` → the generic `sources/rss.ts` adapter — plain outlet feeds with no query needed (Boston.com, Universal Hub, Portland Press Herald, WGME, NHPR).
+
+  Direct sources return real article URLs, so normal OG-image scraping works on them — this is what fixed Local Zone's near-total lack of real images (Phase 11), except where a source itself blocks scraping (Universal Hub returns 403 regardless of User-Agent — accepted limitation, see Known issues).
+
+Each individual source's contribution is capped at 6 before the per-area merge; the zone-wide sort+cap-at-15 (above) applies on top of that.
 
 ### Source adapters (all free)
 
-| Zone | Source | API/Method |
+| Source | Used by | API / method |
 |---|---|---|
-| All news | The Guardian | Guardian API (free, images included) |
-| All news | Curated RSS | RSS parser (`rss-parser` npm package) |
-| Local Zone weather | NWS | `api.weather.gov` — no key, zip → coordinates via `lib/geo/zip.ts` (`api.zippopotam.us`). Live-fetched per request (Weather Card), not pipeline-stored — see `lib/weather/nws.ts` |
-| Local Zone news (community/metro/region) | Google News RSS search (fallback, every area) + curated direct RSS (primary, where verified — see below) | `news.google.com/rss/search?q=...` — no key. See `scripts/pipeline/sources/googlenews.ts` |
-| Local Zone news (curated direct, North Andover area) | BLOX-network query-scoped search RSS | Eagle-Tribune, Salem News, Newburyport Daily News, Derry News, Andover Townsman — same CMS, same URL pattern. See `scripts/pipeline/sources/blox.ts` |
-| Local Zone news (curated direct, Boston/Wells areas) | Direct RSS | Boston.com, Universal Hub, Portland Press Herald, WGME — plain `fetchRss()`, no query needed |
-| Tech Zone (added 2026-07-14) | TechCrunch, The Verge, Ars Technica, Wired | Plain RSS, alongside existing Guardian tech + Hacker News |
-| Sports | ESPN + team RSS | Public RSS feeds (no API key) |
-| Finance | Alpha Vantage | Free tier (25 calls/day — sufficient for indices) |
-| Images (fallback) | OG extraction | `cheerio` scrapes `og:image` from article URL — skipped for Google News links (see Known issues), works fine for BLOX/direct-RSS/Tech sources since those are real article URLs |
-| Images (last resort) | Unsplash | Unsplash API topic match, 50 req/hour free tier — **active as of 2026-07-14** (`UNSPLASH_ACCESS_KEY` set in `.env.local` + Vercel), with results cached by query in the `zone_quicklook` table (reusing its label/value shape, not a new table) to conserve the rate limit |
+| The Guardian Content API | News, Tech, Finance, Work, Entertainment (different `section` per zone — see Zone runners table) | `content.guardianapis.com/search`, `GUARDIAN_API_KEY`. `sources/guardian.ts` |
+| Generic RSS (`rss-parser`) | Sports (ESPN feeds), Tech (TechCrunch/Verge/Ars Technica/Wired/HN), Local (direct-RSS outlets) | `sources/rss.ts` — handles RSS 2.0 and Atom transparently (The Verge is Atom) |
+| Google News RSS search | Local Zone (every area, always runs) | `news.google.com/rss/search?q="..."` — no key, unofficial/undocumented endpoint. `sources/googlenews.ts` |
+| BLOX/TownNews query-scoped search RSS | Local Zone (North Andover-area papers, where configured) | `https://{domain}/search/?q=...&f=rss&t=article`, mobile UA required. `sources/blox.ts` |
+| Alpha Vantage | Finance (index quotes) | Free tier, 25 calls/day — sufficient for 3 index symbols once/run. `sources/finance.ts` |
+| ESPN site API (live, request-time) | Sports Zone's Scores Card — **not** the batch pipeline | `site.api.espn.com`, no key. `lib/scores/espn.ts` |
+| NWS (live, request-time) | Local Zone's Weather Card — **not** the batch pipeline | `api.weather.gov`, no key; zip → coordinates via `lib/geo/zip.ts` (`api.zippopotam.us`). `lib/weather/nws.ts` |
+| OG-image extraction | Fallback for any article missing `imageUrl` after its source adapter ran | `cheerio` scrapes `og:image`/`twitter:image`; skipped for `news.google.com` links (would scrape Google's own branding image, not real article art). `enrich/images.ts` |
+| Unsplash | Last-resort image fallback | `api.unsplash.com/search/photos`, `UNSPLASH_ACCESS_KEY`, 50 req/hour free tier — active since 2026-07-14, results cached by query (reusing `zone_quicklook`'s label/value shape under a sentinel `zone_type`, not a new table) to conserve the rate limit. Doesn't help hyperlocal proper-noun queries (e.g. "North Andover High" → 0 results) — direct RSS sourcing is what actually solves that for Local Zone. |
 
 ### Cost constraints — must be enforced in code
 
@@ -224,17 +266,20 @@ GitHub Actions (cron: every hour)
 
 ```
 scripts/pipeline/
-  index.ts          ← orchestrator (called by API route)
+  index.ts          ← orchestrator (called by API route) — ZONE_RUNNERS table, dedup-before-
+                       enrichment, per-zone try/catch so one zone's failure doesn't block others
   sources/
-    guardian.ts     ← Guardian API adapter
-    rss.ts          ← generic RSS adapter
-    googlenews.ts   ← Google News RSS search adapter (Local Zone community/metro/region)
-    sports.ts       ← ESPN + team RSS adapter
+    guardian.ts     ← Guardian API adapter (section param → zone-specific content)
+    rss.ts          ← generic RSS/Atom adapter
+    googlenews.ts   ← Google News RSS search adapter (Local Zone, every area)
+    blox.ts         ← BLOX/TownNews query-scoped search RSS adapter (Local Zone, curated direct sources)
+    sports.ts       ← ESPN RSS adapter (4 leagues)
     finance.ts      ← Alpha Vantage adapter
   enrich/
-    images.ts       ← OG image extraction with cheerio (skips news.google.com links)
+    images.ts       ← OG image extraction with cheerio (skips news.google.com links) + Unsplash
+                       fallback with query-based caching
     summarize.ts    ← batched Claude Haiku calls
-  write.ts          ← dedup check + Supabase upsert
+  write.ts          ← dedup check + Supabase insert + zone_quicklook update (Finance only)
   types.ts          ← shared RawArticle and ProcessedArticle types
 
 lib/
@@ -243,7 +288,9 @@ lib/
     metros.ts       ← curated major-metro list + nearestMetro() haversine lookup
     regions.ts      ← state → broad US region lookup (e.g. MA → New England)
   weather/
-    nws.ts          ← live NWS fetch for the Local Zone's Weather Card (not pipeline-stored)
+    nws.ts          ← live, request-time NWS fetch for the Local Zone's Weather Card (not pipeline-stored)
+  scores/
+    espn.ts         ← live, request-time ESPN fetch for the Sports Zone's Scores Card (not pipeline-stored)
 
 app/api/pipeline/
   trigger/route.ts  ← POST endpoint called by GitHub Actions (verify CRON_SECRET header)
