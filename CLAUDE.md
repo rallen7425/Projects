@@ -294,9 +294,9 @@ entertainment → type: 'entertainment' // Guardian culture — no active zone f
 
 ## Current status
 
-**Phase 11 deployed — hybrid direct-RSS sourcing for Local Zone + diversified Tech Zone sources, real images across all 4 zones (2026-07-14).**
+**Phase 12 deployed — Zones hub card redesign: plain header, live Scores/Weather card, 3 stories (2026-07-14).**
 
-All V2 code has been deleted. The full app is deployed at https://distilled-news.vercel.app, running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below). This session's work (2026-07-14) spans: the 4-zone restructure (Phase 10, commit `a6d70d3`), a Finance-zone cross-zone-leakage fix (commit `be291b3`), and Phase 11 — Unsplash activation, curated direct RSS sources for Local Zone (commit `8eeecd9`), and Tech Zone source diversification (commit `adf6577`). All deployed and verified live.
+All V2 code has been deleted. The full app is deployed at https://distilled-news.vercel.app, running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below). This session's work (2026-07-14) spans: the 4-zone restructure (Phase 10, commit `a6d70d3`), a Finance-zone cross-zone-leakage fix (commit `be291b3`), Phase 11 — Unsplash activation, curated direct RSS sources for Local Zone (commit `8eeecd9`), Tech Zone source diversification (commit `adf6577`) — and Phase 12, the Zones hub card reformat (commit `d96131a`). All deployed and verified live.
 
 **Deploy urgency note:** the one-off scripts that restructured this session's DB state (deleting the Maine/Finance/Entertainment zones, creating the News zone) ran against the shared production Supabase DB *before* the matching code was deployed — since the old deployed code's `ZONE_META` had no `'news'` entry, any real user hitting a `type: 'news'` zone in that window got a hard crash ("Something went wrong"). Confirmed and fixed by deploying immediately once reported. **Lesson:** when a session's DB changes (new zone types, deleted zones) aren't backward-compatible with the currently-deployed code, deploy the matching code *before or immediately after* running the DB migration script — don't leave that gap open, even mid-session.
 
@@ -315,6 +315,7 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
 | 9 | Local Zone personalization — community/metro/region tiers derived from zip, Weather Card (live NWS), Breaking/Top Stories/Today/Tracking (Home's format, not Sports') | ✅ Done 2026-07-13 |
 | 10 | Zone-preview personalization everywhere (Home, Summary, Zones hub) + 4-zone restructure — News Zone replaces Maine, Wells ME added to Local, Finance/Entertainment deleted, generic Breaking/Top Stories/Today/Tracking/More template for non-Sports/Local zones | ✅ Done 2026-07-14 |
 | 11 | Real images everywhere — Unsplash fallback activated + cached, curated direct RSS for Local Zone (BLOX-network papers, boston.com/Universal Hub, Press Herald/WGME), Tech Zone diversified with TechCrunch/Verge/Ars Technica/Wired | ✅ Done 2026-07-14 |
+| 12 | Zones hub card reformat — plain colored header (zone name + story count only, no hero text), live Scores Card (Sports)/Weather Card (Local) rendered below the header, 3 story rows (up from 2) | ✅ Done 2026-07-14 |
 | — | In-app embedded reader for "Full Coverage" source links (replaces `target="_blank"`), with an interstitial fallback for sites that block framing | ✅ Done 2026-07-13 |
 | — | Migrate onto shared Rocky Coast Labs Supabase platform, verify end-to-end | ✅ Done 2026-07-10 |
 
@@ -325,8 +326,10 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
                             (app/page.tsx + app/InDepthClient.tsx)
 /summary                   Summary View — same sections, compact StoryItem rows for Today + a More section
                             (app/summary/page.tsx + app/summary/SummaryClient.tsx)
-/zones                     Zones hub — user's zones as cards with live hero data, team/area-aware previews (see
-                            lib/zonePreview.ts) and a live weather stat-hero for Local Zone
+/zones                     Zones hub — user's zones as cards: colored header (zone name + story-count indicator only,
+                            no hero text), then — for Sports/Local only — the same live Scores Card / Weather Card
+                            used on their zone detail pages, then up to 3 team/area-aware story rows (see
+                            lib/zonePreview.ts), then a "View {Zone} →" footer link
 /zones/[zoneId]            Zone detail — expanded Story Card format matching Home (zoneId = zone UUID). Sports zone:
                             Scores Card, Updates (game-specific), team-prioritized Top Stories, sports-filtered Tracking,
                             More (general news). Local zone: Weather Card (live NWS), Breaking (if any), Top Stories,
@@ -366,6 +369,16 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
 ---
 
 ## Session log
+
+### Session 2026-07-14 (cont'd) — Zones hub card reformat
+
+Per explicit request, the `/zones` hub card (`components/zones/ZoneCard.tsx`) was reformatted: the colored header now shows only the zone-name pill and the story-count indicator (dots + "N stories") — no headline/stat/schedule hero content. Any zone with a live data card on its own zone detail page (currently Sports' Scores Card, Local's Weather Card) shows that same card as its own block directly below the header, rendered as a `specialCard?: ReactNode` prop rather than the old `heroVariant`/`heroData` variant system. `ScheduleHeroContent`/`StatHeroContent`/`HeadlineHeroContent` and their `SPORT_DOT_COLORS` constant were deleted as dead code along with `buildHeroData()` (`app/zones/ZonesHubClient.tsx`). Story rows bumped from 2 to 3 per card, per explicit request ("up to 3 story cards").
+
+`ScoresCard`/`WeatherCard`/`formatGameTime` were duplicated into `ZonesHubClient.tsx` from `ZoneDetailClient.tsx` (same per-file-copy convention already used for `TrackCard`/`ZoneCard` elsewhere), styled identically (solid `--sports-dark`/`--local-dark` fill, no card-level margin/border-radius since it now sits flush between the header above and story rows below, rather than as a standalone floating card like on the zone detail page). `app/zones/page.tsx` now fetches live scores (`getScoresForTeams`, sports only, mirroring the exact pattern in `app/zones/[zoneId]/page.tsx`) and passes the **full** weather array (previously only `weather[0] ?? null`) so the Zones hub can show every configured Local area (North Andover + Wells, ME), not just the first one.
+
+Verified live (headless Chrome, mobile viewport, real Supabase/ESPN/NWS data): all 4 zone cards (Sports, Local, News, Tech) render correctly — headers show only zone name + story count; Sports/Local show their Scores/Weather card with clean header/card/story-row boundaries and no color-contrast issues; News/Tech have no special card and go straight to story rows; every card shows 3 stories; footer links unchanged. Zero console errors, zero failed network requests.
+
+**Files touched:** `components/zones/ZoneCard.tsx`, `app/zones/ZonesHubClient.tsx`, `app/zones/page.tsx`. No schema/type changes. Deployed as commit `d96131a`.
 
 ### Session 2026-07-14 — Diagnosed "Local Zone shows national/political news" report
 
