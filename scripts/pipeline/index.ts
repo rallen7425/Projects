@@ -6,6 +6,7 @@ config({ path: resolve(process.cwd(), '.env') })
 import { fetchGuardian } from './sources/guardian'
 import { fetchRss } from './sources/rss'
 import { fetchGoogleNews } from './sources/googlenews'
+import { fetchBloxSearch } from './sources/blox'
 import { fetchSports } from './sources/sports'
 import { fetchFinance } from './sources/finance'
 import { enrichImages } from './enrich/images'
@@ -93,12 +94,26 @@ const ZONE_RUNNERS: ZoneRunner[] = [
         return fetchGuardian('us-news', 'local')
       }
 
-      // Cap each area's contribution before merging so one area (e.g. a
-      // high-volume metro query) can't crowd out the others.
-      const results = await Promise.allSettled(
-        areas.map((area) => fetchGoogleNews(area.query, 'local', area.label))
-      )
-      const merged = results.flatMap((r) => (r.status === 'fulfilled' ? r.value.slice(0, 8) : []))
+      // Per area: Google News (broad discovery, every area) plus any curated
+      // direct sources (real article URLs — real OG images work, unlike
+      // Google News' redirect links). Cap each individual source's
+      // contribution before merging so one prolific source can't crowd out
+      // the rest; the final sort+cap below enforces the overall 15/run limit
+      // regardless of how many sources feed in.
+      const fetchers: Promise<RawArticle[]>[] = []
+      for (const area of areas) {
+        fetchers.push(fetchGoogleNews(area.query, 'local', area.label).catch(() => []))
+        for (const source of area.directSources ?? []) {
+          if (source.kind === 'blox') {
+            fetchers.push(fetchBloxSearch(source.domain, area.query, 'local', source.name).catch(() => []))
+          } else {
+            fetchers.push(fetchRss(source.url, 'local', source.name).catch(() => []))
+          }
+        }
+      }
+
+      const resultSets = await Promise.all(fetchers)
+      const merged = resultSets.flatMap((set) => set.slice(0, 6))
       return merged
         .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
         .slice(0, 15)

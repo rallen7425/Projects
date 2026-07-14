@@ -30,6 +30,18 @@ export type ZoneConfig = {
   position: number
 }
 
+// Curated direct RSS sources for a LocalArea — real article URLs (unlike
+// Google News' redirect links), so real OG images work. 'blox' is the
+// query-scoped search-as-RSS pattern shared by several North of Boston Media
+// Group papers (Eagle-Tribune, Salem News, Newburyport Daily News, Derry News,
+// Andover Townsman) — the bare feed is a noisy "everything recent" dump, so
+// it's queried with the area's own `query` term. 'rss' is a plain direct feed
+// that's already area-specific on its own (e.g. a Boston-focused outlet),
+// fetched as-is with no query.
+export type DirectSource =
+  | { kind: 'blox'; domain: string; name: string }
+  | { kind: 'rss'; url: string; name: string }
+
 // Local Zone personalization — community/metro/region tiers derived from the
 // user's zip code, plus up to 3 user-added extra community/metro areas.
 export type LocalArea = {
@@ -38,6 +50,7 @@ export type LocalArea = {
   label: string // e.g. "North Andover, MA", "Boston, MA", "New England"
   query: string  // Google News search query for this area
   zip?: string    // present for community-kind areas — used for the Weather Card
+  directSources?: DirectSource[] // curated real-article sources, in addition to Google News
 }
 
 export type ScheduleRow = {
