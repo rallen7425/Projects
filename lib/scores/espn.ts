@@ -2,6 +2,8 @@
 // pattern already used for the sports RSS feeds in scripts/pipeline/sources/sports.ts.
 // Used at request time for live/recent scores, not part of the batched content pipeline.
 
+import { withTtlCache } from '@/lib/cache/ttlCache'
+
 export type League = 'mlb' | 'nfl' | 'nba' | 'nhl'
 
 export type TeamOfInterest = {
@@ -110,39 +112,44 @@ function toNextGame(event: EspnEvent, teamId: string): NextGame | null {
 }
 
 async function fetchTeamScoreCard(team: TeamOfInterest): Promise<TeamScoreCard | null> {
-  const meta = LEAGUE_META[team.league]
-  const url = `https://site.api.espn.com/apis/site/v2/sports/${meta.sportPath}/${meta.leaguePath}/teams/${team.teamId}/schedule`
+  // The Zones hub and a zone's own detail page both call this for the same
+  // team within seconds of each other during normal navigation — cache the
+  // parsed result briefly so that doesn't mean two ~3MB ESPN fetches.
+  return withTtlCache(`espn-schedule:${team.league}:${team.teamId}`, 60_000, async () => {
+    const meta = LEAGUE_META[team.league]
+    const url = `https://site.api.espn.com/apis/site/v2/sports/${meta.sportPath}/${meta.leaguePath}/teams/${team.teamId}/schedule`
 
-  try {
-    // The full-season schedule payload (~3MB) exceeds Next's 2MB data-cache
-    // limit, so caching it would just fail silently on every request — fetch
-    // fresh instead, which also suits live/recent score data better anyway.
-    const res = await fetch(url, { cache: 'no-store' })
-    if (!res.ok) return null
-    const data = await res.json()
-    const events: EspnEvent[] = data.events ?? []
-    if (events.length === 0) return { team, lastOrLiveGame: null, nextGame: null }
+    try {
+      // The full-season schedule payload (~3MB) exceeds Next's 2MB data-cache
+      // limit, so caching it would just fail silently on every request — fetch
+      // fresh instead, which also suits live/recent score data better anyway.
+      const res = await fetch(url, { cache: 'no-store' })
+      if (!res.ok) return null
+      const data = await res.json()
+      const events: EspnEvent[] = data.events ?? []
+      if (events.length === 0) return { team, lastOrLiveGame: null, nextGame: null }
 
-    const live = events.find((e) => e.competitions[0]?.status.type.state === 'in')
-    const completed = events
-      .filter((e) => e.competitions[0]?.status.type.state === 'post')
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    const upcoming = events
-      .filter((e) => e.competitions[0]?.status.type.state === 'pre')
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      const live = events.find((e) => e.competitions[0]?.status.type.state === 'in')
+      const completed = events
+        .filter((e) => e.competitions[0]?.status.type.state === 'post')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      const upcoming = events
+        .filter((e) => e.competitions[0]?.status.type.state === 'pre')
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
-    const lastOrLiveGame = live
-      ? toGameResult(live, team.teamId, 'live')
-      : completed[0]
-        ? toGameResult(completed[0], team.teamId, 'final')
-        : null
+      const lastOrLiveGame = live
+        ? toGameResult(live, team.teamId, 'live')
+        : completed[0]
+          ? toGameResult(completed[0], team.teamId, 'final')
+          : null
 
-    const nextGame = upcoming[0] ? toNextGame(upcoming[0], team.teamId) : null
+      const nextGame = upcoming[0] ? toNextGame(upcoming[0], team.teamId) : null
 
-    return { team, lastOrLiveGame, nextGame }
-  } catch {
-    return null
-  }
+      return { team, lastOrLiveGame, nextGame }
+    } catch {
+      return null
+    }
+  })
 }
 
 // Returns one card per in-season team of interest. Out-of-season teams are

@@ -10,12 +10,10 @@ import { ZONE_META } from '@/types'
 import type { TeamScoreCard } from '@/lib/scores/espn'
 import type { WeatherCard as WeatherCardData } from '@/lib/weather/nws'
 
-type QuicklookRow = { label: string; value: string; sub?: string | null }
 type ZoneRow = { id: string; type: string; label?: string | null; position: number; enabled: boolean }
 type ZoneData = {
   zone: ZoneRow
   articles: ArticleDisplay[]
-  quicklook: QuicklookRow[]
   scores: TeamScoreCard[]
   weather: WeatherCardData[]
 }
