@@ -355,6 +355,18 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
 
 ## Session log
 
+### Session 2026-07-14 — Diagnosed "Local Zone shows national/political news" report
+
+User reported Local Zone content was full of national news, politics, and international stories unrelated to North Andover/Boston/New England, right after the 2026-07-13 deploy. Root-cause investigation (not a new bug):
+
+1. Pulled the 40 most recent `zone_type='local'` articles from Supabase directly — confirmed a real split: several batches of Guardian/NWS content (Lindsey Graham, US/Iran, ICE operations in Maine, ambient national politics) mixed with genuinely local Google News content (Bruins, Celtics, WBUR, North Andover lottery/real-estate/community stories).
+2. Cross-referenced article `created_at` timestamps against the actual deploy completion time (`vercel inspect` → **2026-07-14T01:03:31 UTC** for commit `64e0ec3`, not the wall-clock time implied by the conversation). Every stale Guardian/NWS row was created *before* that timestamp; every row after it was genuinely local. **The pipeline itself was never broken post-deploy** — 6 more old-code cron batches had simply accumulated in the gap between the last mid-session cleanup (2026-07-13) and the deploy actually taking effect, and nobody did a final cleanup pass after that.
+3. Deleted the ~47 remaining pre-deploy rows (`zone_type='local'` AND `created_at < 2026-07-14T01:03:31`), with explicit user confirmation obtained first. Re-verified live: Weather Card → Breaking → Top Stories → Today now show exclusively local/regional content, zero national/political stories, zero console errors.
+
+**Lesson for future sessions:** after deploying a fix for a content-sourcing bug, get the deploy's *exact* completion timestamp (`vercel inspect <url>` shows it) and do one more stale-data cleanup pass for anything created before it, rather than assuming the last mid-session cleanup was sufficient — cron cadence during the deploy gap can easily add more.
+
+---
+
 ### Session 2026-07-13 — Embedded in-app reader + Local Zone personalization
 
 **Part 1: Embedded "Full Coverage" reader.** Story Detail's source links previously opened `target="_blank"` in a new browser tab. Per explicit request, they now navigate to a new in-app route (`/zones/[zoneId]/story/[storyId]/read`) that either embeds the source in an iframe (same fixed Back/Save/Track header + floating `BottomNav` as Story Detail) or, if the source disallows framing, shows an interstitial with "Open in Browser" / "Back to Story".
@@ -549,8 +561,8 @@ When any React component throws during render, React's error recovery cycle runs
 
 ## Known issues / what's broken
 
-### Resolved — recurring data corruption (fixed by deploy)
-- ~~Production's hourly GitHub Actions cron was still running the OLD pipeline code~~ — **fixed 2026-07-13** by deploying (`npx vercel --prod`, commit `64e0ec3`). During this session, before deploy, the cron hit twice, re-writing stale Guardian/NWS articles and stale `zone_quicklook` rows into `zone_type='local'` on the shared Supabase DB (cleaned up both times with explicit user confirmation, since the safety classifier correctly blocks unscoped bulk deletes). Confirm on the next hourly run (check Supabase for new `zone_type='local'` rows — should be Google News-sourced, not Guardian/NWS) that this is genuinely resolved and not just quiet until the next cron tick.
+### Resolved — recurring data corruption (confirmed fixed by deploy, 2026-07-14)
+- ~~Production's hourly GitHub Actions cron was still running the OLD pipeline code~~ — **confirmed fixed 2026-07-14.** The deploy (`npx vercel --prod`, commit `64e0ec3`) completed at **2026-07-14T01:03:31 UTC** (confirmed via `vercel inspect`). Cross-referencing article `created_at` timestamps against that: every `zone_type='local'` row created *before* 01:03:31 UTC was old Guardian/NWS content (6 more stale batches accumulated in the gap between the last mid-session cleanup and the deploy actually completing); every row created *after* is genuinely local/regional Google News content (Bruins, Celtics, WBUR, Boston Herald, North Andover Patch/Realtor.com/andovertownsman.com stories, etc.) — confirmed by direct inspection, not just absence of Guardian source names. The pipeline itself was never broken post-deploy; the leftover pre-deploy rows just kept outranking the new content by urgency score until a final cleanup pass (2026-07-14, ~47 rows deleted, explicit user confirmation obtained). **Root-cause lesson:** after any deploy meant to fix a content-sourcing bug, check the deploy's exact completion timestamp and do one final stale-data cleanup pass for anything created before it — don't assume the last mid-session cleanup was also the last one needed.
 
 ### Not built yet
 - **Onboarding flow** (`/onboarding`) — page does not exist. New users get default zones (maine + tech) auto-created silently. There is no zone customization, zip code collection, or zone picker. The middleware allows `/onboarding` but the route 404s.
@@ -588,10 +600,10 @@ When any React component throws during render, React's error recovery cycle runs
 
 ## Next session: where to pick up
 
-**Updated 2026-07-13** after the embedded-reader + Local Zone personalization session, both now deployed. Priority 0 is a verification item, not a blocker; everything else keeps its 2026-07-12 ordering. Onboarding is still deliberately last.
+**Updated 2026-07-14** after confirming the 2026-07-13 deploy (embedded reader + Local Zone personalization) is genuinely working — see Known issues → "Resolved — recurring data corruption." Priority 0 is now just "get it on a phone," not a blocker; everything else keeps its 2026-07-12 ordering. Onboarding is still deliberately last.
 
-### Priority 0 — Confirm the 2026-07-13 deploy actually stopped the recurring pollution
-Both the embedded reader and the Local Zone personalization (Weather Card, Breaking/Top Stories/Today/Tracking, empty-hero-image fix, QuickLookStrip removal) are deployed as of commit `64e0ec3`. Check Supabase after the next hourly GitHub Actions cron run to confirm `zone_type='local'` articles are genuinely coming from Google News (North Andover/Boston/New England content) and not the old Guardian/NWS pattern — see Known issues → "Resolved — recurring data corruption." Neither the reader nor the Local Zone work has been checked on a physical phone yet.
+### Priority 0 — Get the deployed work on a real phone
+Both the embedded reader and the Local Zone personalization are deployed (commit `64e0ec3`) and confirmed working correctly as of 2026-07-14 — see Known issues → "Resolved — recurring data corruption" for the full diagnosis (it was leftover pre-deploy data, not a pipeline bug; cleaned up, confirmed clean). Neither the reader nor the Local Zone work has been checked on a physical phone yet.
 
 ### Priority 1 — Verify the 2026-07-12 changes hold up on mobile
 Covers both the original home-page restructure AND the same-day Sports Zone personalization work (Scores Card, Updates, Top Stories/Tracking/More restructure) — none of it has been checked on a real phone yet, only dev-server emulation + headless-Chrome screenshots at various widths. Check the hamburger menu bottom sheet, horizontal-scroll rows (pill row, Updates, Tracking), and Story Card layout for touch-target or viewport issues that don't show up in emulation. The real production sign-in account (see Infrastructure) now has live Red Sox data to look at, not just placeholder/empty states.
