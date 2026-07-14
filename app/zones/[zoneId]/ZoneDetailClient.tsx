@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { ArticleDisplay, ZoneType } from '@/types'
 import { ZONE_META } from '@/types'
 import type { TeamScoreCard } from '@/lib/scores/espn'
+import type { WeatherCard as WeatherCardData } from '@/lib/weather/nws'
 
 type QuicklookRow = { label: string; value: string; sub?: string | null }
 type ZoneRow = { id: string; type: string; position: number; enabled: boolean }
@@ -34,7 +35,7 @@ function ScoresCard({ scores }: { scores: TeamScoreCard[] }) {
   return (
     <div style={{
       margin: '14px 16px 6px',
-      background: '#098533',
+      background: 'var(--sports-dark)',
       borderRadius: '14px',
       overflow: 'hidden',
     }}>
@@ -77,6 +78,39 @@ function ScoresCard({ scores }: { scores: TeamScoreCard[] }) {
   )
 }
 
+// Weather card — one row per configured community area with a zip. Same
+// solid-fill live-data-card pattern as ScoresCard.
+function WeatherCard({ weather }: { weather: WeatherCardData[] }) {
+  if (weather.length === 0) return null
+
+  return (
+    <div style={{
+      margin: '14px 16px 6px',
+      background: 'var(--local-dark)',
+      borderRadius: '14px',
+      overflow: 'hidden',
+    }}>
+      <div style={{ padding: '12px 16px 4px', fontSize: '10px', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: '#ffffff' }}>
+        Weather
+      </div>
+      {weather.map((w, i) => (
+        <div
+          key={w.area.id}
+          style={{ padding: '10px 16px 14px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.25)' : 'none' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text)' }}>{w.city}, {w.state}</span>
+            <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)' }}>{w.temp}°{w.unit}</span>
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--text)', marginTop: '4px' }}>
+            {w.shortForecast} · Wind {w.windSpeed}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function SectionHead({ label }: { label: string }) {
   return (
     <div style={{ padding: '18px 16px 12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -105,6 +139,7 @@ function TrackCard({
   onTrack: () => void
 }) {
   const meta = ZONE_META[article.zoneType]
+  const hasImage = !!article.imageUrl
 
   return (
     <div onClick={onOpen} style={{
@@ -115,24 +150,69 @@ function TrackCard({
     }}>
       <div style={{ height: '3px', width: '100%', background: meta.color }} />
 
-      <div style={{
-        width: '100%', height: '116px', position: 'relative', overflow: 'hidden',
-        background: ZONE_GRADIENTS[article.zoneType],
-      }}>
-        {article.imageUrl && (
+      {hasImage ? (
+        <div style={{
+          width: '100%', height: '116px', position: 'relative', overflow: 'hidden',
+          background: ZONE_GRADIENTS[article.zoneType],
+        }}>
           <img src={article.imageUrl} alt={article.headline}
             style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }} />
-        )}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,9,14,0.10) 0%, rgba(9,9,14,0.50) 50%, rgba(17,17,23,1) 100%)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,9,14,0.10) 0%, rgba(9,9,14,0.50) 50%, rgba(17,17,23,1) 100%)' }} />
 
-        <div style={{ position: 'absolute', top: '12px', left: '14px', right: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ position: 'absolute', top: '12px', left: '14px', right: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div
+              onClick={(e) => { e.stopPropagation(); onZoneOpen() }}
+              style={{
+                background: 'rgba(9,9,14,0.70)', backdropFilter: 'blur(8px)',
+                borderRadius: '20px', padding: '4px 12px',
+                border: `1px solid ${meta.border}`,
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: meta.color }}>
+                {meta.label}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); onSave() }}
+                aria-label={isSaved ? 'Remove from Read Later' : 'Save to Read Later'}
+                style={{
+                  width: '32px', height: '32px', borderRadius: '50%',
+                  background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: isSaved ? 'var(--primary)' : 'var(--text-2)',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+                </svg>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onTrack() }}
+                aria-label="Track this topic"
+                style={{
+                  width: '32px', height: '32px', borderRadius: '50%',
+                  background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: 'var(--text-2)',
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ padding: '12px 14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div
             onClick={(e) => { e.stopPropagation(); onZoneOpen() }}
             style={{
-              background: 'rgba(9,9,14,0.70)', backdropFilter: 'blur(8px)',
-              borderRadius: '20px', padding: '4px 12px',
-              border: `1px solid ${meta.border}`,
-              cursor: 'pointer',
+              background: meta.bg, borderRadius: '20px', padding: '4px 12px',
+              border: `1px solid ${meta.border}`, cursor: 'pointer',
             }}
           >
             <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: meta.color }}>
@@ -145,7 +225,7 @@ function TrackCard({
               aria-label={isSaved ? 'Remove from Read Later' : 'Save to Read Later'}
               style={{
                 width: '32px', height: '32px', borderRadius: '50%',
-                background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', color: isSaved ? 'var(--primary)' : 'var(--text-2)',
               }}
@@ -159,7 +239,7 @@ function TrackCard({
               aria-label="Track this topic"
               style={{
                 width: '32px', height: '32px', borderRadius: '50%',
-                background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', color: 'var(--text-2)',
               }}
@@ -171,10 +251,10 @@ function TrackCard({
             </button>
           </div>
         </div>
-      </div>
+      )}
 
       <div style={{ padding: '0 14px 14px' }}>
-        <div style={{ height: '12px' }} />
+        <div style={{ height: hasImage ? '12px' : '10px' }} />
         <div style={{ fontSize: '14px', fontWeight: 650, color: 'var(--text)', lineHeight: 1.35, letterSpacing: '-0.01em', marginBottom: '6px' }}>
           {article.headline}
         </div>
@@ -317,6 +397,7 @@ function StoryCard({
   onTrack: () => void
 }) {
   const meta = ZONE_META[article.zoneType] ?? ZONE_META.tech
+  const hasImage = !!article.imageUrl
 
   return (
     <div style={{
@@ -326,45 +407,102 @@ function StoryCard({
       overflow: 'hidden',
       marginBottom: '20px',
     }}>
-      {/* Hero image — click to open full Detailed view */}
-      <div
-        onClick={onOpen}
-        style={{
-          position: 'relative', width: '100%', height: '200px', overflow: 'hidden',
-          background: ZONE_GRADIENTS[article.zoneType], cursor: 'pointer',
-        }}
-      >
-        {article.imageUrl && (
+      {hasImage ? (
+        /* Hero image — click to open full Detailed view */
+        <div
+          onClick={onOpen}
+          style={{
+            position: 'relative', width: '100%', height: '200px', overflow: 'hidden',
+            background: ZONE_GRADIENTS[article.zoneType], cursor: 'pointer',
+          }}
+        >
           <img
             src={article.imageUrl}
             alt={article.headline}
             style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }}
           />
-        )}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,9,14,0.15) 0%, rgba(9,9,14,0) 35%, rgba(9,9,14,0.55) 70%, rgba(9,9,14,0.92) 100%)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,9,14,0.15) 0%, rgba(9,9,14,0) 35%, rgba(9,9,14,0.55) 70%, rgba(9,9,14,0.92) 100%)' }} />
 
-        {/* Top row — zone pill (left) + Save/Track (right) */}
-        <div style={{ position: 'absolute', top: '12px', left: '14px', right: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div
-            onClick={(e) => { e.stopPropagation(); onZoneOpen() }}
-            style={{
-              background: 'rgba(9,9,14,0.70)', backdropFilter: 'blur(8px)',
-              borderRadius: '20px', padding: '4px 12px',
-              border: `1px solid ${meta.border}`,
-              cursor: 'pointer',
-            }}
-          >
-            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: meta.color }}>
-              {meta.label}
-            </span>
+          {/* Top row — zone pill (left) + Save/Track (right) */}
+          <div style={{ position: 'absolute', top: '12px', left: '14px', right: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div
+              onClick={(e) => { e.stopPropagation(); onZoneOpen() }}
+              style={{
+                background: 'rgba(9,9,14,0.70)', backdropFilter: 'blur(8px)',
+                borderRadius: '20px', padding: '4px 12px',
+                border: `1px solid ${meta.border}`,
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: meta.color }}>
+                {meta.label}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); onSave() }}
+                aria-label={isSaved ? 'Remove from Read Later' : 'Save to Read Later'}
+                style={{
+                  width: '32px', height: '32px', borderRadius: '50%',
+                  background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: isSaved ? 'var(--primary)' : 'var(--text-2)',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+                </svg>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onTrack() }}
+                aria-label="Track this topic"
+                style={{
+                  width: '32px', height: '32px', borderRadius: '50%',
+                  background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: 'var(--text-2)',
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+
+          {/* Time — bottom-right */}
+          <div style={{ position: 'absolute', bottom: '10px', right: '16px', fontSize: '12px', color: 'var(--text-3)' }}>
+            {relativeTime(article.publishedAt)}
+          </div>
+        </div>
+      ) : (
+        /* No image — compact header row instead of an empty hero block */
+        <div
+          onClick={onOpen}
+          style={{ padding: '14px 18px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <div
+              onClick={(e) => { e.stopPropagation(); onZoneOpen() }}
+              style={{
+                background: meta.bg, borderRadius: '20px', padding: '4px 12px',
+                border: `1px solid ${meta.border}`, cursor: 'pointer', flexShrink: 0,
+              }}
+            >
+              <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: meta.color }}>
+                {meta.label}
+              </span>
+            </div>
+            <span style={{ fontSize: '12px', color: 'var(--text-3)' }}>{relativeTime(article.publishedAt)}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
             <button
               onClick={(e) => { e.stopPropagation(); onSave() }}
               aria-label={isSaved ? 'Remove from Read Later' : 'Save to Read Later'}
               style={{
                 width: '32px', height: '32px', borderRadius: '50%',
-                background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', color: isSaved ? 'var(--primary)' : 'var(--text-2)',
               }}
@@ -378,7 +516,7 @@ function StoryCard({
               aria-label="Track this topic"
               style={{
                 width: '32px', height: '32px', borderRadius: '50%',
-                background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', color: 'var(--text-2)',
               }}
@@ -390,12 +528,7 @@ function StoryCard({
             </button>
           </div>
         </div>
-
-        {/* Time — bottom-right */}
-        <div style={{ position: 'absolute', bottom: '10px', right: '16px', fontSize: '12px', color: 'var(--text-3)' }}>
-          {relativeTime(article.publishedAt)}
-        </div>
-      </div>
+      )}
 
       {/* Content — headline + AI summary, click to open full Detailed view */}
       <div onClick={onOpen} style={{ padding: '9px 18px 14px', cursor: 'pointer' }}>
@@ -440,8 +573,11 @@ export default function ZoneDetailClient({
   articles,
   quicklook,
   scores,
+  weather,
   updates,
+  breaking,
   topStories,
+  today,
   more,
   trackingTopics,
   initialSavedIds,
@@ -451,8 +587,11 @@ export default function ZoneDetailClient({
   articles: ArticleDisplay[]
   quicklook: QuicklookRow[]
   scores: TeamScoreCard[]
+  weather: WeatherCardData[]
   updates: ArticleDisplay[]
+  breaking: ArticleDisplay[]
   topStories: ArticleDisplay[]
+  today: ArticleDisplay[]
   more: ArticleDisplay[]
   trackingTopics: TrackingTopicData[]
   initialSavedIds: string[]
@@ -469,6 +608,7 @@ export default function ZoneDetailClient({
   const [trackMenuOpen, setTrackMenuOpen] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 })
   const trackMenuBtnRef = useRef<HTMLButtonElement>(null)
+  const [localVisibleCount, setLocalVisibleCount] = useState(5)
 
   const showToast = (message: string) => {
     setToast({ visible: true, message })
@@ -531,6 +671,41 @@ export default function ZoneDetailClient({
 
   const qlItems = quicklook.map((q) => ({ label: q.label, value: q.value, sub: q.sub ?? undefined }))
 
+  // Tracking header + row — identical between Sports and Local, extracted once
+  // so both branches below stay in sync automatically.
+  const trackingSection = (
+    <>
+      <div style={{ padding: '18px 16px 12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.02em', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
+          Tracking
+        </span>
+        <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+        <button
+          ref={trackMenuBtnRef}
+          onClick={openTrackMenu}
+          aria-label="Tracking options"
+          style={{
+            width: '28px', height: '28px', borderRadius: '50%',
+            background: 'none', border: 'none', padding: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--text-2)', cursor: 'pointer', flexShrink: 0,
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+          </svg>
+        </button>
+      </div>
+      <div style={{ display: 'flex', gap: '10px', padding: '0 16px 20px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+        {visibleTrackingTopics.map((t) => (
+          <TrackingTopicCard key={t.id} data={t} onClick={() => openTrackingTopic(t)} />
+        ))}
+        {trackingOverflow && <ViewMoreTrackingCard onClick={() => router.push('/tracking')} />}
+        <AddTrackingCard onClick={() => setTrackModal({ open: true })} />
+      </div>
+    </>
+  )
+
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100dvh', paddingBottom: '100px' }}>
       <AppHeader
@@ -549,8 +724,10 @@ export default function ZoneDetailClient({
       />
 
       {zoneType === 'sports' && <ScoresCard scores={scores} />}
+      {zoneType === 'local' && <WeatherCard weather={weather} />}
 
-      {qlItems.length > 0 && (
+      {/* Local Zone has its own Weather Card now — the generic QuickLookStrip would be redundant */}
+      {zoneType !== 'local' && qlItems.length > 0 && (
         <QuickLookStrip items={qlItems} zoneType={zoneType} />
       )}
 
@@ -559,6 +736,25 @@ export default function ZoneDetailClient({
           <SectionHead label="Updates" />
           <div style={{ display: 'flex', gap: '12px', padding: '0 16px 4px', overflowX: 'auto', scrollbarWidth: 'none' }}>
             {updates.map((article) => (
+              <TrackCard
+                key={article.id}
+                article={article}
+                isSaved={savedIds.has(article.id)}
+                onOpen={() => router.push(`/zones/${zone.id}/story/${article.id}`)}
+                onZoneOpen={() => router.push(`/zones/${zone.id}`)}
+                onSave={() => handleSave(article)}
+                onTrack={() => setTrackModal({ open: true, article })}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {zoneType === 'local' && breaking.length > 0 && (
+        <>
+          <SectionHead label="Breaking" />
+          <div style={{ display: 'flex', gap: '12px', padding: '0 16px 4px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {breaking.map((article) => (
               <TrackCard
                 key={article.id}
                 article={article}
@@ -596,34 +792,7 @@ export default function ZoneDetailClient({
           )}
 
           {/* Tracking — same rules/format as Home, filtered to sports-related topics only */}
-          <div style={{ padding: '18px 16px 12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.02em', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
-              Tracking
-            </span>
-            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-            <button
-              ref={trackMenuBtnRef}
-              onClick={openTrackMenu}
-              aria-label="Tracking options"
-              style={{
-                width: '28px', height: '28px', borderRadius: '50%',
-                background: 'none', border: 'none', padding: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--text-2)', cursor: 'pointer', flexShrink: 0,
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-              </svg>
-            </button>
-          </div>
-          <div style={{ display: 'flex', gap: '10px', padding: '0 16px 20px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-            {visibleTrackingTopics.map((t) => (
-              <TrackingTopicCard key={t.id} data={t} onClick={() => openTrackingTopic(t)} />
-            ))}
-            {trackingOverflow && <ViewMoreTrackingCard onClick={() => router.push('/tracking')} />}
-            <AddTrackingCard onClick={() => setTrackModal({ open: true })} />
-          </div>
+          {trackingSection}
 
           {/* More — general sports news beyond the Teams of Interest */}
           {more.length > 0 && (
@@ -644,6 +813,67 @@ export default function ZoneDetailClient({
               </div>
             </>
           )}
+        </>
+      ) : zoneType === 'local' ? (
+        <>
+          {/* Top Stories — general local importance, same TrackCard row format as Home's Breaking/Top Stories */}
+          {topStories.length > 0 && (
+            <>
+              <SectionHead label="Top Stories" />
+              <div style={{ display: 'flex', gap: '12px', padding: '0 16px 4px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                {topStories.map((article) => (
+                  <TrackCard
+                    key={article.id}
+                    article={article}
+                    isSaved={savedIds.has(article.id)}
+                    onOpen={() => router.push(`/zones/${zone.id}/story/${article.id}`)}
+                    onZoneOpen={() => router.push(`/zones/${zone.id}`)}
+                    onSave={() => handleSave(article)}
+                    onTrack={() => setTrackModal({ open: true, article })}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Today — expanded Story Cards, paginated 5 at a time, same as Home */}
+          {today.length > 0 && (
+            <>
+              <SectionHead label="Today" />
+              <div style={{ padding: '0 16px' }}>
+                {today.slice(0, localVisibleCount).map((article) => (
+                  <StoryCard
+                    key={article.id}
+                    article={article}
+                    isSaved={savedIds.has(article.id)}
+                    onOpen={() => router.push(`/zones/${zone.id}/story/${article.id}`)}
+                    onZoneOpen={() => router.push(`/zones/${zone.id}`)}
+                    onSave={() => handleSave(article)}
+                    onTrack={() => setTrackModal({ open: true, article })}
+                  />
+                ))}
+                {today.length > localVisibleCount && (
+                  <button
+                    onClick={() => setLocalVisibleCount((v) => v + 5)}
+                    style={{
+                      width: '100%', background: 'var(--surface)', border: '1px solid var(--border-mid)',
+                      borderRadius: '14px', padding: '14px', marginBottom: '20px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      cursor: 'pointer', color: 'var(--text-2)', fontFamily: 'inherit',
+                    }}
+                  >
+                    <span style={{ fontSize: '14px', fontWeight: 600 }}>View More</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Tracking — same rules/format as Home, filtered to local-related topics only */}
+          {trackingSection}
         </>
       ) : (
         <>

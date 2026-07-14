@@ -103,6 +103,7 @@ function TrackCard({ article, isSaved, onOpen, onZoneOpen, onSave, onTrack }: {
   onTrack: () => void
 }) {
   const meta = ZONE_META[article.zoneType]
+  const hasImage = !!article.imageUrl
 
   return (
     <div onClick={onOpen} style={{
@@ -114,26 +115,72 @@ function TrackCard({ article, isSaved, onOpen, onZoneOpen, onSave, onTrack }: {
       {/* Zone-color top stripe */}
       <div style={{ height: '3px', width: '100%', background: meta.color }} />
 
-      {/* Image area */}
-      <div style={{
-        width: '100%', height: '116px', position: 'relative', overflow: 'hidden',
-        background: ZONE_GRADIENTS[article.zoneType],
-      }}>
-        {article.imageUrl && (
+      {hasImage ? (
+        /* Image area */
+        <div style={{
+          width: '100%', height: '116px', position: 'relative', overflow: 'hidden',
+          background: ZONE_GRADIENTS[article.zoneType],
+        }}>
           <img src={article.imageUrl} alt={article.headline}
             style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }} />
-        )}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,9,14,0.10) 0%, rgba(9,9,14,0.50) 50%, rgba(17,17,23,1) 100%)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,9,14,0.10) 0%, rgba(9,9,14,0.50) 50%, rgba(17,17,23,1) 100%)' }} />
 
-        {/* Top row — zone pill (left) + Save/Track (right) */}
-        <div style={{ position: 'absolute', top: '12px', left: '14px', right: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Top row — zone pill (left) + Save/Track (right) */}
+          <div style={{ position: 'absolute', top: '12px', left: '14px', right: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div
+              onClick={(e) => { e.stopPropagation(); onZoneOpen() }}
+              style={{
+                background: 'rgba(9,9,14,0.70)', backdropFilter: 'blur(8px)',
+                borderRadius: '20px', padding: '4px 12px',
+                border: `1px solid ${meta.border}`,
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: meta.color }}>
+                {meta.label}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); onSave() }}
+                aria-label={isSaved ? 'Remove from Read Later' : 'Save to Read Later'}
+                style={{
+                  width: '32px', height: '32px', borderRadius: '50%',
+                  background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: isSaved ? 'var(--primary)' : 'var(--text-2)',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+                </svg>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onTrack() }}
+                aria-label="Track this topic"
+                style={{
+                  width: '32px', height: '32px', borderRadius: '50%',
+                  background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: 'var(--text-2)',
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* No image — compact header row instead of an empty 116px hero block */
+        <div style={{ padding: '12px 14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div
             onClick={(e) => { e.stopPropagation(); onZoneOpen() }}
             style={{
-              background: 'rgba(9,9,14,0.70)', backdropFilter: 'blur(8px)',
-              borderRadius: '20px', padding: '4px 12px',
-              border: `1px solid ${meta.border}`,
-              cursor: 'pointer',
+              background: meta.bg, borderRadius: '20px', padding: '4px 12px',
+              border: `1px solid ${meta.border}`, cursor: 'pointer',
             }}
           >
             <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: meta.color }}>
@@ -146,7 +193,7 @@ function TrackCard({ article, isSaved, onOpen, onZoneOpen, onSave, onTrack }: {
               aria-label={isSaved ? 'Remove from Read Later' : 'Save to Read Later'}
               style={{
                 width: '32px', height: '32px', borderRadius: '50%',
-                background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', color: isSaved ? 'var(--primary)' : 'var(--text-2)',
               }}
@@ -160,7 +207,7 @@ function TrackCard({ article, isSaved, onOpen, onZoneOpen, onSave, onTrack }: {
               aria-label="Track this topic"
               style={{
                 width: '32px', height: '32px', borderRadius: '50%',
-                background: 'rgba(17,17,23,0.85)', border: '1px solid var(--border-mid)',
+                background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', color: 'var(--text-2)',
               }}
@@ -172,11 +219,11 @@ function TrackCard({ article, isSaved, onOpen, onZoneOpen, onSave, onTrack }: {
             </button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Card body */}
       <div style={{ padding: '0 14px 14px' }}>
-        <div style={{ height: '12px' }} />
+        <div style={{ height: hasImage ? '12px' : '10px' }} />
         <div style={{ fontSize: '14px', fontWeight: 650, color: 'var(--text)', lineHeight: 1.35, letterSpacing: '-0.01em', marginBottom: '6px' }}>
           {article.headline}
         </div>

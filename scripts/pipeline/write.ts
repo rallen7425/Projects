@@ -9,21 +9,6 @@ type QuicklookItem = {
   position: number
 }
 
-function parseWeatherQuicklook(articles: ProcessedArticle[]): QuicklookItem[] {
-  const weather = articles.find((a) => a.zoneType === 'local' && a.bodySnippet?.includes('Temperature:'))
-  if (!weather?.bodySnippet) return []
-
-  const tempMatch = weather.bodySnippet.match(/Temperature: ([\d.]+°[FC])/)
-  const condMatch = weather.bodySnippet.match(/Conditions: ([^.]+)/)
-  const windMatch = weather.bodySnippet.match(/Wind: ([^.]+)/)
-
-  const items: QuicklookItem[] = []
-  if (tempMatch) items.push({ zone_type: 'local', label: 'Now', value: tempMatch[1], position: 0 })
-  if (condMatch) items.push({ zone_type: 'local', label: 'Conditions', value: condMatch[1].trim(), position: 1 })
-  if (windMatch) items.push({ zone_type: 'local', label: 'Wind', value: windMatch[1].trim(), position: 2 })
-  return items
-}
-
 function parseFinanceQuicklook(articles: ProcessedArticle[]): QuicklookItem[] {
   const finance = articles.find((a) => a.zoneType === 'finance' && a.bodySnippet?.includes('S&P 500'))
   if (!finance?.bodySnippet) return []
@@ -85,10 +70,8 @@ export async function writeArticles(articles: ProcessedArticle[]): Promise<numbe
   const { error } = await supabase.from('articles').insert(rows)
   if (error) throw error
 
-  // Update quicklook for weather and finance
-  const weatherItems = parseWeatherQuicklook(articles)
-  const financeItems = parseFinanceQuicklook(articles)
-  const quicklookItems = [...weatherItems, ...financeItems]
+  // Update quicklook for finance (Local Zone's weather now lives in the live-fetched Weather Card, not quicklook)
+  const quicklookItems = parseFinanceQuicklook(articles)
 
   if (quicklookItems.length > 0) {
     for (const item of quicklookItems) {

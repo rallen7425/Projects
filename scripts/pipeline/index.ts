@@ -5,7 +5,7 @@ config({ path: resolve(process.cwd(), '.env.local') })
 config({ path: resolve(process.cwd(), '.env') })
 import { fetchGuardian } from './sources/guardian'
 import { fetchRss } from './sources/rss'
-import { fetchWeather } from './sources/weather'
+import { fetchGoogleNews } from './sources/googlenews'
 import { fetchSports } from './sources/sports'
 import { fetchFinance } from './sources/finance'
 import { enrichImages } from './enrich/images'
@@ -13,13 +13,40 @@ import { summarizeArticles } from './enrich/summarize'
 import { writeArticles } from './write'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { RawArticle, ZoneType } from './types'
+import type { LocalArea } from '@/types'
 
 type ZoneRunner = {
   zone: ZoneType
   fetch: () => Promise<RawArticle[]>
 }
 
-const DEFAULT_ZIP = process.env.DEFAULT_ZIP ?? '04101'  // Portland, ME fallback
+// Local Zone content is driven by each configured local zone's `config.areas`
+// (community/metro/region tiers — see lib/geo/*, lib/weather/nws.ts, and the
+// zones.setup script). Same shared-article-pool architecture as every other
+// zone: no per-user pipeline runs, just a union of whatever areas any enabled
+// local zone has configured, deduped by query text.
+async function fetchLocalAreaConfigs(): Promise<LocalArea[]> {
+  const supabase = createServiceClient()
+  const { data: zones, error } = await supabase
+    .from('zones')
+    .select('config')
+    .eq('type', 'local')
+    .eq('enabled', true)
+
+  if (error) {
+    console.warn('[local] Failed to load zone configs:', error.message)
+    return []
+  }
+
+  const byQuery = new Map<string, LocalArea>()
+  for (const zone of zones ?? []) {
+    const areas = (zone.config as { areas?: LocalArea[] } | null)?.areas ?? []
+    for (const area of areas) {
+      if (!byQuery.has(area.query)) byQuery.set(area.query, area)
+    }
+  }
+  return Array.from(byQuery.values())
+}
 
 const ZONE_RUNNERS: ZoneRunner[] = [
   {
@@ -59,14 +86,22 @@ const ZONE_RUNNERS: ZoneRunner[] = [
   {
     zone: 'local',
     fetch: async () => {
-      const [weather, local] = await Promise.allSettled([
-        fetchWeather(DEFAULT_ZIP),
-        fetchGuardian('us-news', 'local'),
-      ])
-      return [
-        ...(weather.status === 'fulfilled' ? weather.value : []),
-        ...(local.status === 'fulfilled' ? local.value : []),
-      ].slice(0, 15)
+      const areas = await fetchLocalAreaConfigs()
+      if (areas.length === 0) {
+        // No local zone configured yet — fall back to generic US news so the
+        // zone isn't empty.
+        return fetchGuardian('us-news', 'local')
+      }
+
+      // Cap each area's contribution before merging so one area (e.g. a
+      // high-volume metro query) can't crowd out the others.
+      const results = await Promise.allSettled(
+        areas.map((area) => fetchGoogleNews(area.query, 'local', area.label))
+      )
+      const merged = results.flatMap((r) => (r.status === 'fulfilled' ? r.value.slice(0, 8) : []))
+      return merged
+        .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+        .slice(0, 15)
     },
   },
   {

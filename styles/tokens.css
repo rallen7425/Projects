@@ -21,6 +21,11 @@
   --tech:    #A78BFA;
   --finance: #34D399;
 
+  /* Darkened zone colors — for solid-fill live-data cards (Scores, Weather)
+     where white text needs real contrast, not the pill-scale zone color. */
+  --sports-dark: #098533;
+  --local-dark:  #163E77;
+
   /* Critical */
   --critical: #E24B4A;
 

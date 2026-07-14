@@ -39,7 +39,11 @@ async function fetchUnsplashImage(query: string): Promise<string | undefined> {
 }
 
 export async function enrichImages(articles: RawArticle[]): Promise<RawArticle[]> {
-  const missing = articles.filter((a) => !a.imageUrl)
+  // Google News RSS links are redirect pages (news.google.com/rss/articles/...),
+  // not the publisher's article — their og:image is always Google's own generic
+  // branding, not real article art, so OG scraping would produce a wrong image
+  // rather than no image. Skip straight to the Unsplash fallback for these.
+  const missing = articles.filter((a) => !a.imageUrl && !a.sourceUrl.includes('news.google.com'))
 
   // OG extraction — run concurrently but don't block pipeline on failure
   await Promise.all(

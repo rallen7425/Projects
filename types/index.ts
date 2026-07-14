@@ -30,6 +30,16 @@ export type ZoneConfig = {
   position: number
 }
 
+// Local Zone personalization — community/metro/region tiers derived from the
+// user's zip code, plus up to 3 user-added extra community/metro areas.
+export type LocalArea = {
+  id: string
+  kind: 'community' | 'metro' | 'region'
+  label: string // e.g. "North Andover, MA", "Boston, MA", "New England"
+  query: string  // Google News search query for this area
+  zip?: string    // present for community-kind areas — used for the Weather Card
+}
+
 export type ScheduleRow = {
   sport: 'mlb' | 'nba' | 'nfl' | 'other'
   matchup: string

@@ -3,10 +3,38 @@ import { redirect } from 'next/navigation'
 import { getArticlesByZone, getArticleById, searchTeamUpdates, searchArticlesByTopic } from '@/lib/db/articles'
 import { getZoneQuicklook } from '@/lib/db/zones'
 import { getTrackedTopics } from '@/lib/db/tracks'
-import { toArticleDisplay, dedupeStories } from '@/lib/articleUtils'
+import { toArticleDisplay, dedupeStories, selectBreakingStories, selectTopStories } from '@/lib/articleUtils'
 import ZoneDetailClient from './ZoneDetailClient'
-import type { ArticleDisplay, ZoneType } from '@/types'
+import type { ArticleDisplay, LocalArea, ZoneType } from '@/types'
 import { getScoresForTeams, type TeamOfInterest } from '@/lib/scores/espn'
+import { getWeatherForAreas } from '@/lib/weather/nws'
+
+type TrackingTopicResult = { id: string; topic: string; createdAt: string; article: ArticleDisplay | null; articleCount: number }
+
+// Tracking — same fetch/scoring rules for both Sports and Local (best-matching
+// article per topic via searchArticlesByTopic), filtered to this zone's own
+// zoneType: either explicitly tracked from this zone, or an untagged topic
+// whose text actually matches this zone's coverage.
+async function fetchZoneTracking(userId: string, zoneId: string, zoneType: ZoneType): Promise<TrackingTopicResult[]> {
+  const allTracks = await getTrackedTopics(userId)
+  const candidateTracks = allTracks.filter((t) => t.zone_id === zoneId || t.zone_id === null)
+  const raw = await Promise.all(
+    candidateTracks.map(async (t) => {
+      const matches = await searchArticlesByTopic(t.topic, 5, 30, zoneType).catch(() => [])
+      return {
+        id: t.id,
+        topic: t.topic,
+        createdAt: t.created_at,
+        zoneId: t.zone_id,
+        article: matches[0] ? toArticleDisplay(matches[0]) : null,
+        articleCount: matches.length,
+      }
+    })
+  )
+  return raw
+    .filter((t) => t.zoneId === zoneId || t.articleCount > 0)
+    .map((t) => ({ id: t.id, topic: t.topic, createdAt: t.createdAt, article: t.article, articleCount: t.articleCount }))
+}
 
 export default async function ZoneDetailPage({ params }: { params: { zoneId: string } }) {
   const user = await getEffectiveUser()
@@ -25,12 +53,16 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   const zoneType = zone.type as ZoneType
 
   const teamsOfInterest = ((zone.config as { teams?: TeamOfInterest[] } | null)?.teams ?? [])
+  const localAreas = ((zone.config as { areas?: LocalArea[] } | null)?.areas ?? [])
 
-  const [articles, quicklook, scores] = await Promise.all([
+  const [articles, quicklook, scores, weather] = await Promise.all([
     getArticlesByZone(zoneType, 15),
     getZoneQuicklook(zoneType),
     zoneType === 'sports' && teamsOfInterest.length > 0
       ? getScoresForTeams(teamsOfInterest)
+      : Promise.resolve([]),
+    zoneType === 'local' && localAreas.length > 0
+      ? getWeatherForAreas(localAreas).catch(() => [])
       : Promise.resolve([]),
   ])
 
@@ -75,30 +107,25 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
         .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
     : []
 
-  // Tracking — same fetch/scoring rules as Home's Tracking section (best-matching
-  // article per topic via searchArticlesByTopic), filtered to sports-related topics
-  // only: either explicitly tracked from this zone, or an untagged topic whose text
-  // actually matches sports coverage.
-  let trackingTopics: Array<{ id: string; topic: string; createdAt: string; article: ArticleDisplay | null; articleCount: number }> = []
+  // Local Zone's own Breaking/Top Stories/Today split — mirrors Home's logic
+  // exactly (lib/articleUtils.ts), just scoped to this single zone's own
+  // article pool instead of cross-zone.
+  const localDisplays = zoneType === 'local' ? dedupeStories(articleDisplays) : []
+  const localBreaking = zoneType === 'local' ? selectBreakingStories(localDisplays) : []
+  const localBreakingIds = new Set(localBreaking.map((a) => a.id))
+  const localTopStories = zoneType === 'local' ? selectTopStories(localDisplays, localBreakingIds) : []
+  const localTopIds = new Set(localTopStories.map((a) => a.id))
+  const localToday = zoneType === 'local'
+    ? localDisplays.filter((a) => !localBreakingIds.has(a.id) && !localTopIds.has(a.id))
+    : []
+
+  // Tracking — sports and local both use the same fetch/scoring rules as Home's
+  // Tracking section, filtered to this zone's own zoneType.
+  let trackingTopics: TrackingTopicResult[] = []
   if (zoneType === 'sports') {
-    const allTracks = await getTrackedTopics(user.id)
-    const candidateTracks = allTracks.filter((t) => t.zone_id === zone.id || t.zone_id === null)
-    const trackingTopicsRaw = await Promise.all(
-      candidateTracks.map(async (t) => {
-        const matches = await searchArticlesByTopic(t.topic, 5, 30, 'sports').catch(() => [])
-        return {
-          id: t.id,
-          topic: t.topic,
-          createdAt: t.created_at,
-          zoneId: t.zone_id,
-          article: matches[0] ? toArticleDisplay(matches[0]) : null,
-          articleCount: matches.length,
-        }
-      })
-    )
-    trackingTopics = trackingTopicsRaw
-      .filter((t) => t.zoneId === zone.id || t.articleCount > 0)
-      .map((t) => ({ id: t.id, topic: t.topic, createdAt: t.createdAt, article: t.article, articleCount: t.articleCount }))
+    trackingTopics = await fetchZoneTracking(user.id, zone.id, 'sports')
+  } else if (zoneType === 'local') {
+    trackingTopics = await fetchZoneTracking(user.id, zone.id, 'local')
   }
 
   // Check saved status for all articles
@@ -117,8 +144,11 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
       articles={articleDisplays}
       quicklook={quicklook}
       scores={scores}
+      weather={weather}
       updates={updateDisplays}
-      topStories={topStories}
+      breaking={localBreaking}
+      topStories={zoneType === 'local' ? localTopStories : topStories}
+      today={localToday}
       more={more}
       trackingTopics={trackingTopics}
       initialSavedIds={Array.from(savedIds)}
