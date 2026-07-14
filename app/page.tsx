@@ -22,9 +22,15 @@ export default async function InDepthPage() {
   const user = await getEffectiveUser()
   if (!user) redirect('/auth/signin')
 
-  const [articles, dbZones, trackedTopics] = await Promise.all([
-    getTopArticles(30),
-    getUserZones(user.id),
+  // Zones first — scopes the cross-zone Breaking/Top Stories pool to the
+  // user's own active zone types, so content from a zone type the user has no
+  // active zone for (e.g. Finance/Entertainment, whose pipeline runners keep
+  // generating content even with zero users on them) can't leak in.
+  const dbZones = await getUserZones(user.id)
+  const userZoneTypes = dbZones.map(z => z.type as ZoneType)
+
+  const [articles, trackedTopics] = await Promise.all([
+    getTopArticles(30, userZoneTypes),
     getTrackedTopics(user.id),
   ])
 

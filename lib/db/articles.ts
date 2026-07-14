@@ -29,15 +29,23 @@ export async function getArticleById(id: string) {
   return data
 }
 
-export async function getTopArticles(limit = 20) {
+// zoneTypes, when passed, scopes the cross-zone pool to the user's own active
+// zones — without it, the pipeline's other zone runners (e.g. Finance,
+// Entertainment, Work) keep generating content for zone types the user may
+// not have an active zone for at all, and that content would otherwise leak
+// into Home/Summary's Breaking/Top Stories despite no matching zone existing.
+export async function getTopArticles(limit = 20, zoneTypes?: ZoneType[]) {
   const supabase = createServerSupabase()
   // Only show articles from the last 72 hours so stale high-urgency articles
   // don't permanently dominate the Today page
   const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()
-  const { data, error } = await supabase
+  let query = supabase
     .from('articles')
     .select('*')
     .gte('published_at', cutoff)
+  if (zoneTypes && zoneTypes.length > 0) query = query.in('zone_type', zoneTypes)
+
+  const { data, error } = await query
     .order('urgency_score', { ascending: false })
     .order('published_at', { ascending: false })
     .limit(limit)
