@@ -53,14 +53,22 @@ const ZONE_RUNNERS: ZoneRunner[] = [
   {
     zone: 'tech',
     fetch: async () => {
-      const [guardian, hn] = await Promise.allSettled([
+      // Guardian + HN kept as-is (broad framing + community/startup-culture
+      // flavor); TechCrunch/Verge/Ars Technica/Wired added for leading-outlet
+      // tech journalism (confirmed live: real, timely, high-signal content).
+      // Each source capped before merging so no single feed dominates.
+      const sources = await Promise.allSettled([
         fetchGuardian('technology', 'tech'),
         fetchRss('https://hnrss.org/frontpage', 'tech', 'Hacker News'),
+        fetchRss('https://techcrunch.com/feed/', 'tech', 'TechCrunch'),
+        fetchRss('https://www.theverge.com/rss/index.xml', 'tech', 'The Verge'),
+        fetchRss('https://feeds.arstechnica.com/arstechnica/index', 'tech', 'Ars Technica'),
+        fetchRss('https://www.wired.com/feed/rss', 'tech', 'Wired'),
       ])
-      return [
-        ...(guardian.status === 'fulfilled' ? guardian.value : []),
-        ...(hn.status === 'fulfilled' ? hn.value : []),
-      ].slice(0, 15)
+      const merged = sources.flatMap((r) => (r.status === 'fulfilled' ? r.value.slice(0, 6) : []))
+      return merged
+        .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+        .slice(0, 15)
     },
   },
   {
