@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+type ZoneMenuItem = { id: string; label: string; color: string }
 
 type Tab = 'today' | 'zones' | 'tracking' | 'saved'
 
@@ -120,6 +122,15 @@ const TABS: Array<{ id: Tab; label: string; href: string; icon: React.ReactNode 
 
 export default function BottomNav({ activeTab }: BottomNavProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [zones, setZones] = useState<ZoneMenuItem[] | null>(null)
+
+  useEffect(() => {
+    if (!isMenuOpen || zones !== null) return
+    fetch('/api/zones/menu')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: ZoneMenuItem[]) => setZones(data))
+      .catch(() => setZones([]))
+  }, [isMenuOpen, zones])
 
   return (
     <>
@@ -162,25 +173,50 @@ export default function BottomNav({ activeTab }: BottomNavProps) {
         }}
       >
         {MENU_ITEMS.map((item) => (
-          <Link
-            key={item.id}
-            href={item.href}
-            onClick={() => setIsMenuOpen(false)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 14px',
-              borderRadius: '14px',
-              textDecoration: 'none',
-              color: 'var(--text)',
-            }}
-          >
-            <span style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-2)' }}>
-              {item.icon}
-            </span>
-            <span style={{ fontSize: '15px', fontWeight: 500 }}>{item.label}</span>
-          </Link>
+          <div key={item.id}>
+            <Link
+              href={item.href}
+              onClick={() => setIsMenuOpen(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 14px',
+                borderRadius: '14px',
+                textDecoration: 'none',
+                color: 'var(--text)',
+              }}
+            >
+              <span style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-2)' }}>
+                {item.icon}
+              </span>
+              <span style={{ fontSize: '15px', fontWeight: 500 }}>{item.label}</span>
+            </Link>
+
+            {item.id === 'my-zones' && zones && zones.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', padding: '0 14px 6px 46px' }}>
+                {zones.map((zone) => (
+                  <Link
+                    key={zone.id}
+                    href={`/zones/${zone.id}`}
+                    onClick={() => setIsMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '9px',
+                      padding: '8px 10px',
+                      borderRadius: '10px',
+                      textDecoration: 'none',
+                      color: 'var(--text-2)',
+                    }}
+                  >
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: zone.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: '13.5px', fontWeight: 500 }}>{zone.label}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </div>
 
