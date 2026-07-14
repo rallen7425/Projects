@@ -1,5 +1,43 @@
 import * as cheerio from 'cheerio'
+import { createServiceClient } from '@/lib/supabase/service'
 import type { RawArticle } from '../types'
+
+// Unsplash's free tier is 50 requests/hour — cache fetched images by query so
+// repeated/similar headlines (common: recurring weather alerts, multi-day
+// coverage of the same event) reuse one image instead of re-querying. No
+// dedicated cache table exists, so this reuses zone_quicklook's existing
+// label/value shape under a sentinel zone_type that never matches a real
+// zone's own quicklook query.
+const IMAGE_CACHE_ZONE_TYPE = '_image_cache'
+
+async function getCachedImage(query: string): Promise<string | undefined> {
+  try {
+    const supabase = createServiceClient()
+    const { data } = await supabase
+      .from('zone_quicklook')
+      .select('value')
+      .eq('zone_type', IMAGE_CACHE_ZONE_TYPE)
+      .eq('label', query)
+      .maybeSingle()
+    return data?.value ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
+async function setCachedImage(query: string, imageUrl: string): Promise<void> {
+  try {
+    const supabase = createServiceClient()
+    await supabase
+      .from('zone_quicklook')
+      .upsert(
+        { zone_type: IMAGE_CACHE_ZONE_TYPE, label: query, value: imageUrl, updated_at: new Date().toISOString() },
+        { onConflict: 'zone_type,label' }
+      )
+  } catch {
+    // Non-fatal — worst case we just re-fetch next time
+  }
+}
 
 async function fetchOgImage(url: string): Promise<string | undefined> {
   try {
@@ -22,7 +60,13 @@ async function fetchOgImage(url: string): Promise<string | undefined> {
   }
 }
 
-async function fetchUnsplashImage(query: string): Promise<string | undefined> {
+async function fetchUnsplashImage(rawQuery: string): Promise<string | undefined> {
+  const query = rawQuery.trim().toLowerCase()
+  if (!query) return undefined
+
+  const cached = await getCachedImage(query)
+  if (cached) return cached
+
   const accessKey = process.env.UNSPLASH_ACCESS_KEY
   if (!accessKey) return undefined
   try {
@@ -32,7 +76,9 @@ async function fetchUnsplashImage(query: string): Promise<string | undefined> {
     })
     if (!res.ok) return undefined
     const json = await res.json()
-    return json?.results?.[0]?.urls?.small
+    const imageUrl = json?.results?.[0]?.urls?.small
+    if (imageUrl) await setCachedImage(query, imageUrl)
+    return imageUrl
   } catch {
     return undefined
   }
