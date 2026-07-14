@@ -27,12 +27,12 @@ export const ZONE_TEMPLATES: Record<string, ZoneTemplate> = {
     sources: ['espn-rss', 'team-rss'],
     requiresZip: true,
   },
-  headlines: {
-    type: 'maine',
-    label: 'Headlines Zone',
+  news: {
+    type: 'news',
+    label: 'News Zone',
     position: 2,
     defaultConfig: {},
-    sources: ['guardian', 'rss'],
+    sources: ['guardian-world', 'guardian-us-news'],
   },
   tech: {
     type: 'tech',

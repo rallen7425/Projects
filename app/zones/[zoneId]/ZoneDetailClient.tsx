@@ -364,7 +364,7 @@ function ViewMoreTrackingCard({ onClick }: { onClick: () => void }) {
 const ZONE_GRADIENTS: Record<ZoneType, string> = {
   sports: 'linear-gradient(135deg,#1b4332,#0d2419)',
   local: 'linear-gradient(135deg,#0c2d5e,#071a38)',
-  maine: 'linear-gradient(135deg,#3d2005,#251203)',
+  news: 'linear-gradient(135deg,#3d2005,#251203)',
   tech: 'linear-gradient(135deg,#1e104a,#110929)',
   finance: 'linear-gradient(135deg,#0d2418,#070f0c)',
   work: 'linear-gradient(135deg,#1a1a2e,#0f0f1a)',
@@ -608,7 +608,7 @@ export default function ZoneDetailClient({
   const [trackMenuOpen, setTrackMenuOpen] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 })
   const trackMenuBtnRef = useRef<HTMLButtonElement>(null)
-  const [localVisibleCount, setLocalVisibleCount] = useState(5)
+  const [todayVisibleCount, setTodayVisibleCount] = useState(5)
 
   const showToast = (message: string) => {
     setToast({ visible: true, message })
@@ -750,7 +750,7 @@ export default function ZoneDetailClient({
         </>
       )}
 
-      {zoneType === 'local' && breaking.length > 0 && (
+      {zoneType !== 'sports' && breaking.length > 0 && (
         <>
           <SectionHead label="Breaking" />
           <div style={{ display: 'flex', gap: '12px', padding: '0 16px 4px', overflowX: 'auto', scrollbarWidth: 'none' }}>
@@ -841,7 +841,7 @@ export default function ZoneDetailClient({
             <>
               <SectionHead label="Today" />
               <div style={{ padding: '0 16px' }}>
-                {today.slice(0, localVisibleCount).map((article) => (
+                {today.slice(0, todayVisibleCount).map((article) => (
                   <StoryCard
                     key={article.id}
                     article={article}
@@ -852,9 +852,9 @@ export default function ZoneDetailClient({
                     onTrack={() => setTrackModal({ open: true, article })}
                   />
                 ))}
-                {today.length > localVisibleCount && (
+                {today.length > todayVisibleCount && (
                   <button
-                    onClick={() => setLocalVisibleCount((v) => v + 5)}
+                    onClick={() => setTodayVisibleCount((v) => v + 5)}
                     style={{
                       width: '100%', background: 'var(--surface)', border: '1px solid var(--border-mid)',
                       borderRadius: '14px', padding: '14px', marginBottom: '20px',
@@ -877,22 +877,84 @@ export default function ZoneDetailClient({
         </>
       ) : (
         <>
-          <SectionHead label="Top Stories" />
-          <div style={{ padding: '0 16px' }}>
-          {[...articles]
-            .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-            .map((article) => (
-              <StoryCard
-                key={article.id}
-                article={article}
-                isSaved={savedIds.has(article.id)}
-                onOpen={() => router.push(`/zones/${zone.id}/story/${article.id}`)}
-                onZoneOpen={() => router.push(`/zones/${zone.id}`)}
-                onSave={() => handleSave(article)}
-                onTrack={() => setTrackModal({ open: true, article })}
-              />
-            ))}
-          </div>
+          {/* Top Stories — general zone importance, same TrackCard row format as Home's Breaking/Top Stories */}
+          {topStories.length > 0 && (
+            <>
+              <SectionHead label="Top Stories" />
+              <div style={{ display: 'flex', gap: '12px', padding: '0 16px 4px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                {topStories.map((article) => (
+                  <TrackCard
+                    key={article.id}
+                    article={article}
+                    isSaved={savedIds.has(article.id)}
+                    onOpen={() => router.push(`/zones/${zone.id}/story/${article.id}`)}
+                    onZoneOpen={() => router.push(`/zones/${zone.id}`)}
+                    onSave={() => handleSave(article)}
+                    onTrack={() => setTrackModal({ open: true, article })}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Today — expanded Story Cards, paginated 5 at a time up to a cap; anything beyond the cap lands in More below */}
+          {today.length > 0 && (
+            <>
+              <SectionHead label="Today" />
+              <div style={{ padding: '0 16px' }}>
+                {today.slice(0, todayVisibleCount).map((article) => (
+                  <StoryCard
+                    key={article.id}
+                    article={article}
+                    isSaved={savedIds.has(article.id)}
+                    onOpen={() => router.push(`/zones/${zone.id}/story/${article.id}`)}
+                    onZoneOpen={() => router.push(`/zones/${zone.id}`)}
+                    onSave={() => handleSave(article)}
+                    onTrack={() => setTrackModal({ open: true, article })}
+                  />
+                ))}
+                {today.length > todayVisibleCount && (
+                  <button
+                    onClick={() => setTodayVisibleCount((v) => v + 5)}
+                    style={{
+                      width: '100%', background: 'var(--surface)', border: '1px solid var(--border-mid)',
+                      borderRadius: '14px', padding: '14px', marginBottom: '20px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      cursor: 'pointer', color: 'var(--text-2)', fontFamily: 'inherit',
+                    }}
+                  >
+                    <span style={{ fontSize: '14px', fontWeight: 600 }}>View More</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Tracking — same rules/format as Home, filtered to this zone's own zoneType */}
+          {trackingSection}
+
+          {/* More — whatever's left in the zone's pool beyond Today's cap */}
+          {more.length > 0 && (
+            <>
+              <SectionHead label="More" />
+              <div style={{ padding: '0 16px' }}>
+              {more.map((article) => (
+                <StoryCard
+                  key={article.id}
+                  article={article}
+                  isSaved={savedIds.has(article.id)}
+                  onOpen={() => router.push(`/zones/${zone.id}/story/${article.id}`)}
+                  onZoneOpen={() => router.push(`/zones/${zone.id}`)}
+                  onSave={() => handleSave(article)}
+                  onTrack={() => setTrackModal({ open: true, article })}
+                />
+              ))}
+              </div>
+            </>
+          )}
         </>
       )}
 

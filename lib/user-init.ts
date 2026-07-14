@@ -5,7 +5,7 @@ import type { Json } from '@/types/supabase'
 export async function initializeNewUser(userId: string, zipCode?: string) {
   const supabase = createServiceClient()
 
-  const defaultTemplates = ['headlines', 'tech']
+  const defaultTemplates = ['news', 'tech']
   if (zipCode) defaultTemplates.unshift('local')
 
   const zones = defaultTemplates.map((key) => {

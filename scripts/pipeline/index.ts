@@ -105,11 +105,11 @@ const ZONE_RUNNERS: ZoneRunner[] = [
     },
   },
   {
-    zone: 'maine',
+    zone: 'news',
     fetch: async () => {
       const feeds = await Promise.allSettled([
-        fetchRss('https://www.pressherald.com/feed/', 'maine', 'Portland Press Herald'),
-        fetchRss('https://www.bangordailynews.com/feed/', 'maine', 'Bangor Daily News'),
+        fetchGuardian('world', 'news'),
+        fetchGuardian('us-news', 'news'),
       ])
       return feeds
         .flatMap((r) => (r.status === 'fulfilled' ? r.value : []))

@@ -16,7 +16,7 @@ const ZONE_CHIPS: Array<{ id: ZoneType | 'none'; label: string }> = [
   { id: 'none', label: 'No zone' },
   { id: 'sports', label: 'Sports Zone' },
   { id: 'local', label: 'Local Zone' },
-  { id: 'maine', label: 'Maine Zone' },
+  { id: 'news', label: 'News Zone' },
   { id: 'tech', label: 'Tech & AI Zone' },
   { id: 'finance', label: 'Finance Zone' },
 ]

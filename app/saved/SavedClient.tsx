@@ -11,7 +11,7 @@ import { addTrack, unsaveArticle } from '@/lib/actions'
 import type { ArticleDisplay, ZoneType } from '@/types'
 import { ZONE_META } from '@/types'
 
-const ALL_ZONES: Array<ZoneType | 'all'> = ['all', 'sports', 'local', 'tech', 'finance', 'entertainment', 'maine', 'work']
+const ALL_ZONES: Array<ZoneType | 'all'> = ['all', 'sports', 'local', 'tech', 'finance', 'entertainment', 'news', 'work']
 
 export default function SavedClient({ articles: initial, userId }: { articles: ArticleDisplay[]; userId: string }) {
   const router = useRouter()

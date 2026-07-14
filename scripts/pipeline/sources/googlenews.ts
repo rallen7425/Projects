@@ -32,7 +32,12 @@ function makeExternalId(sourceUrl: string, headline: string): string {
 }
 
 export async function fetchGoogleNews(query: string, zoneType: ZoneType, sourceLabel?: string): Promise<RawArticle[]> {
-  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}+when:14d&hl=en-US&gl=US&ceid=US:en`
+  // Quoted as an exact phrase — unquoted multi-word queries are matched as loose
+  // AND/OR keyword sets, not a phrase, which let a bare "Wells Maine" query match
+  // an unrelated article about a person named "Nolan Wells" (confirmed via live
+  // testing). Every query this app uses (town/metro/region names) is a proper
+  // noun phrase, so exact-phrase matching is always what's wanted here.
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(`"${query}"`)}+when:14d&hl=en-US&gl=US&ceid=US:en`
   const feed = await parser.parseURL(url)
 
   return feed.items.slice(0, 15).map((item) => {

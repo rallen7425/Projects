@@ -13,7 +13,7 @@ interface ZoneSubNavProps {
 const DEFAULT_ZONES: Array<{ type: ZoneType }> = [
   { type: 'sports' },
   { type: 'local' },
-  { type: 'maine' },
+  { type: 'news' },
   { type: 'tech' },
   { type: 'finance' },
 ]

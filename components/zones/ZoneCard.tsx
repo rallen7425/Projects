@@ -96,7 +96,7 @@ export default function ZoneCard({ zone, heroVariant, heroData, stories, onClick
   const headerGradients: Record<ZoneType, string> = {
     sports:        'linear-gradient(140deg, rgba(82,201,122,0.21) 0%, rgba(82,201,122,0.06) 100%)',
     local:         'linear-gradient(140deg, rgba(91,156,246,0.21) 0%, rgba(91,156,246,0.06) 100%)',
-    maine:         'linear-gradient(140deg, rgba(239,159,39,0.21) 0%, rgba(239,159,39,0.06) 100%)',
+    news:          'linear-gradient(140deg, rgba(239,159,39,0.21) 0%, rgba(239,159,39,0.06) 100%)',
     tech:          'linear-gradient(140deg, rgba(167,139,250,0.21) 0%, rgba(167,139,250,0.06) 100%)',
     finance:       'linear-gradient(140deg, rgba(52,211,153,0.21) 0%, rgba(52,211,153,0.06) 100%)',
     work:          'linear-gradient(140deg, rgba(148,163,184,0.21) 0%, rgba(148,163,184,0.06) 100%)',
@@ -106,7 +106,7 @@ export default function ZoneCard({ zone, heroVariant, heroData, stories, onClick
   const headerBorders: Record<ZoneType, string> = {
     sports:        'rgba(82,201,122,0.14)',
     local:         'rgba(91,156,246,0.14)',
-    maine:         'rgba(239,159,39,0.14)',
+    news:          'rgba(239,159,39,0.14)',
     tech:          'rgba(167,139,250,0.14)',
     finance:       'rgba(52,211,153,0.14)',
     work:          'rgba(148,163,184,0.14)',

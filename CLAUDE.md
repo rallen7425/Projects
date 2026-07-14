@@ -79,7 +79,7 @@ Distilled is a mobile-first, AI-powered personal news briefing app. The design g
 /* Zone colors */
 --sports:        #52C97A
 --local:         #5B9CF6
---maine:         #EF9F27
+--news:          #EF9F27
 --tech:          #A78BFA
 --finance:       #34D399
 
@@ -121,7 +121,7 @@ create table users (
 create table zones (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid references users(id) on delete cascade,
-  type        text not null,   -- 'sports' | 'local' | 'maine' | 'tech' | 'finance' | 'work' | 'entertainment'
+  type        text not null,   -- 'sports' | 'local' | 'news' | 'tech' | 'finance' | 'work' | 'entertainment'
   template_id text,            -- which starter template was used
   config      jsonb default '{}',  -- zone-specific settings (teams, industry, etc.)
   position    int default 0,
@@ -270,28 +270,30 @@ type RawArticle = {
 
 Zone templates live in `lib/zone-templates.ts`. Each maps a template key to a `ZoneType` and pipeline sources.
 
-**Important:** The `headlines` template maps to `type: 'maine'` — Maine/general headlines share the same zone type. New users get `headlines` (→ maine) + `tech` zones auto-created via `initializeNewUser()` in `lib/user-init.ts`.
+**Note (2026-07-14): `'maine'` was retired and replaced by `'news'`.** The old `headlines` template (Maine-specific RSS: Portland Press Herald, Bangor Daily News) is gone — its zone type, `ZONE_META` entry, `ZONE_GRADIENTS` key, and pipeline runner were fully renamed to `'news'`, refocused on National/Global content (Guardian `world` + `us-news` sections). This wasn't a data migration — old `zone_type='maine'` articles were Maine-specific, not national/global, so they were deleted (766 rows) rather than reassigned. The user's actual interest in Maine now lives as a secondary **community area on Local Zone** (Wells, ME) instead of its own zone — see below. New users get `news` + `tech` zones auto-created via `initializeNewUser()` in `lib/user-init.ts`.
 
 ```typescript
 // lib/zone-templates.ts — abbreviated
-headlines → type: 'maine'   // general news, Guardian + RSS
+news      → type: 'news'    // National/Global — Guardian 'world' + 'us-news' sections
 tech      → type: 'tech'    // Guardian tech + HN RSS
 sports    → type: 'sports'  // ESPN RSS (requiresZip)
 local     → type: 'local'   // Google News RSS (community/metro/region) + live NWS weather (requiresZip)
-finance   → type: 'finance' // Alpha Vantage + Guardian finance
+finance   → type: 'finance' // Alpha Vantage + Guardian finance — no active zone for this test user as of 2026-07-14, template stays valid for future rebuilds
 work      → type: 'work'    // Guardian money/careers (requiresIndustry) — NOT 'business'; finance uses that section
-entertainment → type: 'entertainment' // Guardian culture
+entertainment → type: 'entertainment' // Guardian culture — no active zone for this test user as of 2026-07-14, template stays valid for future rebuilds
 ```
 
-**Local Zone personalization (added 2026-07-13):** `zones.config` for a `local` zone holds `{ areas: LocalArea[] }` — up to 3 default areas (community/metro/region, derived from zip via `lib/geo/*`) plus up to 3 user-added extra community/metro areas. Same `zones.config` jsonb pattern already used for Sports' `{ teams: TeamOfInterest[] }`. See `types/index.ts` for the `LocalArea` shape and the Session log below for the full build.
+**Local Zone personalization (added 2026-07-13, extended 2026-07-14):** `zones.config` for a `local` zone holds `{ areas: LocalArea[] }` — up to 3 default areas (community/metro/region, derived from zip via `lib/geo/*`) plus up to 3 user-added extra community/metro areas. The test profile's local zone now has 4 areas total: North Andover/Boston/New England (defaults) + Wells, ME 04090 (secondary community area, added 2026-07-14 — see Session log). Same `zones.config` jsonb pattern already used for Sports' `{ teams: TeamOfInterest[] }`. See `types/index.ts` for the `LocalArea` shape.
+
+**Generic zone template (added 2026-07-14):** any zone type without its own specific branch in `ZoneDetailClient.tsx` (i.e. anything except Sports and Local) gets a shared template: Breaking (if any) → Top Stories (horizontal `TrackCard` scroll) → Today (paginated `StoryCard` list, 5-at-a-time, capped at 15) → Tracking (zone-filtered) → More (whatever's left beyond Today's cap, unpaginated). Currently used by News and Tech zones, and would apply automatically to Finance/Work/Entertainment if any of those are rebuilt later — this was a deliberate architectural choice (the fallback `else` branch was upgraded in place, not hardcoded to specific zone types).
 
 ---
 
 ## Current status
 
-**Phase 9 complete and deployed — Local Zone personalized (community/metro/region) — app is live and functional (2026-07-13).**
+**Phase 10 built locally, not yet deployed — 4-zone test profile (Sports/Local/News/Tech), zone-preview personalization, generic Breaking/Top Stories/Today/Tracking/More template (2026-07-14).**
 
-All V2 code has been deleted. The full app is deployed at https://distilled-news.vercel.app, running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below). This session (2026-07-13) shipped, in order: an in-app embedded reader for "Full Coverage" source links (replacing `target="_blank"`), then the full Local Zone personalization (Weather Card, Breaking/Top Stories/Today/Tracking, empty-hero-image layout fix, redundant Quick Look strip removal) — **both deployed to production** (commit `64e0ec3`, build verified clean, production correctly redirects unauthenticated requests to `/auth/signin`). This also resolves the recurring data-corruption issue (Known issues) — the next hourly pipeline cron run will use the new Google-News-based local runner instead of the old Guardian/weather one.
+All V2 code has been deleted. The full app is deployed at https://distilled-news.vercel.app, running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below). Phases through 9 (embedded reader, Local Zone personalization) are live in production as of 2026-07-13 (commit `64e0ec3`). This session's work (2026-07-14) — zone-preview personalization reaching Home/Summary/Zones-hub, and the 4-zone restructure (News Zone replacing Maine, Wells ME added to Local, Finance/Entertainment deleted) — is committed locally but **not yet deployed**; see Session log and Next session Priority 0.
 
 ### What's been built
 
@@ -306,6 +308,7 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
 | 7 | Home page restructure — hamburger menu, Breaking/Top Stories tiers, redesigned Tracking (topic cards), story dedup, In-Depth View promoted to `/`, legacy view moved to `/summary` | ✅ Done 2026-07-12 |
 | 8 | Sports Zone personalization — Scores Card (live scores via ESPN API), Updates (game-specific recaps/previews), team-prioritized Top Stories, sports-filtered Tracking, More section | ✅ Done 2026-07-12 |
 | 9 | Local Zone personalization — community/metro/region tiers derived from zip, Weather Card (live NWS), Breaking/Top Stories/Today/Tracking (Home's format, not Sports') | ✅ Done 2026-07-13 |
+| 10 | Zone-preview personalization everywhere (Home, Summary, Zones hub) + 4-zone restructure — News Zone replaces Maine, Wells ME added to Local, Finance/Entertainment deleted, generic Breaking/Top Stories/Today/Tracking/More template for non-Sports/Local zones | ✅ Built locally 2026-07-14, not yet deployed |
 | — | In-app embedded reader for "Full Coverage" source links (replaces `target="_blank"`), with an interstitial fallback for sites that block framing | ✅ Done 2026-07-13 |
 | — | Migrate onto shared Rocky Coast Labs Supabase platform, verify end-to-end | ✅ Done 2026-07-10 |
 
@@ -316,13 +319,16 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
                             (app/page.tsx + app/InDepthClient.tsx)
 /summary                   Summary View — same sections, compact StoryItem rows for Today + a More section
                             (app/summary/page.tsx + app/summary/SummaryClient.tsx)
-/zones                     Zones hub — user's zones as cards with live hero data
+/zones                     Zones hub — user's zones as cards with live hero data, team/area-aware previews (see
+                            lib/zonePreview.ts) and a live weather stat-hero for Local Zone
 /zones/[zoneId]            Zone detail — expanded Story Card format matching Home (zoneId = zone UUID). Sports zone:
                             Scores Card, Updates (game-specific), team-prioritized Top Stories, sports-filtered Tracking,
                             More (general news). Local zone: Weather Card (live NWS), Breaking (if any), Top Stories,
                             Today (paginated 5-at-a-time, same as Home), local-filtered Tracking — mirrors Home's own
-                            section format, not Sports' Updates/More structure. Other zones: single "Top Stories" list
-                            sorted by recency, unchanged.
+                            section format, not Sports' Updates/More structure. Every other zone type (News, Tech, and
+                            any future Finance/Work/Entertainment rebuild): the same generic template — Breaking (if
+                            any), Top Stories (horizontal scroll), Today (paginated, capped at 15), zone-filtered
+                            Tracking, More (whatever's left beyond the cap).
 /zones/[zoneId]/story/[storyId]  Story detail / "Detailed view" (zoneId = zone TYPE string e.g. 'sports')
 /zones/[zoneId]/story/[storyId]/read  Embedded in-app reader for a "Full Coverage" source link — iframe if the
                             source allows framing (checked via X-Frame-Options/CSP frame-ancestors), else an
@@ -364,6 +370,28 @@ User reported Local Zone content was full of national news, politics, and intern
 3. Deleted the ~47 remaining pre-deploy rows (`zone_type='local'` AND `created_at < 2026-07-14T01:03:31`), with explicit user confirmation obtained first. Re-verified live: Weather Card → Breaking → Top Stories → Today now show exclusively local/regional content, zero national/political stories, zero console errors.
 
 **Lesson for future sessions:** after deploying a fix for a content-sourcing bug, get the deploy's *exact* completion timestamp (`vercel inspect <url>` shows it) and do one more stale-data cleanup pass for anything created before it, rather than assuming the last mid-session cleanup was sufficient — cron cadence during the deploy gap can easily add more.
+
+**Part 2: Zone-preview personalization reaches Home, Summary, and the Zones hub.** Sports/Local personalization (Teams of Interest, community/metro/region) previously only affected the zone *detail* page — Home's "Your Zones" section and the `/zones` hub still called generic `getArticlesByZone(type)[0]` for each zone's preview card, so e.g. the Sports Zone's Home card could show *"LeBron tells Lakers he plans to play elsewhere"* — nothing to do with the user's Red Sox/Patriots/Celtics (confirmed live before fixing).
+
+1. **New shared helper `lib/zonePreview.ts`** (`getZoneArticles`/`getZonePreview`) — for Sports, filters to team-of-interest coverage (reuses `searchTeamUpdates`, same as the detail page, falling back to the generic pool only if no teams are configured or none have matching coverage); for every other zone type, the plain zone-wide pool (Local Zone's is already area-specific at ingestion, so no special-casing needed there).
+2. **`app/page.tsx` and `app/summary/page.tsx`** — "Your Zones" cards now use `getZonePreview` instead of a raw top-article fetch. Verified live: Sports card shows *"Boston's silver lining? Red Sox win 9 straight."*
+3. **`app/zones/page.tsx` + `ZonesHubClient.tsx`** — same fix, plus restored the Local Zone's weather stat-hero on the hub card (lost when the prior session retired the old pipeline-quicklook-writing pattern) via a live NWS fetch (`getWeatherForAreas`, same call the zone detail page's Weather Card already makes). Verified live: hub's Local Zone card now shows "92°F / Andover / Sunny" instead of falling back to a generic headline.
+
+**Part 3: Zone restructure — 4-zone test profile (Sports, Local, News, Tech).** Per explicit direction: Finance and Entertainment zones are deleted for this test profile (rebuildable later — their `ZoneType`/template/pipeline-runner code is untouched, only the zone *rows* are gone). The Maine Zone doesn't survive as its own zone either — its purpose (the user's interest in a specific Maine location, tied to their other apps "Summer Village Life" and "Rocky Coast Guide") migrates into **Local Zone as a secondary community area**: Wells, ME 04090. A genuinely new **News Zone** (`type: 'news'`) is built in its place, focused on National/Global/World news — not a data migration of old Maine content, since that content was Maine-specific, not national/global.
+
+1. **Full `'maine'` → `'news'` type rename**, not just a relabel — every `Record<ZoneType, ...>` site (`types/index.ts`, `styles/tokens.css`, `scripts/pipeline/types.ts`, `lib/zone-templates.ts`, `ZONE_GRADIENTS` in all 4 duplicated locations, `app/saved/SavedClient.tsx`'s zone filter list, `app/error.tsx`'s icon color, plus `lib/user-init.ts`'s `defaultTemplates` array which TypeScript didn't catch since it referenced the template key `'headlines'` as a bare string, not a typed `Record` — found by grep, not the compiler). `npx tsc --noEmit` confirmed completeness after the rename (removing `'maine'` from the union forces every `Record<ZoneType,X>` to be updated).
+2. **News Zone pipeline sourcing** (`scripts/pipeline/index.ts`) — `fetchGuardian('world', 'news')` + `fetchGuardian('us-news', 'news')`, no new source code needed. Verified live: genuinely international/national content (Iran strikes, France Bastille Day, Church of England, Bangkok fire, etc.), zero Maine-specific leftovers.
+3. **Wells, ME added to Local Zone's `config.areas`** as a 4th `LocalArea` (community-kind, zip 04090) via a one-off script (same pattern as the original `setup-local-zone.ts`). `getWeatherForAreas()` already supported multiple community areas, so Wells' weather appeared as a second Weather Card row with zero further code changes.
+4. **Bug caught and fixed during this work:** the initial Wells, ME Google News query returned false positives — articles about a person named "Nolan Wells" (a true-crime story), not the town. Root cause: `fetchGoogleNews()` sends multi-word queries unquoted (`q=Wells Maine`), which Google News matches as a loose keyword set, not an exact phrase — even though the *manual* testing done when this function was first built (see 2026-07-13 entry) used a quoted phrase (`%22Wells+Maine%22`) and got clean results, the shipped code never actually quoted the query. Fixed by always wrapping the query in literal quotes before encoding. This risk was latent in every existing query (North Andover, Boston, New England) too — they just happened not to trigger it, since "Wells" alone is a far more common word/surname than the others. Re-verified after the fix: genuinely on-topic Wells, ME content (HarborFest, a town moratorium vote).
+5. **New zone rows** — deleted Finance/Entertainment/Maine zone rows for the test user via a one-off script (`user_tracks.zone_id` has `ON DELETE SET NULL`, so any tracks pointed at these zones become zone-agnostic rather than being deleted); created a fresh News zone row (position 2, between Local and Tech).
+6. **Generic zone template** (`app/zones/[zoneId]/page.tsx` + `ZoneDetailClient.tsx`) — the render ternary's final `else` branch (previously a bare zone-wide list sorted by recency) was upgraded in place to: Breaking (if any, `TrackCard` row) → Top Stories (`TrackCard` row) → Today (`StoryCard` list, paginated 5-at-a-time, capped at 15 total) → zone-filtered Tracking (shared `trackingSection`) → More (whatever's left beyond the cap, unpaginated `StoryCard` list). Deliberately built as the *generic fallback*, not hardcoded to `'news'`/`'tech'`, so Finance/Work/Entertainment get this automatically if rebuilt later. All visual components already existed in this one file — no new component code, just new data-fetching (extending the existing Local Zone Breaking/TopStories/Today split to any non-Sports zone type, adding the cap+More split on top) and a new render branch.
+7. **Cleanup requiring explicit confirmation (obtained):** deleted 766 stale `zone_type='maine'` article rows — necessary because `'maine'` no longer exists in `ZONE_META`/`ZoneType`, so a leftover row surfacing in Home/Summary's cross-zone `getTopArticles()` query (which doesn't filter by the user's actual zones) would crash on an undefined `ZONE_META['maine']` lookup. Finance/Entertainment article rows were *not* touched — those `ZoneType` values stay valid in the type system, matching how `'work'` articles already exist harmlessly today with zero users on that zone type.
+
+**Verified live** (screenshots, real Supabase/Guardian/Google News/NWS data, `npx playwright screenshot` + a small Playwright console-error-check script since `chromium-cli` isn't available in this environment): `/zones` hub shows exactly 4 zones (Sports/Local/News/Tech) in order, each with a genuinely on-topic preview; News Zone and Tech Zone both render the new Breaking/Top Stories/Today/Tracking template automatically; Local Zone's Weather Card shows 2 rows (Andover 92°F, Kennebunk/Wells 87°F — NWS resolves the 04090 coordinates to the nearest named place, Kennebunk, which is adjacent to Wells; expected, not a bug); Home's cross-zone Breaking correctly picked up News Zone's Iran/Middle East content; zero console errors across Home, Summary, the hub, all 4 zone detail pages, and `/saved`.
+
+**Not yet deployed as of this write-up.**
+
+**Files touched:** `types/index.ts`, `styles/tokens.css`, `scripts/pipeline/types.ts`, `lib/zone-templates.ts`, `lib/user-init.ts` (maine→news rename); `app/zones/[zoneId]/ZoneDetailClient.tsx`, `app/InDepthClient.tsx`, `app/summary/SummaryClient.tsx`, `app/zones/[zoneId]/story/[storyId]/StoryDetailClient.tsx` (`ZONE_GRADIENTS` key rename); `app/saved/SavedClient.tsx`, `app/error.tsx`, `components/ui/TrackModal.tsx`, `components/ui/ZoneSubNav.tsx` (dead code but still type-checked), `components/zones/ZoneCard.tsx` (remaining `'maine'` references); `scripts/pipeline/index.ts` (news runner); `scripts/pipeline/sources/googlenews.ts` (exact-phrase quoting fix); `lib/zonePreview.ts` (new); `app/page.tsx`, `app/summary/page.tsx`, `app/zones/page.tsx`, `app/zones/ZonesHubClient.tsx` (zone-preview personalization + hub weather hero); `app/zones/[zoneId]/page.tsx` (generic Breaking/TopStories/Today-capped/More/Tracking data fetching). No schema changes — `zones.config`'s existing jsonb shape absorbed Wells ME with zero migration.
 
 ---
 
@@ -565,9 +593,10 @@ When any React component throws during render, React's error recovery cycle runs
 - ~~Production's hourly GitHub Actions cron was still running the OLD pipeline code~~ — **confirmed fixed 2026-07-14.** The deploy (`npx vercel --prod`, commit `64e0ec3`) completed at **2026-07-14T01:03:31 UTC** (confirmed via `vercel inspect`). Cross-referencing article `created_at` timestamps against that: every `zone_type='local'` row created *before* 01:03:31 UTC was old Guardian/NWS content (6 more stale batches accumulated in the gap between the last mid-session cleanup and the deploy actually completing); every row created *after* is genuinely local/regional Google News content (Bruins, Celtics, WBUR, Boston Herald, North Andover Patch/Realtor.com/andovertownsman.com stories, etc.) — confirmed by direct inspection, not just absence of Guardian source names. The pipeline itself was never broken post-deploy; the leftover pre-deploy rows just kept outranking the new content by urgency score until a final cleanup pass (2026-07-14, ~47 rows deleted, explicit user confirmation obtained). **Root-cause lesson:** after any deploy meant to fix a content-sourcing bug, check the deploy's exact completion timestamp and do one final stale-data cleanup pass for anything created before it — don't assume the last mid-session cleanup was also the last one needed.
 
 ### Not built yet
-- **Onboarding flow** (`/onboarding`) — page does not exist. New users get default zones (maine + tech) auto-created silently. There is no zone customization, zip code collection, or zone picker. The middleware allows `/onboarding` but the route 404s.
+- **Onboarding flow** (`/onboarding`) — page does not exist. New users get default zones (news + tech) auto-created silently. There is no zone customization, zip code collection, or zone picker. The middleware allows `/onboarding` but the route 404s.
 - **Sports Zone team picker** — the Scores Card (added 2026-07-12) reads `teams` from `zones.config`, but there is no UI to set it. Currently hardcoded for the test user only (Red Sox/Patriots/Celtics, written via a one-off script). Building a real team picker is onboarding-adjacent work — revisit when onboarding is built, or sooner if a quick zone-settings UI is wanted first.
-- **Local Zone areas picker** — same situation as Sports' team picker: `zones.config.areas` (community/metro/region + up to 3 extra) is hardcoded for the test user only (zip 01845, written via `scripts/setup-local-zone.ts`), no UI to add/edit areas yet. Unlike Sports' `SPORTS_FEEDS` (which needs a code change per new league), adding a new area's content source is automatic — the pipeline just picks up the new area's Google News query from `config.areas` — so this one is lower-effort to eventually wire to a real settings UI.
+- **Local Zone areas picker** — same situation as Sports' team picker: `zones.config.areas` (community/metro/region + up to 3 extra) is hardcoded for the test user only, no UI to add/edit areas yet. Currently has all 4 slots used (3 defaults from zip 01845 + Wells, ME as the one secondary area added 2026-07-14 — 2 more secondary slots remain available). Unlike Sports' `SPORTS_FEEDS` (which needs a code change per new league), adding a new area's content source is automatic — the pipeline just picks up the new area's Google News query from `config.areas` — so this one is lower-effort to eventually wire to a real settings UI.
+- **News/Tech Zone "generic template" has no UI for managing tracked topics beyond the shared `TrackModal`** — same as every other zone, not a new gap, just noting the generic template (2026-07-14) inherits whatever Tracking limitations already exist elsewhere.
 
 ### Unconfirmed fix
 - **Tracking topic removal persistence** — fix was applied (2026-07-06) but still not confirmed working, on production or otherwise. The delete itself works (DB shows 0 tracks after testing). The issue was the router cache. Fix: `revalidatePath('/tracking')` in server action + `router.refresh()` in client handler. As of 2026-07-10 there were 0 tracked topics in the (migrated) data, so this couldn't be exercised during that session's testing pass either — still needs an actual add-then-remove-then-navigate-away-and-back cycle. A real production sign-in account now exists (see Infrastructure above) making this testable at any time. If topics still reappear after navigating away and back, the next thing to check is whether `removeTrack` is actually completing before navigation (add a console.log to confirm).
@@ -580,6 +609,7 @@ When any React component throws during render, React's error recovery cycle runs
 ### Content precision
 - **Team-name matching is a plain case-insensitive substring check**, not real entity recognition — used both for the Top Stories/More split (does this article mention a Team of Interest?) and, more narrowly, for gating what counts as "game-specific" in Updates (does it name the actual last/next opponent?). Confirmed via live testing this produces false positives: a Detroit Tigers coaching-change article was pulled into Red Sox coverage because its summary happened to mention "former Boston Red Sox manager Alex Cora." This matches the substring-matching approach already used elsewhere in the app (e.g. Tracking's `searchArticlesByTopic`), so it's a pre-existing tradeoff, not a new regression — but it's the first thing to check if Sports Zone content ever looks off-topic.
 - **Google News RSS is an unofficial/undocumented endpoint** (no formal API contract like the Guardian Content API) — stable in practice for years, but could change without notice. Used for all Local Zone content (community/metro/region tiers).
+- ~~Google News queries weren't quoted as exact phrases~~ — **fixed 2026-07-14**: `fetchGoogleNews()` sent multi-word queries unquoted (`q=Wells Maine`), which Google matches as a loose keyword set rather than a phrase — confirmed live to produce false positives (a "Nolan Wells" true-crime story matched the "Wells Maine" town query). Every query (`scripts/pipeline/sources/googlenews.ts`) is now wrapped in literal quotes before encoding. This risk was latent in every prior query (North Andover, Boston, New England) too; they just hadn't triggered it yet.
 - **Google News-sourced articles never get real OG images or true in-app embedding** — their `sourceUrl` is a Google redirect page (`news.google.com/rss/articles/...`), not the publisher's real article URL (the actual destination only resolves client-side via JS). `enrich/images.ts` deliberately skips OG-scraping these (would otherwise grab Google's own generic branding image) — they fall back to Unsplash or the zone-color gradient instead. The embedded "Full Coverage" reader (added 2026-07-13) will always show its "open in browser" interstitial for these links rather than truly embedding, since `news.google.com` sends `X-Frame-Options: SAMEORIGIN` — "Open in Browser" still works correctly. This applies to every Local Zone article, not an occasional edge case. ~~The empty-hero-image layout issue this caused~~ — **fixed 2026-07-13**: `StoryCard`/`TrackCard` now render a compact header row instead of a full empty gradient block when `imageUrl` is absent (see Session log Part 3). The images themselves are still generally missing — that's unchanged — just no longer wastes screen space.
 
 ### Cosmetic / non-blocking
@@ -600,10 +630,10 @@ When any React component throws during render, React's error recovery cycle runs
 
 ## Next session: where to pick up
 
-**Updated 2026-07-14** after confirming the 2026-07-13 deploy (embedded reader + Local Zone personalization) is genuinely working — see Known issues → "Resolved — recurring data corruption." Priority 0 is now just "get it on a phone," not a blocker; everything else keeps its 2026-07-12 ordering. Onboarding is still deliberately last.
+**Updated 2026-07-14 (end of day)** after the zone-preview personalization + 4-zone restructure work. Priority 0 is a real deploy blocker again (new undeployed work); everything else keeps its prior ordering. Onboarding is still deliberately last.
 
-### Priority 0 — Get the deployed work on a real phone
-Both the embedded reader and the Local Zone personalization are deployed (commit `64e0ec3`) and confirmed working correctly as of 2026-07-14 — see Known issues → "Resolved — recurring data corruption" for the full diagnosis (it was leftover pre-deploy data, not a pipeline bug; cleaned up, confirmed clean). Neither the reader nor the Local Zone work has been checked on a physical phone yet.
+### Priority 0 — Deploy the 2026-07-14 zone-preview + restructure work
+Two batches of work from today are committed locally but **not deployed**: (1) zone-preview personalization reaching Home/Summary/Zones-hub (`lib/zonePreview.ts`, hub weather hero), and (2) the 4-zone restructure (News Zone replacing Maine, Wells ME added to Local, Finance/Entertainment deleted, generic Breaking/Top Stories/Today/Tracking/More template for News/Tech). Both fully verified locally (screenshots, zero console errors) — run `npx vercel --prod` once the user signs off. The embedded reader and original Local Zone personalization (2026-07-13) are already live and confirmed working. Nothing from any session has been checked on a physical phone yet.
 
 ### Priority 1 — Verify the 2026-07-12 changes hold up on mobile
 Covers both the original home-page restructure AND the same-day Sports Zone personalization work (Scores Card, Updates, Top Stories/Tracking/More restructure) — none of it has been checked on a real phone yet, only dev-server emulation + headless-Chrome screenshots at various widths. Check the hamburger menu bottom sheet, horizontal-scroll rows (pill row, Updates, Tracking), and Story Card layout for touch-target or viewport issues that don't show up in emulation. The real production sign-in account (see Infrastructure) now has live Red Sox data to look at, not just placeholder/empty states.
@@ -620,20 +650,21 @@ Still unconfirmed since 2026-07-06 (see Known issues) — a real production acco
 ### Priority 5 — Remaining content-management inconsistencies
 The user's original Priority 2 (2026-07-10 plan) was broader than just story duplication — ask if there are other pipeline/content issues still open before assuming this is fully closed out.
 
-### Priority 6 — Zones work (substantially addressed 2026-07-12, follow-ups below)
-The Sports Zone got a full personalization build-out this session (Scores Card, Updates, team-prioritized Top Stories, sports-filtered Tracking, More) — see Session log for the full breakdown. Loose ends from that work, roughly in priority order:
-1. **No UI to manage Teams of Interest** — currently hardcoded for the test user via a one-off script (`zones.config.teams`). A real "edit my teams" flow is onboarding-adjacent; either fold it into Phase 6 (Priority 7) or build a lightweight standalone settings screen first if onboarding stays blocked.
+### Priority 6 — Zones work (substantially addressed 2026-07-12 through 2026-07-14, follow-ups below)
+Sports and Local both got full personalization build-outs, that personalization now reaches every zone-preview surface (not just the detail page), and the test profile is down to its intended 4 zones (Sports/Local/News/Tech) with a shared generic template for News/Tech — see Session log for the full breakdown. Loose ends, roughly in priority order:
+1. **No UI to manage Teams of Interest or Local areas** — both still hardcoded for the test user via one-off scripts (`zones.config.teams`, `zones.config.areas`). A real settings flow is onboarding-adjacent; either fold it into Phase 6 (Priority 7) or build a lightweight standalone settings screen first if onboarding stays blocked.
 2. ~~Scores Card background color churned through 5 values with no matching design token~~ — **done 2026-07-13**: `--sports-dark`/`--local-dark` tokens added to `styles/tokens.css`, `ScoresCard` now references `var(--sports-dark)`.
 3. **Team-name matching is substring-based (ILIKE-style)** for the Top Stories/More split and the game-specific Updates filter — confirmed false-positive-prone (a Tigers article got pulled in via an incidental "former Red Sox manager" mention). Fine for now, but if content quality complaints come up, this is the first place to look.
-4. ~~Other zones (Local, Finance, Work, etc.) got none of this personalization treatment~~ — **Local Zone done 2026-07-13** (community/metro/region tiers, Weather Card — see Session log). Finance/Work/Entertainment/Tech still untouched; ask whether any of those want similar treatment.
-5. **Local Zone's own loose ends** (2026-07-13, mirrors Sports' list above): no UI to manage areas (`scripts/setup-local-zone.ts` one-off only); Google News RSS is an unofficial endpoint and its redirect links mean no real OG images or true in-app embedding for any Local Zone article (see Known issues → Content precision — the empty-space *layout* issue this caused is fixed, the missing images themselves aren't); the shared-article-pool architecture means content still isn't literally per-user, same limitation Sports already has. None of this blocks Priority 0 — deploying now is what actually matters.
+4. ~~Other zones (Local, Finance, Work, etc.) got none of this personalization treatment~~ — **Local Zone done 2026-07-13**, and **zone-preview personalization now reaches Home/Summary/Zones-hub too (2026-07-14)**, not just the detail page. Finance/Entertainment zones were deleted for this test profile (rebuildable later); Work zone was never created for this user; ask whether any of those want a real build-out before assuming News/Tech's generic template is the final word for them.
+5. **Local Zone's own loose ends** (2026-07-13/14): Google News RSS is an unofficial endpoint and its redirect links mean no real OG images or true in-app embedding for any Local/News/Tech-zone article sourced from it (see Known issues → Content precision — the empty-space *layout* issue this caused is fixed, the missing images themselves aren't); the shared-article-pool architecture means content still isn't literally per-user, same limitation Sports already has.
+6. **News/Tech Zone's generic template is brand new (2026-07-14), untested on mobile and undeployed** — see Priority 0.
 
 ### Priority 7 — Build Phase 6: Onboarding (deliberately last)
 Do this only after the above are solid — the user's reasoning: onboarding is best built/tested against stable surrounding product surfaces rather than a moving target, and is best paired with a fixed/static test user ID rather than rebuilding real signup flows prematurely.
 
 3-step flow at `app/onboarding/page.tsx` (see `BUILDPLAN.md` Phase 6 prompt for full spec):
 - Step 1: Zip code (optional, enables Local zone)
-- Step 2: Zone template picker — tap cards, not checkboxes; pre-select Headlines + Local
+- Step 2: Zone template picker — tap cards, not checkboxes; pre-select News + Local
 - Step 3: Narrowing question (city for Sports, industry for Work) — skip if neither selected
 - Activation screen: calls `addZoneFromTemplate`, triggers pipeline, redirects to `/zones`
 - Middleware guard: users with existing zones who visit `/onboarding` → redirect to `/zones`

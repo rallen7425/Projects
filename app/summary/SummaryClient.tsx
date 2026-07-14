@@ -29,7 +29,7 @@ type TrackingTopicData = {
 const ZONE_GRADIENTS: Record<ZoneType, string> = {
   sports: 'linear-gradient(135deg,#1b4332,#0d2419)',
   local: 'linear-gradient(135deg,#0c2d5e,#071a38)',
-  maine: 'linear-gradient(135deg,#3d2005,#251203)',
+  news: 'linear-gradient(135deg,#3d2005,#251203)',
   tech: 'linear-gradient(135deg,#1e104a,#110929)',
   finance: 'linear-gradient(135deg,#0d2418,#070f0c)',
   work: 'linear-gradient(135deg,#1a1a2e,#0f0f1a)',

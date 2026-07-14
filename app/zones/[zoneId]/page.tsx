@@ -107,26 +107,28 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
         .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
     : []
 
-  // Local Zone's own Breaking/Top Stories/Today split — mirrors Home's logic
-  // exactly (lib/articleUtils.ts), just scoped to this single zone's own
-  // article pool instead of cross-zone.
-  const localDisplays = zoneType === 'local' ? dedupeStories(articleDisplays) : []
-  const localBreaking = zoneType === 'local' ? selectBreakingStories(localDisplays) : []
-  const localBreakingIds = new Set(localBreaking.map((a) => a.id))
-  const localTopStories = zoneType === 'local' ? selectTopStories(localDisplays, localBreakingIds) : []
-  const localTopIds = new Set(localTopStories.map((a) => a.id))
-  const localToday = zoneType === 'local'
-    ? localDisplays.filter((a) => !localBreakingIds.has(a.id) && !localTopIds.has(a.id))
-    : []
+  // Local + generic zones (everything except Sports, which has its own
+  // team-of-interest split above) both use the same Breaking/Top Stories split
+  // against their own article pool (lib/articleUtils.ts), mirroring Home's logic
+  // exactly. Generic zones (News, Tech, etc.) additionally cap Today and push
+  // the overflow into a trailing More section; Local's Today is uncapped, no More.
+  const isGeneric = zoneType !== 'sports' && zoneType !== 'local'
+  const TODAY_CAP = 15
 
-  // Tracking — sports and local both use the same fetch/scoring rules as Home's
+  const zoneDisplays = zoneType !== 'sports' ? dedupeStories(articleDisplays) : []
+  const zoneBreaking = zoneType !== 'sports' ? selectBreakingStories(zoneDisplays) : []
+  const zoneBreakingIds = new Set(zoneBreaking.map((a) => a.id))
+  const zoneTopStories = zoneType !== 'sports' ? selectTopStories(zoneDisplays, zoneBreakingIds) : []
+  const zoneTopIds = new Set(zoneTopStories.map((a) => a.id))
+  const zoneRemaining = zoneType !== 'sports'
+    ? zoneDisplays.filter((a) => !zoneBreakingIds.has(a.id) && !zoneTopIds.has(a.id))
+    : []
+  const zoneToday = isGeneric ? zoneRemaining.slice(0, TODAY_CAP) : zoneRemaining
+  const zoneMore = isGeneric ? zoneRemaining.slice(TODAY_CAP) : []
+
+  // Tracking — every zone type uses the same fetch/scoring rules as Home's
   // Tracking section, filtered to this zone's own zoneType.
-  let trackingTopics: TrackingTopicResult[] = []
-  if (zoneType === 'sports') {
-    trackingTopics = await fetchZoneTracking(user.id, zone.id, 'sports')
-  } else if (zoneType === 'local') {
-    trackingTopics = await fetchZoneTracking(user.id, zone.id, 'local')
-  }
+  const trackingTopics: TrackingTopicResult[] = await fetchZoneTracking(user.id, zone.id, zoneType)
 
   // Check saved status for all articles
   const articleIds = articles.map((a) => a.id)
@@ -146,10 +148,10 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
       scores={scores}
       weather={weather}
       updates={updateDisplays}
-      breaking={localBreaking}
-      topStories={zoneType === 'local' ? localTopStories : topStories}
-      today={localToday}
-      more={more}
+      breaking={zoneBreaking}
+      topStories={zoneType === 'sports' ? topStories : zoneTopStories}
+      today={zoneToday}
+      more={zoneType === 'sports' ? more : zoneMore}
       trackingTopics={trackingTopics}
       initialSavedIds={Array.from(savedIds)}
       userId={user.id}

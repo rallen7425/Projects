@@ -9,14 +9,22 @@ import type { ArticleDisplay, ZoneType, ScheduleHero, StatHero, HeadlineHero } f
 import { ZONE_META } from '@/types'
 
 type QuicklookRow = { label: string; value: string; sub?: string | null }
+type WeatherRow = { city: string; state: string; temp: number; unit: string; shortForecast: string } | null
 type ZoneRow = { id: string; type: string; label?: string | null; position: number; enabled: boolean }
-type ZoneData = { zone: ZoneRow; articles: ArticleDisplay[]; quicklook: QuicklookRow[] }
+type ZoneData = { zone: ZoneRow; articles: ArticleDisplay[]; quicklook: QuicklookRow[]; weather: WeatherRow }
 
-function buildHeroData(zoneType: ZoneType, articles: ArticleDisplay[], quicklook: QuicklookRow[]): {
+function buildHeroData(zoneType: ZoneType, articles: ArticleDisplay[], quicklook: QuicklookRow[], weather: WeatherRow): {
   variant: 'schedule' | 'stat' | 'headline'
   data: ScheduleHero | StatHero | HeadlineHero
 } {
-  if (zoneType === 'finance' || zoneType === 'local') {
+  if (zoneType === 'local' && weather) {
+    return {
+      variant: 'stat',
+      data: { value: `${weather.temp}°${weather.unit}`, label: weather.city, sub: weather.shortForecast } satisfies StatHero,
+    }
+  }
+
+  if (zoneType === 'finance') {
     const first = quicklook[0]
     if (first) {
       return {
@@ -78,10 +86,10 @@ export default function ZonesHubClient({ zoneData }: { zoneData: ZoneData[] }) {
 
       {/* Zone cards */}
       <div style={{ padding: '14px 16px 4px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {zoneData.map(({ zone, articles, quicklook }) => {
+        {zoneData.map(({ zone, articles, quicklook, weather }) => {
           const zoneType = zone.type as ZoneType
           const meta = ZONE_META[zoneType]
-          const { variant, data } = buildHeroData(zoneType, articles, quicklook)
+          const { variant, data } = buildHeroData(zoneType, articles, quicklook, weather)
 
           return (
             <ZoneCard

@@ -2,10 +2,11 @@ export const dynamic = 'force-dynamic'
 
 import { createServerSupabase, getEffectiveUser } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getTopArticles, getArticlesByZone, searchArticlesByTopic } from '@/lib/db/articles'
+import { getTopArticles, searchArticlesByTopic } from '@/lib/db/articles'
 import { getUserZones } from '@/lib/db/zones'
 import { getTrackedTopics } from '@/lib/db/tracks'
 import { toArticleDisplay, dedupeStories, selectBreakingStories, selectTopStories } from '@/lib/articleUtils'
+import { getZonePreview } from '@/lib/zonePreview'
 import SummaryClient from './SummaryClient'
 import type { ZoneType } from '@/types'
 
@@ -40,16 +41,17 @@ export default async function SummaryPage() {
   const savedIds = new Set((saves ?? []).map((s) => s.article_id))
   const userCity = userProfile?.zip_code ?? undefined
 
-  // Fetch top 10 articles per zone — used for the Your Zones cards
-  const zoneArticleSets = await Promise.all(
-    dbZones.map(z => getArticlesByZone(z.type as ZoneType, 10))
+  // Preview per zone for the Your Zones cards — team/area-aware for Sports/Local
+  // (see lib/zonePreview.ts), not just a generic zone-wide top article.
+  const zonePreviews = await Promise.all(
+    dbZones.map(z => getZonePreview(z.type as ZoneType, z.config, 10))
   )
 
   const zoneData = dbZones.map((z, i) => ({
     id: z.id,
     type: z.type as ZoneType,
-    topArticle: zoneArticleSets[i][0] ? toArticleDisplay(zoneArticleSets[i][0]) : null,
-    articleCount: zoneArticleSets[i].length,
+    topArticle: zonePreviews[i].topArticle,
+    articleCount: zonePreviews[i].articleCount,
   }))
 
   // Breaking > Top Stories > Today/More — each tier excludes articles already claimed above it

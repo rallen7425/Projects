@@ -1,7 +1,7 @@
 export type ZoneType =
   | 'sports'
   | 'local'
-  | 'maine'
+  | 'news'
   | 'tech'
   | 'finance'
   | 'work'
@@ -77,9 +77,9 @@ export const ZONE_META: Record<ZoneType, { label: string; shortLabel: string; co
     bg: 'rgba(91,156,246,0.12)',
     border: 'rgba(91,156,246,0.30)',
   },
-  maine: {
-    label: 'Maine Zone',
-    shortLabel: 'Maine',
+  news: {
+    label: 'News Zone',
+    shortLabel: 'News',
     color: '#EF9F27',
     bg: 'rgba(239,159,39,0.12)',
     border: 'rgba(239,159,39,0.30)',
