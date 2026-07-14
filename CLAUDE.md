@@ -294,9 +294,9 @@ entertainment → type: 'entertainment' // Guardian culture — no active zone f
 
 ## Current status
 
-**Phase 12 deployed — Zones hub card redesign: plain header, live Scores/Weather card, 3 stories (2026-07-14).**
+**Phase 13 deployed — direct zone links added to the hamburger menu's "My Zones" item (2026-07-14).**
 
-All V2 code has been deleted. The full app is deployed at https://distilled-news.vercel.app, running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below). This session's work (2026-07-14) spans: the 4-zone restructure (Phase 10, commit `a6d70d3`), a Finance-zone cross-zone-leakage fix (commit `be291b3`), Phase 11 — Unsplash activation, curated direct RSS sources for Local Zone (commit `8eeecd9`), Tech Zone source diversification (commit `adf6577`) — and Phase 12, the Zones hub card reformat (commit `d96131a`). All deployed and verified live.
+All V2 code has been deleted. The full app is deployed at https://distilled-news.vercel.app, running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below). This session's work (2026-07-14) spans: the 4-zone restructure (Phase 10, commit `a6d70d3`), a Finance-zone cross-zone-leakage fix (commit `be291b3`), Phase 11 — Unsplash activation, curated direct RSS sources for Local Zone (commit `8eeecd9`), Tech Zone source diversification (commit `adf6577`) — Phase 12, the Zones hub card reformat (commit `d96131a`) — and Phase 13, direct zone sub-links in the Menu (commit `db548b4`). All deployed and verified live.
 
 **Deploy urgency note:** the one-off scripts that restructured this session's DB state (deleting the Maine/Finance/Entertainment zones, creating the News zone) ran against the shared production Supabase DB *before* the matching code was deployed — since the old deployed code's `ZONE_META` had no `'news'` entry, any real user hitting a `type: 'news'` zone in that window got a hard crash ("Something went wrong"). Confirmed and fixed by deploying immediately once reported. **Lesson:** when a session's DB changes (new zone types, deleted zones) aren't backward-compatible with the currently-deployed code, deploy the matching code *before or immediately after* running the DB migration script — don't leave that gap open, even mid-session.
 
@@ -316,6 +316,7 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
 | 10 | Zone-preview personalization everywhere (Home, Summary, Zones hub) + 4-zone restructure — News Zone replaces Maine, Wells ME added to Local, Finance/Entertainment deleted, generic Breaking/Top Stories/Today/Tracking/More template for non-Sports/Local zones | ✅ Done 2026-07-14 |
 | 11 | Real images everywhere — Unsplash fallback activated + cached, curated direct RSS for Local Zone (BLOX-network papers, boston.com/Universal Hub, Press Herald/WGME), Tech Zone diversified with TechCrunch/Verge/Ars Technica/Wired | ✅ Done 2026-07-14 |
 | 12 | Zones hub card reformat — plain colored header (zone name + story count only, no hero text), live Scores Card (Sports)/Weather Card (Local) rendered below the header, 3 story rows (up from 2) | ✅ Done 2026-07-14 |
+| 13 | Hamburger menu's "My Zones" item gained direct sub-links to each zone (colored dot + label → `/zones/{id}`), via a new small `/api/zones/menu` route fetched client-side by `BottomNav` | ✅ Done 2026-07-14 |
 | — | In-app embedded reader for "Full Coverage" source links (replaces `target="_blank"`), with an interstitial fallback for sites that block framing | ✅ Done 2026-07-13 |
 | — | Migrate onto shared Rocky Coast Labs Supabase platform, verify end-to-end | ✅ Done 2026-07-10 |
 
@@ -349,6 +350,7 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
 /auth/callback              OAuth + email confirmation handler
 /profile                   Profile page with sign out
 /api/pipeline/trigger      POST — runs content pipeline (requires x-cron-secret header)
+/api/zones/menu            GET — user's zones (id, label, color) for the hamburger menu's "My Zones" sub-links
 ```
 
 **URL asymmetry to be aware of:** Zone detail uses the zone's database UUID (`/zones/{uuid}`). Story detail uses zone type string (`/zones/sports/story/{uuid}`). This is intentional — stories link directly without knowing the user's zone UUID.
@@ -369,6 +371,14 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
 ---
 
 ## Session log
+
+### Session 2026-07-14 (cont'd) — Direct zone links in the hamburger menu
+
+Per explicit request, the Menu's "My Zones" item now expands to show a direct link to each of the user's zones, not just the `/zones` hub link. `BottomNav.tsx` (a single shared component, unlike most of this app's per-file-duplicated pieces — it's rendered from 9 different page trees: Home, Summary, Zones hub, Zone detail, Story detail, the embedded reader, Tracking, Saved, Profile) had no zone data available at several of those call sites (Profile, Tracking, Saved don't otherwise fetch zones at all). Rather than threading a `zones` prop through all 9 call sites' server components, added a small new route, `GET /api/zones/menu` (auth via the same `getEffectiveUser()` every page already uses, returns `{ id, label, color }[]`), and had `BottomNav` fetch it client-side the first time the menu is opened (not on every page load).
+
+Sub-links render indented under "My Zones" with a small dot in the zone's own color, and navigate straight to `/zones/{id}` — bypassing the hub. Verified live: all 4 zones (Sports/Local/News/Tech) appear with correct colors, clicking one navigates directly to that zone's detail page, zero console errors, `/api/zones/menu` returns 200.
+
+**Files touched:** `app/api/zones/menu/route.ts` (new), `components/ui/BottomNav.tsx`. No schema changes. Deployed as commit `db548b4`.
 
 ### Session 2026-07-14 (cont'd) — Zones hub card reformat
 
