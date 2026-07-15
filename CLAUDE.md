@@ -27,7 +27,7 @@ Distilled is a mobile-first, AI-powered personal news briefing app. The design g
 **Core screens:**
 - **Home / In-Depth View** (`/`) — the default landing page (changed 2026-07-12; previously this was the compact "Today" list). Urgency-tiered briefing: **Breaking** (urgent + ≤12h old, only appears when something qualifies), **Top Stories** (cross-zone, always ≥3), **Your Zones**, **Today** (expanded "Story Card" format — full-bleed hero, AI Snapshot, "Full Coverage →" link — paginated 5 at a time via a "View More" row), **Tracking** (one card per tracked topic).
 - **Summary View** (`/summary`) — the original compact list-style briefing, reachable via the hamburger menu. Shares the same Breaking/Top Stories/Your Zones/Tracking sections as Home, but Today (+ a separate "More" section, not paginated) render as compact `StoryItem` rows instead of expanded Story Cards.
-- **Zones** (`/zones`) — hub showing all user zones as cards with live hero stats/schedules/headlines; tap into any zone for full story list
+- **Zones** (`/zones`) — hub showing one horizontal-scroll row per zone (changed 2026-07-15; previously one card per zone). Header is the zone's name in its own color, sized to match Home's Breaking/Top Stories headings. Row content uses the same black-rectangle story-card format as Home's Breaking/Top Stories (Sports/Local lead with their live Scores/Weather card, reformatted to match — no more solid zone-color fill), up to 9 stories, ending with a "View {Zone} →" link card
 - **Tracking** (`/tracking`) — dedicated page listing every tracked topic with live article carousels (distinct from the Tracking *section* that now also appears on Home/Summary)
 - **Read Later** (`/saved`) — bookmarked articles, filterable by zone
 - **Menu** (hamburger icon, 5th item in the bottom nav) — Profile, My Zones, Tracking & Saved, Summary View
@@ -193,7 +193,10 @@ GitHub Actions (cron: every hour)
   └── calls POST /api/pipeline/trigger (secret-protected)
         └── for each zone runner (see table below):
               1. Fetch raw articles from that zone's source adapter(s), merge, sort by
-                 recency, cap at 15
+                 recency, cap at 15 — **except Local Zone**, which round-robin interleaves
+                 per-source and per-area instead of a flat recency sort (fixed 2026-07-15,
+                 see "Local Zone sourcing" below — a plain recency sort let one prolific
+                 source starve another completely, every run, for weeks)
               2. Deduplicate against articles table (skip known external_ids) — both
                  against existing DB rows and within the batch itself (the same real
                  story can appear in more than one feed)
@@ -226,19 +229,27 @@ These replaced an earlier design (retired 2026-07-13) where a `weather` pipeline
 | `work` | Guardian `money` | **Never switch this to `business`** — that's Finance's section; using it here previously let Finance's dedup claim every article first and starve Work of new content entirely (fixed 2026-07-06). |
 | `entertainment` | Guardian `culture` | No active zone for the test profile as of 2026-07-14 (deleted, see Zone templates); the runner and template stay valid for a future rebuild. |
 
-Every runner sorts its merged results by recency and caps at 15 (`slice(0, 15)`) — enforced per-zone regardless of how many sources feed into it, so one prolific source can't crowd out the rest.
+Every runner sorts its merged results by recency and caps at 15 (`slice(0, 15)`) — enforced per-zone regardless of how many sources feed into it. **Local Zone is the one exception** (fixed 2026-07-15, see below): a plain recency sort let one high-publish-frequency source completely starve a lower-frequency one despite this per-zone cap, so it uses a fairness-preserving round-robin interleave instead.
 
 ### Local Zone sourcing (hybrid, per configured area)
 
 Local Zone content is driven by whichever `local` zone(s) have `config.areas` set (see Zone templates below) — `fetchLocalAreaConfigs()` unions areas across all enabled local zones by query text, same shared-article-pool architecture as every other zone (no per-user pipeline runs). For each area:
 - **Google News RSS search** (`sources/googlenews.ts`) always runs — query wrapped in literal quotes for exact-phrase matching (a bare multi-word query is matched as a loose keyword set, which produced a real false positive — see Known issues), 14-day window, browser-like desktop User-Agent. Its item links are Google redirect pages, not the publisher's real URL, so these articles never get a real OG image or true in-app embedding (see Known issues).
 - **Curated direct sources** (`area.directSources`, optional, added Phase 11 / 2026-07-14) run in parallel alongside Google News wherever configured:
-  - `kind: 'blox'` → `sources/blox.ts` — query-scoped search-as-RSS for BLOX/TownNews-CMS papers (Eagle-Tribune, Salem News, Newburyport Daily News, Derry News, Andover Townsman). Requires a mobile Safari User-Agent — a desktop UA got a 429 from eagletribune.com.
+  - `kind: 'blox'` → `sources/blox.ts` — query-scoped search-as-RSS for BLOX/TownNews-CMS papers (Eagle-Tribune, Salem News, Newburyport Daily News, Derry News, Andover Townsman). Requires a mobile Safari User-Agent — a desktop UA got a 429 from eagletribune.com. **Client-side 14-day freshness filter added 2026-07-15**: unlike Google News' `when:14d` param, this search endpoint ranks by relevance, not recency, so a well-matched but over-a-year-old evergreen article could otherwise win a slot ahead of genuinely fresh coverage (confirmed live: a 2024 article). Items with no parseable date are kept rather than dropped.
   - `kind: 'rss'` → the generic `sources/rss.ts` adapter — plain outlet feeds with no query needed (Boston.com, Universal Hub, Portland Press Herald, WGME, NHPR).
 
   Direct sources return real article URLs, so normal OG-image scraping works on them — this is what fixed Local Zone's near-total lack of real images (Phase 11), except where a source itself blocks scraping (Universal Hub returns 403 regardless of User-Agent — accepted limitation, see Known issues).
 
-Each individual source's contribution is capped at 6 before the per-area merge; the zone-wide sort+cap-at-15 (above) applies on top of that.
+**Two-level round-robin interleave, replacing a plain merge+sort+cap (fixed 2026-07-15):** the old approach — cap each source at 6, merge everything, sort by recency, cap the whole area (and later the whole zone) at a flat number — looked reasonable but had a real starvation bug, confirmed live: the North Andover BLOX papers (Eagle-Tribune, Salem News, Newburyport, Derry News, Andover Townsman) were fetching real content successfully on *every single hourly run*, but their articles never once survived the final recency sort, because higher-frequency sources (Portland Press Herald and WGME on the Wells, ME secondary area; even NHPR *within* North Andover's own source list) always had something more recent. Zero articles from those five papers existed in the `articles` table despite weeks of "working" fetches. Fixed with `interleaveRoundRobin()` (`scripts/pipeline/index.ts`) applied at two levels:
+1. **Within an area**, across its own sources — each source's items are recency-sorted and capped at 6, then interleaved one-per-source per round (instead of merged-then-globally-sorted) so a single prolific source (e.g. NHPR) can't fill an area's whole allocation.
+2. **Across areas**, using each area's own interleaved-and-capped-at-8 list — same round-robin, so a high-frequency area (e.g. one with two statewide direct sources) can't fill the whole zone's 15-article cap.
+
+Verified live (dry run against real feeds, zero DB writes, then a real triggered pipeline run): North Andover's own bucket went from 6-of-8 slots held by NHPR alone to genuine representation across all its configured sources; the zone's final 15 went from zero North-Andover-tied articles to several real ones (Eagle-Tribune, Salem News, Andover Townsman, Newburyport, plus a Google News "Patch" hit).
+
+**Read-time prioritization on top of the above (`lib/zonePreview.ts`, added 2026-07-15):** `LocalArea.id` follows a `community-primary` / `metro-primary` / `region-primary` / `community-secondary-N` naming convention (see `scripts/setup-local-zone.ts`) — areas without `-secondary` are the user's actual home community/metro/region. `classifyLocalArticle()` tags each article `'primary' | 'secondary' | 'neutral'` (source-name match against an area's curated `directSources` first, since that's the strongest signal for outlets like WGME/Portland Press Herald whose stories rarely mention the area by name; falls back to a headline/summary keyword match otherwise). `applyLocalAreaPriority()` gives primary-classified articles a +1 urgency boost (capped at 5) and re-sorts by (boosted urgency, recency) — the existing urgency/recency-based selection functions (`selectTopStories`, plain sort) are untouched, only their input ranking is biased. Secondary-area articles are never penalized, only left unboosted, so the result is a mix, not an exclusion. Used by:
+- The Zone Detail page's Top Stories/Today (`app/zones/[zoneId]/page.tsx`) — pulls from a separately-fetched, larger 45-row pool (vs. the generic 15) specifically for Local, since a 15-row pool can already be starved before re-ranking gets a chance to help. **Breaking is deliberately excluded** from this boost — it stays purely urgency/recency-driven, zone-wide, so a genuinely urgent story from any configured area (primary or secondary) still surfaces there.
+- `getZoneArticles()` (`lib/zonePreview.ts`) for Local specifically — flows through to the Zones hub row and Home/Summary's "Your Zones" preview card automatically.
 
 ### Source adapters (all free)
 
@@ -247,7 +258,7 @@ Each individual source's contribution is capped at 6 before the per-area merge; 
 | The Guardian Content API | News, Tech, Finance, Work, Entertainment (different `section` per zone — see Zone runners table) | `content.guardianapis.com/search`, `GUARDIAN_API_KEY`. `sources/guardian.ts` |
 | Generic RSS (`rss-parser`) | Sports (ESPN feeds), Tech (TechCrunch/Verge/Ars Technica/Wired/HN), Local (direct-RSS outlets) | `sources/rss.ts` — handles RSS 2.0 and Atom transparently (The Verge is Atom) |
 | Google News RSS search | Local Zone (every area, always runs) | `news.google.com/rss/search?q="..."` — no key, unofficial/undocumented endpoint. `sources/googlenews.ts` |
-| BLOX/TownNews query-scoped search RSS | Local Zone (North Andover-area papers, where configured) | `https://{domain}/search/?q=...&f=rss&t=article`, mobile UA required. `sources/blox.ts` |
+| BLOX/TownNews query-scoped search RSS | Local Zone (North Andover-area papers, where configured) | `https://{domain}/search/?q=...&f=rss&t=article`, mobile UA required; results filtered client-side to the last 14 days (added 2026-07-15 — the endpoint ranks by relevance, not recency, see "Local Zone sourcing"). `sources/blox.ts` |
 | Alpha Vantage | Finance (index quotes) | Free tier, 25 calls/day — sufficient for 3 index symbols once/run. `sources/finance.ts` |
 | ESPN site API (live, request-time) | Sports Zone's Scores Card — **not** the batch pipeline | `site.api.espn.com`, no key. `lib/scores/espn.ts` |
 | NWS (live, request-time) | Local Zone's Weather Card — **not** the batch pipeline | `api.weather.gov`, no key; zip → coordinates via `lib/geo/zip.ts` (`api.zippopotam.us`). `lib/weather/nws.ts` |
@@ -267,12 +278,15 @@ Each individual source's contribution is capped at 6 before the per-area merge; 
 ```
 scripts/pipeline/
   index.ts          ← orchestrator (called by API route) — ZONE_RUNNERS table, dedup-before-
-                       enrichment, per-zone try/catch so one zone's failure doesn't block others
+                       enrichment, per-zone try/catch so one zone's failure doesn't block others,
+                       interleaveRoundRobin() fairness helper (Local Zone's per-source/per-area
+                       interleave, added 2026-07-15 — see "Local Zone sourcing")
   sources/
     guardian.ts     ← Guardian API adapter (section param → zone-specific content)
     rss.ts          ← generic RSS/Atom adapter
     googlenews.ts   ← Google News RSS search adapter (Local Zone, every area)
-    blox.ts         ← BLOX/TownNews query-scoped search RSS adapter (Local Zone, curated direct sources)
+    blox.ts         ← BLOX/TownNews query-scoped search RSS adapter (Local Zone, curated direct
+                       sources) — 14-day freshness filter added 2026-07-15
     sports.ts       ← ESPN RSS adapter (4 leagues)
     finance.ts      ← Alpha Vantage adapter
   enrich/
@@ -291,6 +305,10 @@ lib/
     nws.ts          ← live, request-time NWS fetch for the Local Zone's Weather Card (not pipeline-stored)
   scores/
     espn.ts         ← live, request-time ESPN fetch for the Sports Zone's Scores Card (not pipeline-stored)
+  zonePreview.ts    ← getZoneArticles()/getZonePreview() (Sports team-of-interest filtering, Local
+                       area-priority boost via applyLocalAreaPriority()/classifyLocalArticle(),
+                       added 2026-07-15 — see "Local Zone sourcing"); read-time only, feeds the
+                       Zones hub row and Home/Summary's "Your Zones" preview card
 
 app/api/pipeline/
   trigger/route.ts  ← POST endpoint called by GitHub Actions (verify CRON_SECRET header)
@@ -341,9 +359,9 @@ entertainment → type: 'entertainment' // Guardian culture — no active zone f
 
 ## Current status
 
-**Phase 14 deployed — content-fetching efficiency pass on the Zones hub (2026-07-14).**
+**Phase 15 deployed — Zones page horizontal-scroll rework + Local Zone pipeline starvation fix (2026-07-15).**
 
-All V2 code has been deleted. The full app is deployed at https://distilled-news.vercel.app, running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below). This session's work (2026-07-14) spans: the 4-zone restructure (Phase 10, commit `a6d70d3`), a Finance-zone cross-zone-leakage fix (commit `be291b3`), Phase 11 — Unsplash activation, curated direct RSS sources for Local Zone (commit `8eeecd9`), Tech Zone source diversification (commit `adf6577`) — Phase 12, the Zones hub card reformat (commit `d96131a`) — Phase 13, direct zone sub-links in the Menu (commit `db548b4`) — and Phase 14, a fetch-efficiency review + fix (commit `928d631`). All deployed and verified live.
+All V2 code has been deleted. The full app is deployed at https://distilled-news.vercel.app, running on the shared Rocky Coast Labs Supabase platform (see Infrastructure below). Prior session's work (2026-07-14) spans: the 4-zone restructure (Phase 10, commit `a6d70d3`), a Finance-zone cross-zone-leakage fix (commit `be291b3`), Phase 11 — Unsplash activation, curated direct RSS sources for Local Zone (commit `8eeecd9`), Tech Zone source diversification (commit `adf6577`) — Phase 12, the Zones hub card reformat (commit `d96131a`) — Phase 13, direct zone sub-links in the Menu (commit `db548b4`) — and Phase 14, a fetch-efficiency review + fix (commit `928d631`). Today's work (2026-07-15, Phase 15) is deployed live (two `npx vercel --prod` deploys) and verified — see Session log — but **not yet committed to git** (`git status` shows all Phase 15 files as modified/deleted on disk). This repo has hit this exact drift before (the V3 rebuild sat uncommitted for months) — commit before starting further work next session.
 
 **Deploy urgency note:** the one-off scripts that restructured this session's DB state (deleting the Maine/Finance/Entertainment zones, creating the News zone) ran against the shared production Supabase DB *before* the matching code was deployed — since the old deployed code's `ZONE_META` had no `'news'` entry, any real user hitting a `type: 'news'` zone in that window got a hard crash ("Something went wrong"). Confirmed and fixed by deploying immediately once reported. **Lesson:** when a session's DB changes (new zone types, deleted zones) aren't backward-compatible with the currently-deployed code, deploy the matching code *before or immediately after* running the DB migration script — don't leave that gap open, even mid-session.
 
@@ -365,6 +383,7 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
 | 12 | Zones hub card reformat — plain colored header (zone name + story count only, no hero text), live Scores Card (Sports)/Weather Card (Local) rendered below the header, 3 story rows (up from 2) | ✅ Done 2026-07-14 |
 | 13 | Hamburger menu's "My Zones" item gained direct sub-links to each zone (colored dot + label → `/zones/{id}`), via a new small `/api/zones/menu` route fetched client-side by `BottomNav` | ✅ Done 2026-07-14 |
 | 14 | Fetch-efficiency review — 60s in-memory TTL cache (`lib/cache/ttlCache.ts`) added around the live ESPN/NWS fetches (Phase 12 doubled their call frequency by adding them to the hub alongside the zone detail page), dead `getZoneQuicklook` query removed from the hub | ✅ Done 2026-07-14 |
+| 15 | Zones page rework — one horizontal-scroll row per zone (black-rectangle story-card format matching Home's Breaking/Top Stories, replacing one-card-per-zone), Home/Summary headers + "Your Zones"/Tracking cards restyled to match; Local Zone pipeline starvation bug found and fixed (two-level round-robin interleave + BLOX freshness filter) plus a read-time primary-area priority boost | ✅ Done 2026-07-15 |
 | — | In-app embedded reader for "Full Coverage" source links (replaces `target="_blank"`), with an interstitial fallback for sites that block framing | ✅ Done 2026-07-13 |
 | — | Migrate onto shared Rocky Coast Labs Supabase platform, verify end-to-end | ✅ Done 2026-07-10 |
 
@@ -375,10 +394,13 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
                             (app/page.tsx + app/InDepthClient.tsx)
 /summary                   Summary View — same sections, compact StoryItem rows for Today + a More section
                             (app/summary/page.tsx + app/summary/SummaryClient.tsx)
-/zones                     Zones hub — user's zones as cards: colored header (zone name + story-count indicator only,
-                            no hero text), then — for Sports/Local only — the same live Scores Card / Weather Card
-                            used on their zone detail pages, then up to 3 team/area-aware story rows (see
-                            lib/zonePreview.ts), then a "View {Zone} →" footer link
+/zones                     Zones hub — one horizontal-scroll row per zone (changed 2026-07-15; previously one
+                            card per zone). Header is the zone's name in its own color, sized to match Home's
+                            Breaking/Top Stories headings. Row content: for Sports/Local, the live Scores Card /
+                            Weather Card leads it (reformatted to the same black-rectangle story-card style as
+                            every other card in the row, replacing the old solid zone-color fill) — then up to
+                            9 team/area-aware stories (see lib/zonePreview.ts) in the same TrackCard format used
+                            on Home's Breaking/Top Stories, then a "View {Zone} →" link card closes the row
 /zones/[zoneId]            Zone detail — expanded Story Card format matching Home (zoneId = zone UUID). Sports zone:
                             Scores Card, Updates (game-specific), team-prioritized Top Stories, sports-filtered Tracking,
                             More (general news). Local zone: Weather Card (live NWS), Breaking (if any), Top Stories,
@@ -419,6 +441,40 @@ All V2 code has been deleted. The full app is deployed at https://distilled-news
 ---
 
 ## Session log
+
+### Session 2026-07-15 — Zones page horizontal-scroll rework + Local Zone pipeline starvation fix
+
+**Part 1: Zones page rework.** Per explicit request, replaced the one-card-per-zone `/zones` hub layout with one horizontal-scroll row per zone, matching Home's Breaking/Top Stories pattern instead of inventing a new one.
+
+1. **Header** — zone name in the zone's own color, font size bumped to match (21px/800, up from the old 13px/700 section-head style). Applied consistently: also bumped Home's and Summary's own Breaking/Top Stories/Your Zones/Today/Tracking headers to the same size (same color scheme, just larger) per an explicit follow-up request, so all section headings across the app read at one consistent scale.
+2. **Row content** — up to 9 stories per zone in the same 300px `TrackCard` format already used for Breaking/Top Stories (image hero or compact no-image header, zone pill, Save/Track buttons, "Full Coverage →"), fetched via `getZoneArticles(zoneType, config, 9)` (`lib/zonePreview.ts`, limit bumped from 3). Row ends with a new `ViewZoneCard` link card ("View {Zone} →", circular arrow icon) that navigates to `/zones/{id}`.
+3. **Scores/Weather card reformat** (Sports/Local only) — per explicit follow-up correction, the lead card in these two zones' rows was changed from a solid `--sports-dark`/`--local-dark` fill covering the whole card to the same black-rectangle (`var(--surface)` + `var(--border-mid)` outline) format as the story cards: 3px zone-color top stripe, zone-name pill in the upper-left (not a "SCORES"/"WEATHER" label), score/weather rows on the plain black background, "View {Zone} →" bottom-right. Two structural bugs caught and fixed during this same follow-up, both explicit corrections:
+   - The "View Zone" link wasn't bottom-aligned with the neighboring TrackCard's "Full Coverage →" — root cause: the flex row already stretches every card to the tallest card's height (confirmed via direct DOM measurement, both cards were exactly 251.97px tall), but the *inner content* wasn't filling that stretched height, so the link sat wherever the (shorter) natural content ended. Fixed by making the card a flex column (`display:flex, flexDirection:'column'`) with the link's container using `marginTop:'auto'` to push to the true bottom. Verified via direct pixel measurement: both links' `getBoundingClientRect().bottom` matched exactly (410.47px) after the fix.
+   - The zone-name pill stretched to the card's full width instead of sizing to its own text — a side effect of the above flex-column change (a flex column's default `align-items: stretch` stretches direct children horizontally, including a `display:'inline-block'` span). Fixed with `alignSelf:'flex-start'` on the pill.
+   - Also fixed, same follow-up: both teams'/rows' font sizes in the Scores Card weren't matching (opponent row was 13px/14px vs. the team's own row at 14.5px/15px) — unified to 14.5px (team name) / 15px (score) for both rows, keeping only font-*weight* (bold vs. regular) to indicate the winning team, as originally designed.
+4. **"Your Zones" and Tracking cards restyled to match** (`app/InDepthClient.tsx` + `app/summary/SummaryClient.tsx`, kept in sync per the usual convention) — per explicit request, the 172px `ZoneCard`/`TrackingTopicCard` components dropped their image-hero-with-gradient-overlay look (`ZONE_GRADIENTS` background, "NEW"/"QUIET" badge over the image) for the same black-rectangle format: zone-color top stripe, zone pill + NEW/QUIET badge in a plain top row, headline, "View {Zone Label} →" bottom-right (Tracking cards keep "Open →" since a tracked topic doesn't map to one zone). `AddTrackingCard`/`ViewMoreTrackingCard` border-radius bumped 14px→16px to match.
+5. **Dead code removed** — `components/zones/ZoneCard.tsx` (the old one-card-per-zone component) had no remaining callers after the rework and was deleted outright, not deprecated in place.
+
+Verified live throughout (headless Chromium via `npx playwright`, real Supabase/ESPN/NWS data, direct DOM `getBoundingClientRect()` measurements for the alignment fixes rather than eyeballing screenshots — the bottom nav overlay obscures enough of the viewport that visual alignment checks alone were inconclusive on one comparison): all 4 zone rows render correctly, Sports/Local's Scores/Weather cards match the story-card format with a correctly-sized pill and bottom-aligned link, story-card and "View Zone" link-card clicks navigate correctly, zero console errors.
+
+**Files touched (Part 1):** `app/zones/ZonesHubClient.tsx` (full rework), `app/zones/page.tsx` (fetch limit bump to 9, `initialSavedIds` added since the new cards are interactive), `app/InDepthClient.tsx` + `app/summary/SummaryClient.tsx` (header sizes, `ZoneCard`/`TrackingTopicCard`/`AddTrackingCard`/`ViewMoreTrackingCard` restyle), `components/zones/ZoneCard.tsx` (deleted). No schema changes.
+
+**Part 2: Diagnosed and fixed a real Local Zone content-pipeline bug.** Mid-conversation, user reported Local Zone content still skewed heavily toward Wells/Maine content despite North Andover being the primary community. Investigation (not assumed — confirmed via direct Supabase queries and live dry-run scripts before touching any code):
+
+1. **Root cause #1 — cross-source and cross-area starvation, not a fetch failure.** Queried the full `articles` table for `zone_type='local'`: zero rows ever from Eagle-Tribune, Salem News, Newburyport Daily News, Derry News, or Andover Townsman (the five curated North Andover-primary BLOX sources), despite 32 Portland Press Herald + 16 WGME rows (both tied to the Wells, ME secondary area). Reproduced the exact `fetchBloxSearch()` call path live (same `rss-parser` + mobile UA) — all 5 sources returned real, current North Andover content immediately; the fetch was never broken. The actual cause: the pipeline's final step merged every source's results and did a flat `sort by recency, cap at 15/8` — since WGME/Portland Press Herald (and, one level deeper, NHPR *within* North Andover's own source list) simply publish more frequently, their items were always more recent and completely filled every available slot, every single hourly run, regardless of the existing per-source cap of 6.
+2. **Fix — two-level round-robin interleave** (`interleaveRoundRobin()`, `scripts/pipeline/index.ts`): within an area, each source's own items are capped at 6 and interleaved one-per-source per round (instead of merged-then-sorted); across areas, each area's own interleaved-and-capped-at-8 list is interleaved again the same way for the final 15. Verified via a read-only dry-run script (real live fetches, zero DB writes, dedup-checked against the live table) before touching production: North Andover's own bucket went from 6-of-8 slots held by NHPR alone to real representation across Eagle-Tribune, Salem News, Newburyport, Derry News, Andover Townsman, and NHPR; the final 15 went from zero North-Andover-tied articles to four.
+3. **Root cause #2 — BLOX search has no recency filter.** After deploying fix #2 and triggering a real pipeline run, most of the newly-written BLOX articles turned out to have `published_at` over a year old (one from 2024) — the search endpoint ranks by relevance, not date, unlike Google News' `when:14d` param. These would never actually display (the app's own 14-day read-time window excludes them), so the fix, while structurally correct, yielded little visible improvement on this run. **Fixed:** added a client-side 14-day freshness filter to `fetchBloxSearch()` (`scripts/pipeline/sources/blox.ts`), verified live against all 5 sources before deploying — correctly surfaced genuinely fresh, real content (e.g. "Fireworks will illuminate Andover, North Andover") and correctly returned zero results for sources with no recent match, rather than falling back to stale evergreen content.
+4. **Read-time prioritization, applied on top of the ingestion fix** (`lib/zonePreview.ts`, new `classifyLocalArticle()`/`applyLocalAreaPriority()`) — since ingestion-time fairness alone doesn't stop a genuinely-abundant secondary source from still winning individual slots by chance, primary-area articles (identified via `LocalArea.id`'s `-primary`/`-secondary` naming convention, source-name matched against each area's curated `directSources` first, headline/summary keyword match as a fallback for Google News results) get a +1 urgency boost before the existing `selectTopStories`/sort logic runs — the selection criteria themselves are untouched, only the input ranking is biased. Deliberately **not** applied to Breaking, which stays purely urgency/recency-driven zone-wide so a genuinely urgent story from any configured area still surfaces there. Wired into the Zone Detail page's Top Stories/Today (which now also fetches a separate, larger 45-row pool for Local specifically, since the standard 15-row pool can already be starved before re-ranking gets a chance to help) and into `getZoneArticles()`, which flows through to the Zones hub row and Home/Summary's zone-preview card automatically.
+
+Both pipeline fixes were deployed (`npx vercel --prod`, two separate deploys) and verified against the live production pipeline via `POST /api/pipeline/trigger` (`{"zones":["local"]}`) — first run wrote 12 new articles including real Salem News/Newburyport/Derry News content (before the freshness filter); second run, after the freshness filter, wrote 4 new articles including genuinely current Eagle-Tribune and Andover Townsman content. Confirmed via direct Supabase queries after each run, not just trusting the trigger endpoint's summary counts.
+
+**Known limitation surfaced by this investigation, not fixed:** Salem News, Newburyport, and Derry News currently have zero results matching "North Andover" within the new 14-day freshness window — not a bug, just an honest reflection that these town papers don't publish about North Andover specifically every day. This will fluctuate run to run as they publish; nothing to act on unless it persists.
+
+**Files touched (Part 2):** `scripts/pipeline/index.ts` (`interleaveRoundRobin()`, local runner rewired), `scripts/pipeline/sources/blox.ts` (14-day freshness filter), `lib/zonePreview.ts` (`classifyLocalArticle()`, `applyLocalAreaPriority()`, local branch in `getZoneArticles()`), `app/zones/[zoneId]/page.tsx` (larger local-specific pool fetch, Breaking/Top-Stories/Today split updated to apply the boost after Breaking, saved-status lookup extended to cover the larger pool). No schema changes.
+
+**Not yet committed to git** — both parts deployed straight from disk via `npx vercel --prod` (matching this repo's established deploy pattern), per CLAUDE.md update instructions at end of session; `git status` will show all touched files as modified/deleted until a commit is made.
+
+---
 
 ### Session 2026-07-14 (cont'd) — Content-pipeline docs review + fetch-efficiency pass
 
@@ -706,6 +762,9 @@ When any React component throws during render, React's error recovery cycle runs
 
 ## Known issues / what's broken
 
+### Resolved — Local Zone pipeline starvation (confirmed fixed by deploy + live pipeline trigger, 2026-07-15)
+- ~~Local Zone content skewed heavily toward the Wells, ME secondary area despite North Andover being primary~~ — **confirmed fixed 2026-07-15.** Two distinct, confirmed-via-live-testing root causes, both fixed: (1) the pipeline's final "merge everything, sort by recency, cap" step let high-frequency sources (WGME/Portland Press Herald on the secondary area; NHPR even *within* the primary area's own source list) completely starve lower-frequency sources — the five North Andover BLOX papers were fetching real content successfully on every run but never once survived the cut, for weeks — fixed with a two-level round-robin interleave (`interleaveRoundRobin()`, `scripts/pipeline/index.ts`); (2) the BLOX search endpoint has no recency filter (unlike Google News), so a well-matched but over-a-year-old article could win a slot ahead of fresh content — fixed with a 14-day client-side freshness filter (`scripts/pipeline/sources/blox.ts`). A third, read-time-only layer (`lib/zonePreview.ts`'s `applyLocalAreaPriority()`) further biases Top Stories/Today toward primary-area content without touching Breaking. See Session log 2026-07-15 for the full root-cause writeup, including the dry-run scripts used to verify each fix against live feeds before deploying.
+
 ### Resolved — recurring data corruption (confirmed fixed by deploy, 2026-07-14)
 - ~~Production's hourly GitHub Actions cron was still running the OLD pipeline code~~ — **confirmed fixed 2026-07-14.** The deploy (`npx vercel --prod`, commit `64e0ec3`) completed at **2026-07-14T01:03:31 UTC** (confirmed via `vercel inspect`). Cross-referencing article `created_at` timestamps against that: every `zone_type='local'` row created *before* 01:03:31 UTC was old Guardian/NWS content (6 more stale batches accumulated in the gap between the last mid-session cleanup and the deploy actually completing); every row created *after* is genuinely local/regional Google News content (Bruins, Celtics, WBUR, Boston Herald, North Andover Patch/Realtor.com/andovertownsman.com stories, etc.) — confirmed by direct inspection, not just absence of Guardian source names. The pipeline itself was never broken post-deploy; the leftover pre-deploy rows just kept outranking the new content by urgency score until a final cleanup pass (2026-07-14, ~47 rows deleted, explicit user confirmation obtained). **Root-cause lesson:** after any deploy meant to fix a content-sourcing bug, check the deploy's exact completion timestamp and do one final stale-data cleanup pass for anything created before it — don't assume the last mid-session cleanup was also the last one needed.
 
@@ -720,9 +779,10 @@ When any React component throws during render, React's error recovery cycle runs
 
 ### Untested at scale
 - **Tracking section overflow states** (2026-07-12 redesign — see Session log) — the 0-topic and 1-topic states were verified live, but the 9-and-10-card overflow behavior (first 8 topics + a "View More" card + the Add card) was only verified by code review, since the test account had at most 1 tracked topic all session. Worth adding ~10 tracked topics to a test account and confirming the card count/ordering live before trusting it in production. Applies to both Home's Tracking section and the Sports Zone's sports-filtered one — they share the same overflow logic.
-- **Sports Zone personalization not tested on a real phone** (2026-07-12) — Scores Card, Updates, and the Top Stories/Tracking/More restructure were only verified via dev-server emulation and headless-Chrome screenshots at various widths, never a physical device. See "Next session" Priority 1.
+- **Sports Zone personalization not tested on a real phone** (2026-07-12) — Scores Card, Updates, and the Top Stories/Tracking/More restructure were only verified via dev-server emulation and headless-Chrome screenshots at various widths, never a physical device. See "Next session" Priority 2.
 - **Local Zone and News/Tech Zone personalization not tested on a real phone** (2026-07-13/14) — Weather Card, Breaking/Top Stories/Today/Tracking/More were only verified via dev-server + headless-Chromium screenshots, same caveat as Sports above. All of it is deployed and confirmed working post-deploy (see Current status) — mobile is the only remaining unverified surface.
 - **Zones hub card reformat and Menu zone sub-links not tested on a real phone** (Phases 12–13, 2026-07-14) — both verified only via dev-server + headless-Chrome screenshots at a 390px emulated viewport. Worth checking on an actual device: the Scores/Weather card's touch-target spacing right where it meets the header above and story rows below, and the Menu's indented zone sub-links (small tap targets, colored dots) for legibility/tap-accuracy at real phone scale.
+- **Zones page horizontal-scroll rework not tested on a real phone** (Phase 15, 2026-07-15) — verified only via headless Chromium at a 390px emulated viewport, including precise `getBoundingClientRect()` measurements for the alignment fixes. Worth checking specifically: horizontal-scroll momentum/snap feel on a real touchscreen (emulation doesn't reproduce this), and whether the "View {Zone} →" link card at the end of each row is an obvious/discoverable affordance at real thumb-scroll speed.
 
 ### Content precision
 - **Team-name matching is a plain case-insensitive substring check**, not real entity recognition — used both for the Top Stories/More split (does this article mention a Team of Interest?) and, more narrowly, for gating what counts as "game-specific" in Updates (does it name the actual last/next opponent?). Confirmed via live testing this produces false positives: a Detroit Tigers coaching-change article was pulled into Red Sox coverage because its summary happened to mention "former Boston Red Sox manager Alex Cora." This matches the substring-matching approach already used elsewhere in the app (e.g. Tracking's `searchArticlesByTopic`), so it's a pre-existing tradeoff, not a new regression — but it's the first thing to check if Sports Zone content ever looks off-topic.
@@ -753,38 +813,41 @@ When any React component throws during render, React's error recovery cycle runs
 
 ## Next session: where to pick up
 
-**Updated 2026-07-14 (end of day)**, now covering the full day's work through Phase 14: the zone-preview personalization + 4-zone restructure (Phases 10–11), the Zones hub card reformat and Menu zone sub-links (Phases 12–13), and the fetch-efficiency pass (Phase 14). Priority 0 is "get it on a phone," not a deploy blocker; everything else keeps its prior ordering. Onboarding is still deliberately last.
+**Updated 2026-07-15 (end of day)**, now covering Phase 15 (Zones page horizontal-scroll rework + the Local Zone pipeline starvation fix) on top of everything through Phase 14. Priority 0 is a **git commit**, not a deploy blocker but a real risk this repo has hit before — everything below that is "get it on a phone," matching last session's ordering; onboarding is still deliberately last.
 
-### Priority 0 — Get today's work (2026-07-14, Phases 10–14) on a real phone
-Zone-preview personalization, the 4-zone restructure, the Finance-leakage fix, Phase 11's real-images work (Unsplash + curated direct RSS + Tech diversification), the Zones hub card reformat, the Menu's direct zone sub-links, and the fetch-efficiency fixes are all deployed and confirmed working post-deploy in dev-server/headless-Chrome testing. Nothing from any session this week has been checked on a physical phone yet — the reported "Something went wrong" crash (see Current status → "Deploy urgency note" and Session log Part 4) was a code/DB sync gap, not a mobile-specific bug, but worth explicitly re-confirming on a phone now that everything is in sync. Worth eyeballing on a phone specifically: real article images across all 4 zones (previously Local Zone showed none); the Zones hub's new plain header + Scores/Weather card layout; the Menu's indented zone sub-links (small tap targets) — see "Untested at scale" in Known issues for the full list.
+### Priority 0 — Commit Phase 15's changes to git
+`git status` currently shows `app/InDepthClient.tsx`, `app/summary/SummaryClient.tsx`, `app/zones/ZonesHubClient.tsx`, `app/zones/[zoneId]/page.tsx`, `app/zones/page.tsx`, `lib/zonePreview.ts`, `scripts/pipeline/index.ts`, `scripts/pipeline/sources/blox.ts` modified and `components/zones/ZoneCard.tsx` deleted — all deployed live (two `npx vercel --prod` runs) but not committed. This repo has hit this exact gap before (the V3 rebuild sat uncommitted for months, see `project_git_deploy_gap` in memory) — commit before starting further work, don't let it compound.
 
-### Priority 1 — Verify the 2026-07-12 changes hold up on mobile
+### Priority 1 — Get Phase 15 (2026-07-15) on a real phone
+The Zones page horizontal-scroll rework was only verified via headless Chromium at a 390px emulated viewport, including the bottom-alignment/pill-width fixes (done via precise `getBoundingClientRect()` measurements, not eyeballing). Specifically worth checking on a real device: horizontal-scroll momentum/snap feel (emulation doesn't reproduce this), and whether the "View {Zone} →" link card at the end of each row reads as an obvious affordance at real thumb-scroll speed. Separately, confirm the Local Zone pipeline fix is visibly working — check `/zones/{local-zone-id}` for genuine North Andover-tied stories (Eagle-Tribune/Salem News/Andover Townsman/Newburyport/Derry News source names) mixed in alongside Boston/Wells content, not just Maine-heavy like before. Content will keep improving run-over-run as the hourly cron picks up fresher BLOX articles — if it still looks entirely Maine-heavy after a few hours, re-open the investigation (see Session log 2026-07-15 for the full diagnostic approach, reusable for future pipeline-mix complaints).
+
+### Priority 2 — Get Phases 10–14 (2026-07-14) on a real phone
 Covers both the original home-page restructure AND the same-day Sports Zone personalization work (Scores Card, Updates, Top Stories/Tracking/More restructure) — none of it has been checked on a real phone yet, only dev-server emulation + headless-Chrome screenshots at various widths. Check the hamburger menu bottom sheet, horizontal-scroll rows (pill row, Updates, Tracking), and Story Card layout for touch-target or viewport issues that don't show up in emulation. The real production sign-in account (see Infrastructure) now has live Red Sox data to look at, not just placeholder/empty states.
 
-### Priority 2 — Confirm Tracking section overflow states with real data
+### Priority 3 — Confirm Tracking section overflow states with real data
 Add ~10 tracked topics to the test account and confirm the 9-and-10-card layout (8 topics + View More + Add) actually renders and behaves as designed — see "Untested at scale" in Known issues. This now applies to **two** Tracking sections (Home's and the Sports Zone's sports-filtered one), both share the same overflow logic.
 
-### Priority 3 — Fix the `relativeTime()` hydration warning
+### Priority 4 — Fix the `relativeTime()` hydration warning
 A background task was already spawned for this on 2026-07-12 (see Known issues) — check whether it landed before redoing the work.
 
-### Priority 4 — Confirm tracking-topic-removal persistence fix
+### Priority 5 — Confirm tracking-topic-removal persistence fix
 Still unconfirmed since 2026-07-06 (see Known issues) — a real production account now exists, so this is easy to test whenever it comes up.
 
-### Priority 5 — Remaining content-management inconsistencies
+### Priority 6 — Remaining content-management inconsistencies
 The user's original Priority 2 (2026-07-10 plan) was broader than just story duplication — ask if there are other pipeline/content issues still open before assuming this is fully closed out.
 
-### Priority 6 — Zones work (substantially addressed 2026-07-12 through 2026-07-14, follow-ups below)
+### Priority 7 — Zones work (substantially addressed 2026-07-12 through 2026-07-15, follow-ups below)
 Sports and Local both got full personalization build-outs, that personalization now reaches every zone-preview surface (not just the detail page), and the test profile is down to its intended 4 zones (Sports/Local/News/Tech) with a shared generic template for News/Tech — see Session log for the full breakdown. Loose ends, roughly in priority order:
-1. **No UI to manage Teams of Interest or Local areas** — both still hardcoded for the test user via one-off scripts (`zones.config.teams`, `zones.config.areas`). A real settings flow is onboarding-adjacent; either fold it into Phase 6 (Priority 7) or build a lightweight standalone settings screen first if onboarding stays blocked.
+1. **No UI to manage Teams of Interest or Local areas** — both still hardcoded for the test user via one-off scripts (`zones.config.teams`, `zones.config.areas`). A real settings flow is onboarding-adjacent; either fold it into Phase 6 (Priority 8) or build a lightweight standalone settings screen first if onboarding stays blocked.
 2. ~~Scores Card background color churned through 5 values with no matching design token~~ — **done 2026-07-13**: `--sports-dark`/`--local-dark` tokens added to `styles/tokens.css`, `ScoresCard` now references `var(--sports-dark)`.
 3. **Team-name matching is substring-based (ILIKE-style)** for the Top Stories/More split and the game-specific Updates filter — confirmed false-positive-prone (a Tigers article got pulled in via an incidental "former Red Sox manager" mention). Fine for now, but if content quality complaints come up, this is the first place to look.
 4. ~~Other zones (Local, Finance, Work, etc.) got none of this personalization treatment~~ — **Local Zone done 2026-07-13**, and **zone-preview personalization now reaches Home/Summary/Zones-hub too (2026-07-14)**, not just the detail page. Finance/Entertainment zones were deleted for this test profile (rebuildable later); Work zone was never created for this user; ask whether any of those want a real build-out before assuming News/Tech's generic template is the final word for them.
    - ~~Deleted Finance zone still leaked into Home/Summary's Breaking/Top Stories~~ — **fixed 2026-07-14**: `getTopArticles()` (`lib/db/articles.ts`) had no zone filter at all, so content from any zone type with no active zone (the Finance pipeline runner keeps running per the "rebuildable later" decision) could still surface. Now scoped to the user's own active zone types — see Session log Part 5. Same fix protects against `'work'`'s pipeline runner doing the same thing, which was a latent, previously-undetected risk.
-5. **Local Zone's own loose ends** (2026-07-13/14): Google News RSS is an unofficial endpoint and its redirect links mean no real OG images or true in-app embedding for any Local/News/Tech-zone article sourced from it (see Known issues → Content precision — the empty-space *layout* issue this caused is fixed, the missing images themselves aren't); the shared-article-pool architecture means content still isn't literally per-user, same limitation Sports already has.
-6. **News/Tech Zone's generic template is brand new (2026-07-14) and deployed, but untested on mobile** — see Priority 0.
+5. **Local Zone's own loose ends** (2026-07-13/14): Google News RSS is an unofficial endpoint and its redirect links mean no real OG images or true in-app embedding for any Local/News/Tech-zone article sourced from it (see Known issues → Content precision — the empty-space *layout* issue this caused is fixed, the missing images themselves aren't); the shared-article-pool architecture means content still isn't literally per-user, same limitation Sports already has. ~~Local Zone content mix skewed heavily toward the secondary (Wells, ME) area~~ — **fixed 2026-07-15**: a two-level pipeline starvation bug plus a BLOX search freshness gap, see Known issues → Resolved and Session log 2026-07-15. Genuinely fresh North Andover content had never once survived the pipeline's old selection step, despite fetching successfully every run for weeks — worth remembering as the first thing to check if any *other* zone's content mix ever looks unexpectedly skewed toward one source.
+6. **News/Tech Zone's generic template is brand new (2026-07-14) and deployed, but untested on mobile** — see Priority 2.
 7. **`/api/zones/menu` duplicates a zones query 5 pages already have server-side** (Phase 13/14, see Known issues → Fetch efficiency) — small and on-demand, not urgent, but worth closing by threading a `zones` prop through Home/Summary/Zones-hub/Zone-Detail/Story-Detail (falling back to the client fetch only on Profile/Tracking/Saved/the embedded reader) if any of those pages get touched for other reasons anyway.
 
-### Priority 7 — Build Phase 6: Onboarding (deliberately last)
+### Priority 8 — Build Phase 6: Onboarding (deliberately last)
 Do this only after the above are solid — the user's reasoning: onboarding is best built/tested against stable surrounding product surfaces rather than a moving target, and is best paired with a fixed/static test user ID rather than rebuilding real signup flows prematurely.
 
 3-step flow at `app/onboarding/page.tsx` (see `BUILDPLAN.md` Phase 6 prompt for full spec):
@@ -794,7 +857,7 @@ Do this only after the above are solid — the user's reasoning: onboarding is b
 - Activation screen: calls `addZoneFromTemplate`, triggers pipeline, redirects to `/zones`
 - Middleware guard: users with existing zones who visit `/onboarding` → redirect to `/zones`
 
-### Priority 8 — Design fixes from critique
+### Priority 9 — Design fixes from critique
 Address the highest-impact gaps from `prototypes/distilled-design-critique.md`:
 1. **Track card urgency state** — add "something changed" indicator and deadline countdown badge to track cards (read `prototypes/briefing-concepts.html` for new layout concepts)
 2. **AI synthesis in feed** — add 1-sentence AI prose below headline on each signal item in the compact `StoryItem` row (Summary View)

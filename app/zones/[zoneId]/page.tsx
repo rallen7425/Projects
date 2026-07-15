@@ -4,6 +4,7 @@ import { getArticlesByZone, getArticleById, searchTeamUpdates, searchArticlesByT
 import { getZoneQuicklook } from '@/lib/db/zones'
 import { getTrackedTopics } from '@/lib/db/tracks'
 import { toArticleDisplay, dedupeStories, selectBreakingStories, selectTopStories } from '@/lib/articleUtils'
+import { applyLocalAreaPriority } from '@/lib/zonePreview'
 import ZoneDetailClient from './ZoneDetailClient'
 import type { ArticleDisplay, LocalArea, ZoneType } from '@/types'
 import { getScoresForTeams, type TeamOfInterest } from '@/lib/scores/espn'
@@ -55,7 +56,11 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   const teamsOfInterest = ((zone.config as { teams?: TeamOfInterest[] } | null)?.teams ?? [])
   const localAreas = ((zone.config as { areas?: LocalArea[] } | null)?.areas ?? [])
 
-  const [articles, quicklook, scores, weather] = await Promise.all([
+  // Local Zone's Breaking/Top Stories/Today pool is fetched separately and larger (45 vs
+  // the generic 15) — its own urgency-sorted top 15 can already be dominated by one
+  // prolific secondary-area source before applyLocalAreaPriority ever gets a chance to
+  // re-bias it toward the user's primary community/metro (see that function's doc comment).
+  const [articles, quicklook, scores, weather, localPoolRows] = await Promise.all([
     getArticlesByZone(zoneType, 15),
     getZoneQuicklook(zoneType),
     zoneType === 'sports' && teamsOfInterest.length > 0
@@ -64,6 +69,7 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
     zoneType === 'local' && localAreas.length > 0
       ? getWeatherForAreas(localAreas).catch(() => [])
       : Promise.resolve([]),
+    zoneType === 'local' ? getArticlesByZone('local', 45) : Promise.resolve([]),
   ])
 
   // Team-of-interest coverage — general news, specific to in-season teams only (the
@@ -115,13 +121,28 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   const isGeneric = zoneType !== 'sports' && zoneType !== 'local'
   const TODAY_CAP = 15
 
-  const zoneDisplays = zoneType !== 'sports' ? dedupeStories(articleDisplays) : []
+  // Local draws from the larger 45-row pool fetched above; every other non-Sports
+  // zone type is unaffected and keeps using the standard 15-row `articles` fetch.
+  const nonSportsPool = zoneType === 'local' ? localPoolRows : articles
+  const zoneDisplays = zoneType !== 'sports' ? dedupeStories(nonSportsPool.map(toArticleDisplay)) : []
+
+  // Breaking stays purely urgency/recency-driven (unboosted) so a genuinely urgent story
+  // from any configured area — primary or secondary — still surfaces here.
   const zoneBreaking = zoneType !== 'sports' ? selectBreakingStories(zoneDisplays) : []
   const zoneBreakingIds = new Set(zoneBreaking.map((a) => a.id))
-  const zoneTopStories = zoneType !== 'sports' ? selectTopStories(zoneDisplays, zoneBreakingIds) : []
+  const zoneAfterBreaking = zoneDisplays.filter((a) => !zoneBreakingIds.has(a.id))
+
+  // Top Stories/Today favor the user's primary community/metro over a secondary "extra"
+  // area (see lib/zonePreview.ts's applyLocalAreaPriority) — a mix, not an exclusion,
+  // since secondary-area articles are only left unboosted, never penalized.
+  const prioritizedRemaining = zoneType === 'local'
+    ? applyLocalAreaPriority(zoneAfterBreaking, localAreas)
+    : zoneAfterBreaking
+
+  const zoneTopStories = zoneType !== 'sports' ? selectTopStories(prioritizedRemaining, new Set()) : []
   const zoneTopIds = new Set(zoneTopStories.map((a) => a.id))
   const zoneRemaining = zoneType !== 'sports'
-    ? zoneDisplays.filter((a) => !zoneBreakingIds.has(a.id) && !zoneTopIds.has(a.id))
+    ? prioritizedRemaining.filter((a) => !zoneTopIds.has(a.id))
     : []
   const zoneToday = isGeneric ? zoneRemaining.slice(0, TODAY_CAP) : zoneRemaining
   const zoneMore = isGeneric ? zoneRemaining.slice(TODAY_CAP) : []
@@ -130,8 +151,10 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   // Tracking section, filtered to this zone's own zoneType.
   const trackingTopics: TrackingTopicResult[] = await fetchZoneTracking(user.id, zone.id, zoneType)
 
-  // Check saved status for all articles
-  const articleIds = articles.map((a) => a.id)
+  // Check saved status for all articles — includes the larger local pool for Local zone
+  const articleIds = zoneType === 'local'
+    ? Array.from(new Set([...articles.map((a) => a.id), ...localPoolRows.map((a) => a.id)]))
+    : articles.map((a) => a.id)
   const { data: saves } = await supabase
     .from('user_saves')
     .select('article_id')
@@ -143,7 +166,7 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   return (
     <ZoneDetailClient
       zone={zone}
-      articles={articleDisplays}
+      articles={zoneType === 'local' ? zoneDisplays : articleDisplays}
       quicklook={quicklook}
       scores={scores}
       weather={weather}

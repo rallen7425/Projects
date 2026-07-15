@@ -21,6 +21,13 @@ const parser = new Parser({
 // through as item titles — filter those out defensively.
 const FILENAME_PATTERN = /\.(jpe?g|png|webp|gif)$/i
 
+// Unlike Google News' `when:14d` param, this search endpoint has no built-in recency
+// filter — it ranks by relevance, so a well-matched but over-a-year-old evergreen
+// article (confirmed live: e.g. a 2024 sports recap) can rank ahead of genuinely fresh
+// coverage. Match the app's own 14-day display window (getArticlesByZone's default)
+// so stale results never even reach the per-source cap upstream in the pipeline.
+const MAX_AGE_DAYS = 14
+
 function makeExternalId(sourceUrl: string, headline: string): string {
   return createHash('sha256').update(sourceUrl + headline).digest('hex').slice(0, 32)
 }
@@ -28,9 +35,14 @@ function makeExternalId(sourceUrl: string, headline: string): string {
 export async function fetchBloxSearch(domain: string, query: string, zoneType: ZoneType, sourceName: string): Promise<RawArticle[]> {
   const url = `https://${domain}/search/?q=${encodeURIComponent(query)}&f=rss&t=article`
   const feed = await parser.parseURL(url)
+  const cutoffMs = Date.now() - MAX_AGE_DAYS * 24 * 60 * 60 * 1000
 
   return feed.items
     .filter((item) => item.title && !FILENAME_PATTERN.test(item.title))
+    .filter((item) => {
+      const dateStr = item.isoDate ?? item.pubDate
+      return dateStr ? new Date(dateStr).getTime() >= cutoffMs : true
+    })
     .slice(0, 15)
     .map((item) => {
       const headline = item.title ?? ''

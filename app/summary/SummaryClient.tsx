@@ -53,7 +53,7 @@ function Dot() {
 function SectionHead({ label }: { label: string }) {
   return (
     <div style={{ padding: '28px 20px 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.02em', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: '21px', fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
         {label}
       </span>
       <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
@@ -246,7 +246,8 @@ function TrackCard({ article, isSaved, onOpen, onZoneOpen, onSave, onTrack }: {
   )
 }
 
-// Used for Your Zones — 172px cards
+// Used for Your Zones — 172px cards, black-rectangle format matching the other
+// horizontal-scroll cards (TrackCard / the Zones page's cards) rather than an image hero
 function ZoneCard({ zone, onClick }: { zone: ZoneCardData; onClick: () => void }) {
   const meta = ZONE_META[zone.type]
   const hasArticles = zone.articleCount > 0
@@ -254,29 +255,28 @@ function ZoneCard({ zone, onClick }: { zone: ZoneCardData; onClick: () => void }
   return (
     <div onClick={onClick} style={{
       flexShrink: 0, width: '172px', background: 'var(--surface)',
-      borderRadius: '14px', border: '1px solid var(--border)', overflow: 'hidden', cursor: 'pointer',
+      borderRadius: '16px', border: '1px solid var(--border-mid)', overflow: 'hidden', cursor: 'pointer',
     }}>
-      <div style={{ width: '100%', height: '96px', position: 'relative', overflow: 'hidden', background: ZONE_GRADIENTS[zone.type] }}>
-        {zone.topArticle?.imageUrl && (
-          <img src={zone.topArticle.imageUrl} alt={meta.label}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        )}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,9,14,0.05) 0%, rgba(9,9,14,0.40) 50%, rgba(17,17,23,0.95) 100%)' }} />
-        <div style={{ position: 'absolute', bottom: '8px', left: '12px', fontSize: '9px', fontWeight: 800, letterSpacing: '0.11em', textTransform: 'uppercase', color: meta.color }}>
-          {meta.shortLabel} Zone
+      <div style={{ height: '3px', width: '100%', background: meta.color }} />
+      <div style={{ padding: '12px 14px 13px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <span style={{
+            fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
+            color: meta.color, background: meta.bg, border: `1px solid ${meta.border}`,
+            borderRadius: '20px', padding: '4px 10px',
+          }}>
+            {meta.shortLabel}
+          </span>
+          <span style={{
+            fontSize: '9px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
+            padding: '2px 7px', borderRadius: '10px',
+            color: hasArticles ? meta.color : 'var(--text-3)',
+            background: hasArticles ? meta.bg : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${hasArticles ? meta.border : 'rgba(255,255,255,0.09)'}`,
+          }}>
+            {hasArticles ? `${zone.articleCount} NEW` : 'QUIET'}
+          </span>
         </div>
-        <div style={{
-          position: 'absolute', top: '8px', right: '8px',
-          fontSize: '9px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
-          padding: '2px 7px', borderRadius: '10px',
-          color: hasArticles ? meta.color : 'var(--text-3)',
-          background: hasArticles ? meta.bg : 'rgba(255,255,255,0.05)',
-          border: `1px solid ${hasArticles ? meta.border : 'rgba(255,255,255,0.09)'}`,
-        }}>
-          {hasArticles ? `${zone.articleCount} NEW` : 'QUIET'}
-        </div>
-      </div>
-      <div style={{ padding: '11px 12px 13px' }}>
         <div style={{
           fontSize: '13px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.4, marginBottom: '10px',
           display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '54px',
@@ -285,7 +285,7 @@ function ZoneCard({ zone, onClick }: { zone: ZoneCardData; onClick: () => void }
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '10px', color: 'var(--text-3)' }}>{zone.articleCount} {zone.articleCount === 1 ? 'story' : 'stories'} today</span>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: hasArticles ? meta.color : 'var(--text-3)' }}>Open →</span>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: hasArticles ? meta.color : 'var(--text-3)' }}>View {meta.label} →</span>
         </div>
       </div>
     </div>
@@ -300,31 +300,30 @@ function TrackingTopicCard({ data, onClick }: { data: TrackingTopicData; onClick
   return (
     <div onClick={onClick} style={{
       flexShrink: 0, width: '172px', background: 'var(--surface)',
-      borderRadius: '14px', border: '1px solid var(--border)', overflow: 'hidden', cursor: 'pointer',
+      borderRadius: '16px', border: '1px solid var(--border-mid)', overflow: 'hidden', cursor: 'pointer',
     }}>
-      <div style={{ width: '100%', height: '96px', position: 'relative', overflow: 'hidden', background: data.article ? ZONE_GRADIENTS[data.article.zoneType] : 'var(--surface-2)' }}>
-        {data.article?.imageUrl && (
-          <img src={data.article.imageUrl} alt={data.topic}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        )}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,9,14,0.05) 0%, rgba(9,9,14,0.40) 50%, rgba(17,17,23,0.95) 100%)' }} />
-        {meta && (
-          <div style={{ position: 'absolute', bottom: '8px', left: '12px', fontSize: '9px', fontWeight: 800, letterSpacing: '0.11em', textTransform: 'uppercase', color: meta.color }}>
-            {meta.shortLabel} Zone
-          </div>
-        )}
-        <div style={{
-          position: 'absolute', top: '8px', right: '8px',
-          fontSize: '9px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
-          padding: '2px 7px', borderRadius: '10px',
-          color: hasMatch ? meta!.color : 'var(--text-3)',
-          background: hasMatch ? meta!.bg : 'rgba(255,255,255,0.05)',
-          border: `1px solid ${hasMatch ? meta!.border : 'rgba(255,255,255,0.09)'}`,
-        }}>
-          {hasMatch ? `${data.articleCount} NEW` : 'QUIET'}
+      <div style={{ height: '3px', width: '100%', background: meta ? meta.color : 'var(--border-mid)' }} />
+      <div style={{ padding: '12px 14px 13px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          {meta ? (
+            <span style={{
+              fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
+              color: meta.color, background: meta.bg, border: `1px solid ${meta.border}`,
+              borderRadius: '20px', padding: '4px 10px',
+            }}>
+              {meta.shortLabel}
+            </span>
+          ) : <span />}
+          <span style={{
+            fontSize: '9px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
+            padding: '2px 7px', borderRadius: '10px',
+            color: hasMatch ? meta!.color : 'var(--text-3)',
+            background: hasMatch ? meta!.bg : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${hasMatch ? meta!.border : 'rgba(255,255,255,0.09)'}`,
+          }}>
+            {hasMatch ? `${data.articleCount} NEW` : 'QUIET'}
+          </span>
         </div>
-      </div>
-      <div style={{ padding: '11px 12px 13px' }}>
         <div style={{
           fontSize: '13px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.4, marginBottom: '10px',
           display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '54px',
@@ -344,7 +343,7 @@ function AddTrackingCard({ onClick }: { onClick: () => void }) {
   return (
     <div onClick={onClick} style={{
       flexShrink: 0, width: '172px', background: 'var(--surface)',
-      borderRadius: '14px', border: '1px dashed var(--border-mid)',
+      borderRadius: '16px', border: '1px dashed var(--border-mid)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
       cursor: 'pointer',
     }}>
@@ -362,7 +361,7 @@ function ViewMoreTrackingCard({ onClick }: { onClick: () => void }) {
   return (
     <div onClick={onClick} style={{
       flexShrink: 0, width: '172px', background: 'var(--surface)',
-      borderRadius: '14px', border: '1px solid var(--border)',
+      borderRadius: '16px', border: '1px solid var(--border-mid)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
       cursor: 'pointer',
     }}>
@@ -612,7 +611,7 @@ export default function SummaryClient({
 
       {/* Tracking — repositioned, keyed to the user's tracked topics */}
       <div style={{ padding: '28px 20px 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.02em', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: '21px', fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
           Tracking
         </span>
         <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />

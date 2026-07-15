@@ -21,6 +21,22 @@ type ZoneRunner = {
   fetch: () => Promise<RawArticle[]>
 }
 
+// Merges pre-sorted (most-recent-first) groups by taking one item from each group in
+// turn — group 1's most recent, group 2's most recent, ... group N's most recent, then
+// group 1's second-most-recent, etc. — instead of concatenating and re-sorting by
+// recency, which lets a high-frequency group's items dominate purely by being newer.
+// Used for the Local Zone's per-source and per-area fairness (see the 'local' runner).
+function interleaveRoundRobin<T>(groups: T[][]): T[] {
+  const result: T[] = []
+  const maxLen = Math.max(0, ...groups.map((g) => g.length))
+  for (let i = 0; i < maxLen; i++) {
+    for (const group of groups) {
+      if (group[i] !== undefined) result.push(group[i])
+    }
+  }
+  return result
+}
+
 // Local Zone content is driven by each configured local zone's `config.areas`
 // (community/metro/region tiers — see lib/geo/*, lib/weather/nws.ts, and the
 // zones.setup script). Same shared-article-pool architecture as every other
@@ -102,29 +118,36 @@ const ZONE_RUNNERS: ZoneRunner[] = [
         return fetchGuardian('us-news', 'local')
       }
 
-      // Per area: Google News (broad discovery, every area) plus any curated
-      // direct sources (real article URLs — real OG images work, unlike
-      // Google News' redirect links). Cap each individual source's
-      // contribution before merging so one prolific source can't crowd out
-      // the rest; the final sort+cap below enforces the overall 15/run limit
-      // regardless of how many sources feed in.
-      const fetchers: Promise<RawArticle[]>[] = []
-      for (const area of areas) {
-        fetchers.push(fetchGoogleNews(area.query, 'local', area.label).catch(() => []))
-        for (const source of area.directSources ?? []) {
-          if (source.kind === 'blox') {
-            fetchers.push(fetchBloxSearch(source.domain, area.query, 'local', source.name).catch(() => []))
-          } else {
-            fetchers.push(fetchRss(source.url, 'local', source.name).catch(() => []))
+      // Per area: Google News (broad discovery) plus any curated direct sources (real
+      // article URLs — real OG images work, unlike Google News' redirect links). Both
+      // within an area (across its own sources) and across areas, results are
+      // round-robin interleaved rather than globally sorted-by-recency-and-capped — a
+      // plain recency sort let one high-publish-frequency source (e.g. a regional public
+      // radio newsroom, or a statewide outlet on a secondary area) crowd out a
+      // lower-frequency source completely, every single run, even though that source's
+      // own fetch succeeds every time (confirmed live: a 5-paper BLOX area was producing
+      // 10 real articles per source but almost none ever made the final cut, buried under
+      // one prolific source within the same area). Interleaving at both levels guarantees
+      // every configured source — and every configured area — a fair share.
+      const perArea = await Promise.all(
+        areas.map(async (area) => {
+          const fetchers: Promise<RawArticle[]>[] = [fetchGoogleNews(area.query, 'local', area.label).catch(() => [])]
+          for (const source of area.directSources ?? []) {
+            if (source.kind === 'blox') {
+              fetchers.push(fetchBloxSearch(source.domain, area.query, 'local', source.name).catch(() => []))
+            } else {
+              fetchers.push(fetchRss(source.url, 'local', source.name).catch(() => []))
+            }
           }
-        }
-      }
+          const sets = await Promise.all(fetchers)
+          const perSource = sets.map((set) =>
+            [...set].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 6)
+          )
+          return interleaveRoundRobin(perSource).slice(0, 8)
+        })
+      )
 
-      const resultSets = await Promise.all(fetchers)
-      const merged = resultSets.flatMap((set) => set.slice(0, 6))
-      return merged
-        .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-        .slice(0, 15)
+      return interleaveRoundRobin(perArea).slice(0, 15)
     },
   },
   {
