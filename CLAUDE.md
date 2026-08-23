@@ -848,7 +848,7 @@ When any React component throws during render, React's error recovery cycle runs
 
 ### Untested at scale
 - **Tracking section overflow states** (2026-07-12 redesign — see Session log) — the 0-topic and 1-topic states were verified live, but the 9-and-10-card overflow behavior (first 8 topics + a "View More" card + the Add card) was only verified by code review, since the test account had at most 1 tracked topic all session. Worth adding ~10 tracked topics to a test account and confirming the card count/ordering live before trusting it in production. Applies to both Home's Tracking section and the Sports Zone's sports-filtered one — they share the same overflow logic.
-- **Sports Zone personalization not tested on a real phone** (2026-07-12) — Scores Card, Updates, and the Top Stories/Tracking/More restructure were only verified via dev-server emulation and headless-Chrome screenshots at various widths, never a physical device. See "Next session" Priority 2.
+- **Sports Zone personalization not tested on a real phone** (2026-07-12) — Scores Card, Updates, and the Top Stories/Tracking/More restructure were only verified via dev-server emulation and headless-Chrome screenshots at various widths, never a physical device. See "Next session" Priority 4.
 - **Local Zone and News/Tech Zone personalization not tested on a real phone** (2026-07-13/14) — Weather Card, Breaking/Top Stories/Today/Tracking/More were only verified via dev-server + headless-Chromium screenshots, same caveat as Sports above. All of it is deployed and confirmed working post-deploy (see Current status) — mobile is the only remaining unverified surface.
 - **Zones hub card reformat and Menu zone sub-links not tested on a real phone** (Phases 12–13, 2026-07-14) — both verified only via dev-server + headless-Chrome screenshots at a 390px emulated viewport. Worth checking on an actual device: the Scores/Weather card's touch-target spacing right where it meets the header above and story rows below, and the Menu's indented zone sub-links (small tap targets, colored dots) for legibility/tap-accuracy at real phone scale.
 - **Zones page horizontal-scroll rework not tested on a real phone** (Phase 15, 2026-07-15) — verified only via headless Chromium at a 390px emulated viewport, including precise `getBoundingClientRect()` measurements for the alignment fixes. Worth checking specifically: horizontal-scroll momentum/snap feel on a real touchscreen (emulation doesn't reproduce this), and whether the "View {Zone} →" link card at the end of each row is an obvious/discoverable affordance at real thumb-scroll speed.
@@ -882,49 +882,46 @@ When any React component throws during render, React's error recovery cycle runs
 
 ## Next session: where to pick up
 
-**Updated 2026-08-22 (end of day)**, now covering Phase 16 (Zone Management + Tracking overhaul + Profile) on top of everything through Phase 15. Priority 0 is committing and deploying Phase 16 — it's built and verified against the dev server only, not yet in git or on Vercel.
+**Updated 2026-08-22 (end of day)** — Phase 16 (Zone Management + Tracking overhaul + Profile) is committed (`7c7d684`, `3544d7e`) and deployed, verified live with zero console errors. Nothing outstanding blocks starting fresh work.
 
 **Explicit direction for next session's Zones work:** continue refining how each zone is customized, **starting with Sports Zone** — the current Customize sheet (team picker) works but hasn't had a real design/UX pass yet. **Custom zones (arbitrary user-defined topics) are on hold** — deliberately not part of this next round, revisit only when asked.
 
-### Priority 0 — Commit and deploy Phase 16
-`git status` will show Phase 16's new/changed files (see Session log 2026-08-22 for the full list) as untracked/modified — none of it is committed or deployed (`npx vercel --prod`) yet. This repo has hit the "built but not committed" gap before (the V3 rebuild sat uncommitted for months, see `project_git_deploy_gap` in memory) — commit and deploy before starting further work, don't let it compound.
-
-### Priority 0.5 — Get Phase 16 on a real phone
-Same caveat as every UI phase before it — `/zones/manage`, the Customize sheets, the redesigned Tracking cards, and the new Profile Personalization section were only verified via dev-server + headless Chromium (drag-and-drop specifically only via simulated mouse drag, never a real touch gesture). Specifically worth checking on a real device: the Sports team picker's search input and league-grouped chip grid at real thumb-scroll speed, the pointer-based drag-and-drop's feel with actual touch input, and the turn-on setup prompt's inline zip/industry field (native mobile keyboard behavior, `inputMode="numeric"` on the zip field).
-
-### Priority 0.6 — Sports Zone Customize refinements (explicit next-session starting point)
+### Priority 1 — Sports Zone Customize refinements (explicit next-session starting point)
 The team picker (search + league-grouped chip grid) is functional but was built quickly to close the "one-off script" gap — worth a real pass on layout/interaction now that the underlying data (real ESPN team catalog) and write path (`updateZoneCustomization`) are solid. Revisit each zone's Customize sheet one at a time, Sports first; hold off on custom (arbitrary-topic) zones per the explicit direction above.
 
-### Priority 1 — Get Phase 15 (2026-07-15) on a real phone
+### Priority 2 — Get Phase 16 on a real phone
+Same caveat as every UI phase before it — `/zones/manage`, the Customize sheets, the redesigned Tracking cards, and the new Profile Personalization section were only verified via dev-server + headless Chromium (drag-and-drop specifically only via simulated mouse drag, never a real touch gesture). Specifically worth checking on a real device: the Sports team picker's search input and league-grouped chip grid at real thumb-scroll speed, the pointer-based drag-and-drop's feel with actual touch input, and the turn-on setup prompt's inline zip/industry field (native mobile keyboard behavior, `inputMode="numeric"` on the zip field).
+
+### Priority 3 — Get Phase 15 (2026-07-15) on a real phone
 The Zones page horizontal-scroll rework was only verified via headless Chromium at a 390px emulated viewport, including the bottom-alignment/pill-width fixes (done via precise `getBoundingClientRect()` measurements, not eyeballing). Specifically worth checking on a real device: horizontal-scroll momentum/snap feel (emulation doesn't reproduce this), and whether the "View {Zone} →" link card at the end of each row reads as an obvious affordance at real thumb-scroll speed. Separately, confirm the Local Zone pipeline fix is visibly working — check `/zones/{local-zone-id}` for genuine North Andover-tied stories (Eagle-Tribune/Salem News/Andover Townsman/Newburyport/Derry News source names) mixed in alongside Boston/Wells content, not just Maine-heavy like before. Content will keep improving run-over-run as the hourly cron picks up fresher BLOX articles — if it still looks entirely Maine-heavy after a few hours, re-open the investigation (see Session log 2026-07-15 for the full diagnostic approach, reusable for future pipeline-mix complaints).
 
-### Priority 2 — Get Phases 10–14 (2026-07-14) on a real phone
+### Priority 4 — Get Phases 10–14 (2026-07-14) on a real phone
 Covers both the original home-page restructure AND the same-day Sports Zone personalization work (Scores Card, Updates, Top Stories/Tracking/More restructure) — none of it has been checked on a real phone yet, only dev-server emulation + headless-Chrome screenshots at various widths. Check the hamburger menu bottom sheet, horizontal-scroll rows (pill row, Updates, Tracking), and Story Card layout for touch-target or viewport issues that don't show up in emulation. The real production sign-in account (see Infrastructure) now has live Red Sox data to look at, not just placeholder/empty states.
 
-### Priority 3 — Confirm Tracking section overflow states with real data
+### Priority 5 — Confirm Tracking section overflow states with real data
 Add ~10 tracked topics to the test account and confirm the 9-and-10-card layout (8 topics + View More + Add) actually renders and behaves as designed — see "Untested at scale" in Known issues. This now applies to **two** Tracking sections (Home's and the Sports Zone's sports-filtered one), both share the same overflow logic.
 
-### Priority 4 — Fix the `relativeTime()` hydration warning
+### Priority 6 — Fix the `relativeTime()` hydration warning
 A background task was already spawned for this on 2026-07-12 (see Known issues) — check whether it landed before redoing the work.
 
-### Priority 5 — Confirm tracking-topic-removal persistence fix
+### Priority 7 — Confirm tracking-topic-removal persistence fix
 Still unconfirmed since 2026-07-06 (see Known issues) — a real production account now exists, so this is easy to test whenever it comes up.
 
-### Priority 6 — Remaining content-management inconsistencies
+### Priority 8 — Remaining content-management inconsistencies
 The user's original Priority 2 (2026-07-10 plan) was broader than just story duplication — ask if there are other pipeline/content issues still open before assuming this is fully closed out.
 
-### Priority 7 — Zones work (substantially addressed 2026-07-12 through 2026-07-15, follow-ups below)
+### Priority 9 — Zones work (substantially addressed 2026-07-12 through 2026-07-15, follow-ups below)
 Sports and Local both got full personalization build-outs, that personalization now reaches every zone-preview surface (not just the detail page), and the test profile is down to its intended 4 zones (Sports/Local/News/Tech) with a shared generic template for News/Tech — see Session log for the full breakdown. Loose ends, roughly in priority order:
-1. **No UI to manage Teams of Interest or Local areas** — both still hardcoded for the test user via one-off scripts (`zones.config.teams`, `zones.config.areas`). A real settings flow is onboarding-adjacent; either fold it into Phase 6 (Priority 8) or build a lightweight standalone settings screen first if onboarding stays blocked.
+1. **No UI to manage Teams of Interest or Local areas** — both still hardcoded for the test user via one-off scripts (`zones.config.teams`, `zones.config.areas`). A real settings flow is onboarding-adjacent; either fold it into Phase 6 (Priority 10) or build a lightweight standalone settings screen first if onboarding stays blocked.
 2. ~~Scores Card background color churned through 5 values with no matching design token~~ — **done 2026-07-13**: `--sports-dark`/`--local-dark` tokens added to `styles/tokens.css`, `ScoresCard` now references `var(--sports-dark)`.
 3. **Team-name matching is substring-based (ILIKE-style)** for the Top Stories/More split and the game-specific Updates filter — confirmed false-positive-prone (a Tigers article got pulled in via an incidental "former Red Sox manager" mention). Fine for now, but if content quality complaints come up, this is the first place to look.
 4. ~~Other zones (Local, Finance, Work, etc.) got none of this personalization treatment~~ — **Local Zone done 2026-07-13**, and **zone-preview personalization now reaches Home/Summary/Zones-hub too (2026-07-14)**, not just the detail page. Finance/Entertainment zones were deleted for this test profile (rebuildable later); Work zone was never created for this user; ask whether any of those want a real build-out before assuming News/Tech's generic template is the final word for them.
    - ~~Deleted Finance zone still leaked into Home/Summary's Breaking/Top Stories~~ — **fixed 2026-07-14**: `getTopArticles()` (`lib/db/articles.ts`) had no zone filter at all, so content from any zone type with no active zone (the Finance pipeline runner keeps running per the "rebuildable later" decision) could still surface. Now scoped to the user's own active zone types — see Session log Part 5. Same fix protects against `'work'`'s pipeline runner doing the same thing, which was a latent, previously-undetected risk.
 5. **Local Zone's own loose ends** (2026-07-13/14): Google News RSS is an unofficial endpoint and its redirect links mean no real OG images or true in-app embedding for any Local/News/Tech-zone article sourced from it (see Known issues → Content precision — the empty-space *layout* issue this caused is fixed, the missing images themselves aren't); the shared-article-pool architecture means content still isn't literally per-user, same limitation Sports already has. ~~Local Zone content mix skewed heavily toward the secondary (Wells, ME) area~~ — **fixed 2026-07-15**: a two-level pipeline starvation bug plus a BLOX search freshness gap, see Known issues → Resolved and Session log 2026-07-15. Genuinely fresh North Andover content had never once survived the pipeline's old selection step, despite fetching successfully every run for weeks — worth remembering as the first thing to check if any *other* zone's content mix ever looks unexpectedly skewed toward one source.
-6. **News/Tech Zone's generic template is brand new (2026-07-14) and deployed, but untested on mobile** — see Priority 2.
+6. **News/Tech Zone's generic template is brand new (2026-07-14) and deployed, but untested on mobile** — see Priority 4.
 7. **`/api/zones/menu` duplicates a zones query 5 pages already have server-side** (Phase 13/14, see Known issues → Fetch efficiency) — small and on-demand, not urgent, but worth closing by threading a `zones` prop through Home/Summary/Zones-hub/Zone-Detail/Story-Detail (falling back to the client fetch only on Profile/Tracking/Saved/the embedded reader) if any of those pages get touched for other reasons anyway.
 
-### Priority 8 — Build Phase 6: Onboarding (deliberately last)
+### Priority 10 — Build Phase 6: Onboarding (deliberately last)
 Do this only after the above are solid — the user's reasoning: onboarding is best built/tested against stable surrounding product surfaces rather than a moving target, and is best paired with a fixed/static test user ID rather than rebuilding real signup flows prematurely.
 
 3-step flow at `app/onboarding/page.tsx` (see `BUILDPLAN.md` Phase 6 prompt for full spec):
@@ -934,7 +931,7 @@ Do this only after the above are solid — the user's reasoning: onboarding is b
 - Activation screen: calls `addZoneFromTemplate`, triggers pipeline, redirects to `/zones`
 - Middleware guard: users with existing zones who visit `/onboarding` → redirect to `/zones`
 
-### Priority 9 — Design fixes from critique
+### Priority 11 — Design fixes from critique
 Address the highest-impact gaps from `prototypes/distilled-design-critique.md`:
 1. **Track card urgency state** — add "something changed" indicator and deadline countdown badge to track cards (read `prototypes/briefing-concepts.html` for new layout concepts)
 2. **AI synthesis in feed** — add 1-sentence AI prose below headline on each signal item in the compact `StoryItem` row (Summary View)
