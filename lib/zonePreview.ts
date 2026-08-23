@@ -96,12 +96,17 @@ export async function getZoneArticles(zoneType: ZoneType, config: Json, limit = 
   return articles.map(toArticleDisplay)
 }
 
-export type ZonePreview = { topArticle: ArticleDisplay | null; articleCount: number }
+// `topArticles` is the full fetched pool (up to `limit`), not pre-sliced to 3 —
+// callers (Home/Summary's page.tsx) dedupe against Breaking/Top Stories first,
+// then take the first 3 of what's left, so a story already shown higher up
+// the page never repeats in a zone's preview card.
+export type ZonePreview = { topArticle: ArticleDisplay | null; topArticles: ArticleDisplay[]; articleCount: number }
 
 export async function getZonePreview(zoneType: ZoneType, config: Json, limit = 10): Promise<ZonePreview> {
   const articles = await getZoneArticles(zoneType, config, limit)
   return {
     topArticle: articles[0] ?? null,
+    topArticles: articles,
     articleCount: articles.length,
   }
 }

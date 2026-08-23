@@ -193,9 +193,24 @@ export default function BottomNav({ activeTab }: BottomNavProps) {
               <span style={{ fontSize: '15px', fontWeight: 500 }}>{item.label}</span>
             </Link>
 
-            {item.id === 'my-zones' && zones && zones.length > 0 && (
+            {item.id === 'my-zones' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', padding: '0 14px 6px 46px' }}>
-                {zones.map((zone) => (
+                <Link
+                  href="/zones/manage"
+                  onClick={() => setIsMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '9px',
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    color: 'var(--text-2)',
+                  }}
+                >
+                  <span style={{ fontSize: '13.5px', fontWeight: 600 }}>Manage Zones</span>
+                </Link>
+                {zones && zones.map((zone) => (
                   <Link
                     key={zone.id}
                     href={`/zones/${zone.id}`}

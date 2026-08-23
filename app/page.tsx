@@ -2,11 +2,12 @@ export const dynamic = 'force-dynamic'
 
 import { createServerSupabase, getEffectiveUser } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getTopArticles, searchArticlesByTopic } from '@/lib/db/articles'
+import { getTopArticles } from '@/lib/db/articles'
 import { getUserZones } from '@/lib/db/zones'
 import { getTrackedTopics } from '@/lib/db/tracks'
 import { toArticleDisplay, dedupeStories, selectBreakingStories, selectTopStories } from '@/lib/articleUtils'
 import { getZonePreview } from '@/lib/zonePreview'
+import { getTrackingPreview } from '@/lib/trackingPreview'
 import InDepthClient from './InDepthClient'
 import type { ZoneType } from '@/types'
 
@@ -53,13 +54,6 @@ export default async function InDepthPage() {
     dbZones.map(z => getZonePreview(z.type as ZoneType, z.config, 10))
   )
 
-  const zoneData = dbZones.map((z, i) => ({
-    id: z.id,
-    type: z.type as ZoneType,
-    topArticle: zonePreviews[i].topArticle,
-    articleCount: zonePreviews[i].articleCount,
-  }))
-
   // Breaking > Top Stories > Today/More — each tier excludes articles already claimed above it
   const breakingArticles = selectBreakingStories(displays)
   const breakingIds = new Set(breakingArticles.map(a => a.id))
@@ -69,18 +63,23 @@ export default async function InDepthPage() {
 
   const remainingArticles = displays.filter(a => !breakingIds.has(a.id) && !topStoryIds.has(a.id))
 
-  // One representative article per tracked topic (most recent match), for the Tracking card row
+  // Your Zones' 3 stories per card exclude anything already shown in Breaking
+  // or Top Stories above — a story shouldn't repeat lower on the same page.
+  const zoneData = dbZones.map((z, i) => ({
+    id: z.id,
+    type: z.type as ZoneType,
+    topArticle: zonePreviews[i].topArticle,
+    topArticles: zonePreviews[i].topArticles
+      .filter(a => !breakingIds.has(a.id) && !topStoryIds.has(a.id))
+      .slice(0, 3),
+    articleCount: zonePreviews[i].articleCount,
+  }))
+
+  // Top 3 stories per tracked topic, zone-scoped when the topic has an
+  // explicit zone_id — see lib/trackingPreview.ts.
+  const zoneRefs = dbZones.map((z) => ({ id: z.id, type: z.type as ZoneType }))
   const trackingTopics = await Promise.all(
-    trackedTopics.map(async (t) => {
-      const matches = await searchArticlesByTopic(t.topic, 5).catch(() => [])
-      return {
-        id: t.id,
-        topic: t.topic,
-        createdAt: t.created_at,
-        article: matches[0] ? toArticleDisplay(matches[0]) : null,
-        articleCount: matches.length,
-      }
-    })
+    trackedTopics.map((t) => getTrackingPreview(t, zoneRefs, 10))
   )
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })

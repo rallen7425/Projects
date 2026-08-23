@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createServerSupabase, getEffectiveUser } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getArticlesByZone, getArticleById, searchTeamUpdates, searchArticlesByTopic } from '@/lib/db/articles'

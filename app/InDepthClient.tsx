@@ -14,6 +14,7 @@ type ZoneCardData = {
   id: string
   type: ZoneType
   topArticle: ArticleDisplay | null
+  topArticles: ArticleDisplay[]
   articleCount: number
 }
 
@@ -21,7 +22,9 @@ type TrackingTopicData = {
   id: string
   topic: string
   createdAt: string
+  zoneType: ZoneType | null
   article: ArticleDisplay | null
+  articles: ArticleDisplay[]
   articleCount: number
 }
 
@@ -254,20 +257,31 @@ function TrackCard({ article, isSaved, onOpen, onZoneOpen, onSave, onTrack }: {
   )
 }
 
-// Used for Your Zones — 172px cards, black-rectangle format matching the other
-// horizontal-scroll cards (TrackCard / the Zones page's cards) rather than an image hero
-function ZoneCard({ zone, onClick }: { zone: ZoneCardData; onClick: () => void }) {
+// Used for Your Zones — matches TrackCard's 300px width (Breaking/Top Stories)
+// so all three horizontal-scroll rows read at the same scale. Shows up to 3
+// stories per zone, each row borrowing the "More from {Zone}" format from the
+// Story Detail page (56px thumbnail + 2-line headline) rather than a single
+// headline per card.
+function ZoneCard({
+  zone,
+  onZoneOpen,
+  onStoryOpen,
+}: {
+  zone: ZoneCardData
+  onZoneOpen: () => void
+  onStoryOpen: (article: ArticleDisplay) => void
+}) {
   const meta = ZONE_META[zone.type]
-  const hasArticles = zone.articleCount > 0
+  const hasArticles = zone.topArticles.length > 0
 
   return (
-    <div onClick={onClick} style={{
-      flexShrink: 0, width: '172px', background: 'var(--surface)',
-      borderRadius: '16px', border: '1px solid var(--border-mid)', overflow: 'hidden', cursor: 'pointer',
+    <div style={{
+      flexShrink: 0, width: '300px', background: 'var(--surface)',
+      borderRadius: '16px', border: '1px solid var(--border-mid)', overflow: 'hidden',
     }}>
       <div style={{ height: '3px', width: '100%', background: meta.color }} />
       <div style={{ padding: '12px 14px 13px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <div onClick={onZoneOpen} style={{ marginBottom: '12px', cursor: 'pointer' }}>
           <span style={{
             fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
             color: meta.color, background: meta.bg, border: `1px solid ${meta.border}`,
@@ -275,72 +289,99 @@ function ZoneCard({ zone, onClick }: { zone: ZoneCardData; onClick: () => void }
           }}>
             {meta.shortLabel}
           </span>
-          <span style={{
-            fontSize: '9px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
-            padding: '2px 7px', borderRadius: '10px',
-            color: hasArticles ? meta.color : 'var(--text-3)',
-            background: hasArticles ? meta.bg : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${hasArticles ? meta.border : 'rgba(255,255,255,0.09)'}`,
-          }}>
-            {hasArticles ? `${zone.articleCount} NEW` : 'QUIET'}
-          </span>
         </div>
-        <div style={{
-          fontSize: '13px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.4, marginBottom: '10px',
-          display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '54px',
-        }}>
-          {zone.topArticle?.headline ?? 'No stories yet'}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '10px', color: 'var(--text-3)' }}>{zone.articleCount} {zone.articleCount === 1 ? 'story' : 'stories'} today</span>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: hasArticles ? meta.color : 'var(--text-3)' }}>View {meta.label} →</span>
+
+        {hasArticles ? (
+          zone.topArticles.map((article, i) => (
+            <div
+              key={article.id}
+              onClick={() => onStoryOpen(article)}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: '10px',
+                paddingBottom: i < zone.topArticles.length - 1 ? '12px' : 0,
+                marginBottom: i < zone.topArticles.length - 1 ? '12px' : 0,
+                borderBottom: i < zone.topArticles.length - 1 ? '1px solid var(--border)' : 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ width: '56px', height: '56px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: ZONE_GRADIENTS[article.zoneType] ?? 'var(--surface-2)' }}>
+                {article.imageUrl && (
+                  <img src={article.imageUrl} alt={article.headline} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                )}
+              </div>
+              <div style={{
+                flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.35,
+                display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+              }}>
+                {article.headline}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div style={{ fontSize: '13px', color: 'var(--text-3)', padding: '4px 0 8px' }}>No stories yet</div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+          <span onClick={onZoneOpen} style={{ fontSize: '11px', fontWeight: 700, color: hasArticles ? meta.color : 'var(--text-3)', cursor: 'pointer' }}>View {meta.label} →</span>
         </div>
       </div>
     </div>
   )
 }
 
-// Tracking section — same 172px card format as Your Zones, but keyed to a tracked topic
-function TrackingTopicCard({ data, onClick }: { data: TrackingTopicData; onClick: () => void }) {
-  const meta = data.article ? ZONE_META[data.article.zoneType] : null
-  const hasMatch = !!data.article
+// Tracking section — matches ZoneCard's 300px/top-3-stories format, with the
+// topic itself (not a zone label) as the card's header pill.
+function TrackingTopicCard({
+  data,
+  onTopicOpen,
+  onStoryOpen,
+}: {
+  data: TrackingTopicData
+  onTopicOpen: () => void
+  onStoryOpen: (article: ArticleDisplay) => void
+}) {
+  const meta = data.zoneType ? ZONE_META[data.zoneType] : null
+  const hasArticles = data.articles.length > 0
 
   return (
-    <div onClick={onClick} style={{
-      flexShrink: 0, width: '172px', background: 'var(--surface)',
-      borderRadius: '16px', border: '1px solid var(--border-mid)', overflow: 'hidden', cursor: 'pointer',
+    <div style={{
+      flexShrink: 0, width: '300px', background: 'var(--surface)',
+      borderRadius: '16px', border: '1px solid var(--border-mid)', overflow: 'hidden',
     }}>
       <div style={{ height: '3px', width: '100%', background: meta ? meta.color : 'var(--border-mid)' }} />
-      <div style={{ padding: '12px 14px 13px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-          {meta ? (
-            <span style={{
-              fontSize: '10px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
-              color: meta.color, background: meta.bg, border: `1px solid ${meta.border}`,
-              borderRadius: '20px', padding: '4px 10px',
-            }}>
-              {meta.shortLabel}
-            </span>
-          ) : <span />}
-          <span style={{
-            fontSize: '9px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
-            padding: '2px 7px', borderRadius: '10px',
-            color: hasMatch ? meta!.color : 'var(--text-3)',
-            background: hasMatch ? meta!.bg : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${hasMatch ? meta!.border : 'rgba(255,255,255,0.09)'}`,
-          }}>
-            {hasMatch ? `${data.articleCount} NEW` : 'QUIET'}
-          </span>
-        </div>
-        <div style={{
-          fontSize: '13px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.4, marginBottom: '10px',
-          display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '54px',
-        }}>
-          #{data.topic}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '10px', color: 'var(--text-3)' }}>{data.articleCount} {data.articleCount === 1 ? 'story' : 'stories'}</span>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: hasMatch ? meta!.color : 'var(--text-3)' }}>Open →</span>
+      <div style={{ padding: '14px 14px 13px' }}>
+        {hasArticles ? (
+          data.articles.map((article, i) => (
+            <div
+              key={article.id}
+              onClick={() => onStoryOpen(article)}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: '10px',
+                paddingBottom: i < data.articles.length - 1 ? '12px' : 0,
+                marginBottom: i < data.articles.length - 1 ? '12px' : 0,
+                borderBottom: i < data.articles.length - 1 ? '1px solid var(--border)' : 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ width: '56px', height: '56px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: ZONE_GRADIENTS[article.zoneType] ?? 'var(--surface-2)' }}>
+                {article.imageUrl && (
+                  <img src={article.imageUrl} alt={article.headline} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                )}
+              </div>
+              <div style={{
+                flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.35,
+                display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+              }}>
+                {article.headline}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div style={{ fontSize: '13px', color: 'var(--text-3)', padding: '4px 0 8px' }}>No stories yet — we&apos;ll alert you when something happens.</div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+          <span onClick={onTopicOpen} style={{ fontSize: '11px', fontWeight: 700, color: meta ? meta.color : 'var(--text-3)', cursor: 'pointer' }}>View #{data.topic} →</span>
         </div>
       </div>
     </div>
@@ -350,7 +391,7 @@ function TrackingTopicCard({ data, onClick }: { data: TrackingTopicData; onClick
 function AddTrackingCard({ onClick }: { onClick: () => void }) {
   return (
     <div onClick={onClick} style={{
-      flexShrink: 0, width: '172px', background: 'var(--surface)',
+      flexShrink: 0, width: '300px', background: 'var(--surface)',
       borderRadius: '16px', border: '1px dashed var(--border-mid)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
       cursor: 'pointer',
@@ -368,7 +409,7 @@ function AddTrackingCard({ onClick }: { onClick: () => void }) {
 function ViewMoreTrackingCard({ onClick }: { onClick: () => void }) {
   return (
     <div onClick={onClick} style={{
-      flexShrink: 0, width: '172px', background: 'var(--surface)',
+      flexShrink: 0, width: '300px', background: 'var(--surface)',
       borderRadius: '16px', border: '1px solid var(--border-mid)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
       cursor: 'pointer',
@@ -634,8 +675,8 @@ export default function InDepthClient({
     }
   }
 
-  const handleTrack = async (topic: string, _zone: string | null) => {
-    const result = await addTrack(topic).catch(() => null)
+  const handleTrack = async (topic: string, zone: ZoneType | null) => {
+    const result = await addTrack(topic, zone).catch(() => null)
     if (result) showToast(`Tracking "${topic}"`)
     else showToast(`Couldn't save tracking topic`)
   }
@@ -685,10 +726,8 @@ export default function InDepthClient({
   const trackingOverflow = trackingTopics.length > 9
   const visibleTrackingTopics = trackingOverflow ? trackingTopics.slice(0, 8) : trackingTopics
 
-  const openTrackingTopic = (data: TrackingTopicData) => {
-    if (data.article) router.push(`/zones/${data.article.zoneType}/story/${data.article.id}`)
-    else router.push('/tracking')
-  }
+  const openTrackingTopic = () => router.push('/tracking')
+  const openTrackingStory = (article: ArticleDisplay) => router.push(`/zones/${article.zoneType}/story/${article.id}`)
 
   const profileAvatar = (
     <a href="/profile" style={{ textDecoration: 'none' }}>
@@ -712,7 +751,7 @@ export default function InDepthClient({
     {
       label: 'Edit a tracked topic',
       icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
-      onClick: () => { showToast('Coming soon'); setTrackMenuOpen(false) },
+      onClick: () => { router.push('/tracking'); setTrackMenuOpen(false) },
     },
     {
       label: 'View all tracking',
@@ -782,7 +821,12 @@ export default function InDepthClient({
           <SectionHead label="Your Zones" />
           <div style={{ display: 'flex', gap: '10px', padding: '0 20px 20px', overflowX: 'auto', scrollbarWidth: 'none' }}>
             {zoneData.map((zone) => (
-              <ZoneCard key={zone.id} zone={zone} onClick={() => router.push(`/zones/${zone.id}`)} />
+              <ZoneCard
+                key={zone.id}
+                zone={zone}
+                onZoneOpen={() => router.push(`/zones/${zone.id}`)}
+                onStoryOpen={(article) => router.push(`/zones/${article.zoneType}/story/${article.id}`)}
+              />
             ))}
           </div>
         </>
@@ -847,7 +891,7 @@ export default function InDepthClient({
       </div>
       <div style={{ display: 'flex', gap: '10px', padding: '0 20px 20px', overflowX: 'auto', scrollbarWidth: 'none' }}>
         {visibleTrackingTopics.map((t) => (
-          <TrackingTopicCard key={t.id} data={t} onClick={() => openTrackingTopic(t)} />
+          <TrackingTopicCard key={t.id} data={t} onTopicOpen={openTrackingTopic} onStoryOpen={openTrackingStory} />
         ))}
         {trackingOverflow && <ViewMoreTrackingCard onClick={() => router.push('/tracking')} />}
         <AddTrackingCard onClick={() => setTrackModal({ open: true })} />

@@ -7,14 +7,16 @@ import BottomNav from '@/components/ui/BottomNav'
 import QuickLookStrip from '@/components/ui/QuickLookStrip'
 import TrackModal from '@/components/ui/TrackModal'
 import Toast from '@/components/ui/Toast'
+import CustomizeSheet from '@/components/zones/CustomizeSheet'
 import { createClient } from '@/lib/supabase/client'
+import { addTrack } from '@/lib/actions'
 import type { ArticleDisplay, ZoneType } from '@/types'
 import { ZONE_META } from '@/types'
 import type { TeamScoreCard } from '@/lib/scores/espn'
 import type { WeatherCard as WeatherCardData } from '@/lib/weather/nws'
 
 type QuicklookRow = { label: string; value: string; sub?: string | null }
-type ZoneRow = { id: string; type: string; position: number; enabled: boolean }
+type ZoneRow = { id: string; type: string; position: number; enabled: boolean; config?: unknown }
 type TrackingTopicData = { id: string; topic: string; createdAt: string; article: ArticleDisplay | null; articleCount: number }
 
 function formatGameTime(iso: string): string {
@@ -609,6 +611,8 @@ export default function ZoneDetailClient({
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 })
   const trackMenuBtnRef = useRef<HTMLButtonElement>(null)
   const [todayVisibleCount, setTodayVisibleCount] = useState(5)
+  const [customizeOpen, setCustomizeOpen] = useState(false)
+  const canCustomize = zoneType === 'sports' || zoneType === 'local' || zoneType === 'work'
 
   const showToast = (message: string) => {
     setToast({ visible: true, message })
@@ -627,8 +631,11 @@ export default function ZoneDetailClient({
     }
   }
 
-  const handleTrack = async (topic: string, zoneId: string | null, _deadline: boolean) => {
-    await supabase.from('user_tracks').insert({ user_id: userId, topic, zone_id: zoneId ?? null })
+  const handleTrack = async (topic: string, zone: ZoneType | null, _deadline: boolean) => {
+    // Was a raw client-side insert writing the ZoneType string (e.g. "sports")
+    // straight into the zone_id UUID column — addTrack resolves it to this
+    // user's actual zone row id server-side.
+    await addTrack(topic, zone).catch(() => null)
     showToast(`Tracking "${topic}"`)
   }
 
@@ -717,11 +724,30 @@ export default function ZoneDetailClient({
           </button>
         }
         rightSlot={
-          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-3)', background: 'var(--surface-2)', border: '1px solid var(--border)', padding: '3px 9px', borderRadius: '20px' }}>
-            {articles.length} stories
-          </span>
+          <>
+            {canCustomize && (
+              <button
+                onClick={() => setCustomizeOpen(true)}
+                style={{ fontSize: '11px', fontWeight: 700, color: meta?.color ?? 'var(--text)', background: meta?.bg ?? 'var(--surface-2)', border: `1px solid ${meta?.border ?? 'var(--border)'}`, padding: '3px 11px', borderRadius: '20px', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Customize
+              </button>
+            )}
+            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-3)', background: 'var(--surface-2)', border: '1px solid var(--border)', padding: '3px 9px', borderRadius: '20px' }}>
+              {articles.length} stories
+            </span>
+          </>
         }
       />
+
+      {customizeOpen && (
+        <CustomizeSheet
+          zoneId={zone.id}
+          zoneType={zoneType}
+          config={zone.config}
+          onClose={() => setCustomizeOpen(false)}
+        />
+      )}
 
       {zoneType === 'sports' && <ScoresCard scores={scores} />}
       {zoneType === 'local' && <WeatherCard weather={weather} />}

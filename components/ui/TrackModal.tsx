@@ -10,6 +10,7 @@ interface TrackModalProps {
   initialTopic?: string
   initialZone?: ZoneType
   aiMode?: boolean
+  mode?: 'add' | 'edit'
 }
 
 const ZONE_CHIPS: Array<{ id: ZoneType | 'none'; label: string }> = [
@@ -21,7 +22,7 @@ const ZONE_CHIPS: Array<{ id: ZoneType | 'none'; label: string }> = [
   { id: 'finance', label: 'Finance Zone' },
 ]
 
-export default function TrackModal({ open, onClose, onConfirm, initialTopic, initialZone, aiMode }: TrackModalProps) {
+export default function TrackModal({ open, onClose, onConfirm, initialTopic, initialZone, aiMode, mode = 'add' }: TrackModalProps) {
   const [topic, setTopic] = useState('')
   const [selectedZone, setSelectedZone] = useState<ZoneType | 'none'>('none')
   const [deadlineOn, setDeadlineOn] = useState(false)
@@ -136,10 +137,12 @@ export default function TrackModal({ open, onClose, onConfirm, initialTopic, ini
         <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'var(--border-mid)', margin: '12px auto 20px' }} />
 
         <div style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', padding: '0 20px 4px', letterSpacing: '-0.01em' }}>
-          Track a topic
+          {mode === 'edit' ? 'Edit tracked topic' : 'Track a topic'}
         </div>
         <div style={{ fontSize: '12.5px', color: 'var(--text-3)', padding: '0 20px 18px', lineHeight: 1.5 }}>
-          Type anything — a team, story, event, or deadline. Distilled will alert you when something significant happens.
+          {mode === 'edit'
+            ? 'Update the topic text or change which zone it belongs to.'
+            : 'Type anything — a team, story, event, or deadline. Distilled will alert you when something significant happens.'}
         </div>
 
         {/* Input */}
@@ -307,7 +310,7 @@ export default function TrackModal({ open, onClose, onConfirm, initialTopic, ini
               transition: 'opacity 0.2s',
             }}
           >
-            Start Tracking
+            {mode === 'edit' ? 'Save Changes' : 'Start Tracking'}
           </button>
         </div>
       </div>

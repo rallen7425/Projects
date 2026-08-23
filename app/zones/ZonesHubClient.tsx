@@ -338,7 +338,6 @@ function ZoneSectionHead({ zoneType, label }: { zoneType: ZoneType; label: strin
 
 export default function ZonesHubClient({ zoneData, initialSavedIds }: { zoneData: ZoneData[]; initialSavedIds: string[] }) {
   const router = useRouter()
-  const [manageOpen, setManageOpen] = useState(false)
   const [savedIds, setSavedIds] = useState(new Set(initialSavedIds))
   const [trackModal, setTrackModal] = useState<{ open: boolean; article?: ArticleDisplay }>({ open: false })
   const [toast, setToast] = useState({ visible: false, message: '' })
@@ -362,8 +361,8 @@ export default function ZonesHubClient({ zoneData, initialSavedIds }: { zoneData
     }
   }
 
-  const handleTrack = async (topic: string, _zone: string | null) => {
-    const result = await addTrack(topic).catch(() => null)
+  const handleTrack = async (topic: string, zone: ZoneType | null) => {
+    const result = await addTrack(topic, zone).catch(() => null)
     if (result) showToast(`Tracking "${topic}"`)
     else showToast(`Couldn't save tracking topic`)
   }
@@ -374,7 +373,7 @@ export default function ZonesHubClient({ zoneData, initialSavedIds }: { zoneData
         title="Zones"
         rightSlot={
           <button
-            onClick={() => setManageOpen(true)}
+            onClick={() => router.push('/zones/manage')}
             style={{
               fontSize: '12px', fontWeight: 600, color: 'var(--text-3)',
               background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
@@ -418,48 +417,6 @@ export default function ZonesHubClient({ zoneData, initialSavedIds }: { zoneData
       })}
 
       <BottomNav activeTab="zones" />
-
-      {/* Manage Zones Sheet */}
-      {manageOpen && (
-        <div
-          onClick={(e) => { if (e.target === e.currentTarget) setManageOpen(false) }}
-          style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ width: '100%', maxWidth: '430px', background: 'var(--surface)', borderRadius: '24px 24px 0 0', border: '1px solid var(--border-mid)', padding: '20px 0 48px', animation: 'slideUp 0.28s cubic-bezier(0.32,0.72,0,1)' }}
-          >
-            <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.15)', margin: '0 auto 20px' }} />
-            <div style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', padding: '0 20px', marginBottom: '3px' }}>Manage Zones</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-3)', padding: '0 20px', marginBottom: '18px' }}>Reorder or turn off zones you don&apos;t need.</div>
-
-            <div style={{ borderTop: '1px solid var(--border)' }}>
-              {zoneData.map(({ zone }) => {
-                const zoneType = zone.type as ZoneType
-                const meta = ZONE_META[zoneType]
-                return (
-                  <div key={zone.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 20px', borderBottom: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.09em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: '4px', color: meta?.color, background: meta?.bg }}>
-                      {meta?.shortLabel}
-                    </span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', flex: 1 }}>{meta?.label}</span>
-                  </div>
-                )
-              })}
-            </div>
-
-            <div style={{ padding: '14px 20px 18px', fontSize: '12px', color: 'var(--text-3)', lineHeight: 1.5 }}>
-              Add zones during onboarding or from your profile.
-            </div>
-            <button
-              onClick={() => setManageOpen(false)}
-              style={{ width: 'calc(100% - 40px)', margin: '0 20px', padding: '14px', background: 'var(--primary)', color: 'var(--primary-text)', fontSize: '15px', fontWeight: 700, borderRadius: '14px', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
 
       <TrackModal
         open={trackModal.open}

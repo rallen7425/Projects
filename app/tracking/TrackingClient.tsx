@@ -7,7 +7,8 @@ import BottomNav from '@/components/ui/BottomNav'
 import TrackModal from '@/components/ui/TrackModal'
 import Toast from '@/components/ui/Toast'
 import ZonePill from '@/components/ui/ZonePill'
-import { addTrack, removeTrack } from '@/lib/actions'
+import { addTrack, removeTrack, updateTrack } from '@/lib/actions'
+import { resolveTrackedTopicZone, type ZoneRef } from '@/lib/trackedTopicZone'
 import type { ArticleDisplay, ZoneType } from '@/types'
 
 type TopicRow = { id: string; topic: string; zone_id?: string | null; deadline_at?: string | null; created_at: string }
@@ -22,10 +23,11 @@ function relativeTime(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-export default function TrackingClient({ topicsWithArticles: initial, userId }: { topicsWithArticles: TopicData[]; userId: string }) {
+export default function TrackingClient({ topicsWithArticles: initial, userId, zones }: { topicsWithArticles: TopicData[]; userId: string; zones: ZoneRef[] }) {
   const router = useRouter()
   const [topics, setTopics] = useState(initial)
   const [addModal, setAddModal] = useState(false)
+  const [editingTopic, setEditingTopic] = useState<TopicRow | null>(null)
   const [toast, setToast] = useState({ visible: false, message: '' })
 
   const showToast = (message: string) => {
@@ -33,13 +35,27 @@ export default function TrackingClient({ topicsWithArticles: initial, userId }: 
     setTimeout(() => setToast((t) => ({ ...t, visible: false })), 2500)
   }
 
-  const handleAddTopic = async (topic: string, _zone: ZoneType | null) => {
-    const data = await addTrack(topic).catch(() => null)
+  const handleAddTopic = async (topic: string, zone: ZoneType | null) => {
+    const data = await addTrack(topic, zone).catch(() => null)
     if (data) {
       setTopics((prev) => [{ topic: data, articles: [] }, ...prev])
       showToast(`Tracking "${topic}"`)
     } else {
       showToast(`Couldn't save tracking topic`)
+    }
+  }
+
+  const handleEditTopic = async (topic: string, zone: ZoneType | null) => {
+    if (!editingTopic) return
+    const id = editingTopic.id
+    const data = await updateTrack(id, topic, zone).catch(() => null)
+    setEditingTopic(null)
+    if (data) {
+      setTopics((prev) => prev.map((t) => (t.topic.id === id ? { ...t, topic: data } : t)))
+      showToast('Topic updated')
+      router.refresh()
+    } else {
+      showToast(`Couldn't update tracking topic`)
     }
   }
 
@@ -104,14 +120,27 @@ export default function TrackingClient({ topicsWithArticles: initial, userId }: 
                     {articles.length} {articles.length === 1 ? 'story' : 'stories'} · tracked {relativeTime(topic.created_at)}
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDelete(topic.id)}
-                  style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <button
+                    onClick={() => setEditingTopic(topic)}
+                    aria-label={`Edit "${topic.topic}"`}
+                    style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(topic.id)}
+                    aria-label={`Remove "${topic.topic}"`}
+                    style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               {/* Article cards — horizontal scroll */}
@@ -152,6 +181,15 @@ export default function TrackingClient({ topicsWithArticles: initial, userId }: 
         open={addModal}
         onClose={() => setAddModal(false)}
         onConfirm={handleAddTopic}
+      />
+
+      <TrackModal
+        open={!!editingTopic}
+        mode="edit"
+        onClose={() => setEditingTopic(null)}
+        onConfirm={handleEditTopic}
+        initialTopic={editingTopic?.topic}
+        initialZone={editingTopic ? resolveTrackedTopicZone(editingTopic.zone_id, zones) ?? undefined : undefined}
       />
 
       <Toast message={toast.message} visible={toast.visible} />
