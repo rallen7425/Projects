@@ -7,7 +7,7 @@ export async function getArticlesByZone(zoneType: ZoneType, limit = 15, days = 1
   const { data, error } = await supabase
     .from('articles')
     .select('*')
-    .eq('zone_type', zoneType)
+    .contains('zone_types', [zoneType])
     .gte('published_at', cutoff)
     .order('urgency_score', { ascending: false })
     .order('published_at', { ascending: false })
@@ -43,7 +43,7 @@ export async function getTopArticles(limit = 20, zoneTypes?: ZoneType[]) {
     .from('articles')
     .select('*')
     .gte('published_at', cutoff)
-  if (zoneTypes && zoneTypes.length > 0) query = query.in('zone_type', zoneTypes)
+  if (zoneTypes && zoneTypes.length > 0) query = query.overlaps('zone_types', zoneTypes)
 
   const { data, error } = await query
     .order('urgency_score', { ascending: false })
@@ -63,7 +63,7 @@ export async function searchArticlesByTopic(topic: string, limit = 10, days = 30
     .select('*')
     .or(`headline.ilike.%${escaped}%,summary.ilike.%${escaped}%`)
     .gte('published_at', cutoff)
-  if (zoneType) query = query.eq('zone_type', zoneType)
+  if (zoneType) query = query.contains('zone_types', [zoneType])
 
   const { data, error } = await query
     .order('published_at', { ascending: false })

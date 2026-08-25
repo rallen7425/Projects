@@ -15,4 +15,9 @@ export type ProcessedArticle = RawArticle & {
   summary: string
   urgencyScore: number     // 1–5
   tags: string[]
+  // Every zone this article should be findable under — its classified native
+  // zone (zoneType, above — overridden post-classification, no longer just
+  // the source-feed hint it was fetched with), plus 'news' when the article
+  // is breaking/critical enough to also surface there. See summarize.ts.
+  zoneTypes: ZoneType[]
 }

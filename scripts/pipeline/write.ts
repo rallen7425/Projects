@@ -64,6 +64,7 @@ export async function writeArticles(articles: ProcessedArticle[]): Promise<numbe
     published_at: a.publishedAt,
     urgency_score: a.urgencyScore,
     zone_type: a.zoneType,
+    zone_types: a.zoneTypes,
     tags: a.tags,
   }))
 

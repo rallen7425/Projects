@@ -28,6 +28,7 @@ export type Database = {
           tags: Json
           urgency_score: number
           zone_type: string | null
+          zone_types: string[]
         }
         Insert: {
           created_at?: string
@@ -42,6 +43,7 @@ export type Database = {
           tags?: Json
           urgency_score?: number
           zone_type?: string | null
+          zone_types?: string[]
         }
         Update: {
           created_at?: string
@@ -56,6 +58,7 @@ export type Database = {
           tags?: Json
           urgency_score?: number
           zone_type?: string | null
+          zone_types?: string[]
         }
         Relationships: []
       }
