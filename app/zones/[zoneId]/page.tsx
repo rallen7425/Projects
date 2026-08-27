@@ -54,15 +54,18 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   if (!zone) redirect('/zones')
 
   const zoneType = zone.type as ZoneType
+  const isGeneric = zoneType !== 'sports' && zoneType !== 'local'
 
   const teamsOfInterest = ((zone.config as { teams?: TeamOfInterest[] } | null)?.teams ?? [])
   const localAreas = ((zone.config as { areas?: LocalArea[] } | null)?.areas ?? [])
 
-  // Local Zone's Breaking/Top Stories/Today pool is fetched separately and larger (45 vs
-  // the generic 15) — its own urgency-sorted top 15 can already be dominated by one
-  // prolific secondary-area source before applyLocalAreaPriority ever gets a chance to
-  // re-bias it toward the user's primary community/metro (see that function's doc comment).
-  const [articles, quicklook, scores, weather, localPoolRows] = await Promise.all([
+  // Local Zone's (and, for the same reason, every generic zone's) Breaking/Top Stories/Today
+  // pool is fetched separately and larger (45 vs the flat 15) — its own urgency-sorted top 15
+  // can already be dominated by one prolific source/event (e.g. a live-blogged breaking story
+  // spawning a dozen high-urgency rows) before dedupeStories ever gets enough raw material to
+  // find genuinely distinct stories among it. Local's version of this also re-biases toward the
+  // user's primary community/metro via applyLocalAreaPriority (see that function's doc comment).
+  const [articles, quicklook, scores, weather, localPoolRows, genericPoolRows] = await Promise.all([
     getArticlesByZone(zoneType, 15),
     getZoneQuicklook(zoneType),
     zoneType === 'sports' && teamsOfInterest.length > 0
@@ -72,6 +75,7 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
       ? getWeatherForAreas(localAreas).catch(() => [])
       : Promise.resolve([]),
     zoneType === 'local' ? getArticlesByZone('local', 45) : Promise.resolve([]),
+    isGeneric ? getArticlesByZone(zoneType, 45) : Promise.resolve([]),
   ])
 
   // Team-of-interest coverage — general news, specific to in-season teams only (the
@@ -120,12 +124,12 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   // against their own article pool (lib/articleUtils.ts), mirroring Home's logic
   // exactly. Generic zones (News, Tech, etc.) additionally cap Today and push
   // the overflow into a trailing More section; Local's Today is uncapped, no More.
-  const isGeneric = zoneType !== 'sports' && zoneType !== 'local'
   const TODAY_CAP = 15
 
-  // Local draws from the larger 45-row pool fetched above; every other non-Sports
-  // zone type is unaffected and keeps using the standard 15-row `articles` fetch.
-  const nonSportsPool = zoneType === 'local' ? localPoolRows : articles
+  // Local and generic zones each draw from their own larger 45-row pool fetched
+  // above, rather than the flat 15-row `articles` fetch (see the comment above
+  // that fetch for why).
+  const nonSportsPool = zoneType === 'local' ? localPoolRows : genericPoolRows
   const zoneDisplays = zoneType !== 'sports' ? dedupeStories(nonSportsPool.map(toArticleDisplay)) : []
 
   // Breaking stays purely urgency/recency-driven (unboosted) so a genuinely urgent story
@@ -153,10 +157,13 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   // Tracking section, filtered to this zone's own zoneType.
   const trackingTopics: TrackingTopicResult[] = await fetchZoneTracking(user.id, zone.id, zoneType)
 
-  // Check saved status for all articles — includes the larger local pool for Local zone
+  // Check saved status for all articles — includes the larger local/generic pool so a
+  // save made outside the flat 15-row fetch still shows as saved.
   const articleIds = zoneType === 'local'
     ? Array.from(new Set([...articles.map((a) => a.id), ...localPoolRows.map((a) => a.id)]))
-    : articles.map((a) => a.id)
+    : isGeneric
+      ? Array.from(new Set([...articles.map((a) => a.id), ...genericPoolRows.map((a) => a.id)]))
+      : articles.map((a) => a.id)
   const { data: saves } = await supabase
     .from('user_saves')
     .select('article_id')
@@ -168,7 +175,7 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   return (
     <ZoneDetailClient
       zone={zone}
-      articles={zoneType === 'local' ? zoneDisplays : articleDisplays}
+      articles={zoneType === 'sports' ? articleDisplays : zoneDisplays}
       quicklook={quicklook}
       scores={scores}
       weather={weather}

@@ -44,28 +44,55 @@ function significantHeadlineWords(headline: string): Set<string> {
 
 // Collapses separate DB rows covering the same real-world event into one representative
 // article — the first (i.e. highest-priority, since callers pass an already urgency/recency
-// sorted list) encountered. Two articles are treated as the same story only when they share
-// BOTH a tag AND at least two significant headline words — tag overlap alone isn't safe, since
-// generic tags (e.g. "Politics", "US Senate") are shared by genuinely unrelated stories.
+// sorted list) encountered. Two articles are treated as the same story via either path:
+//
+//  A) an EXACT shared tag string AND >=2 shared significant headline words — tag overlap
+//     alone isn't safe, since generic tags (e.g. "Politics", "US Senate") are shared by
+//     genuinely unrelated stories.
+//  B) the SAME source, a fuzzy (word-level) tag overlap, AND >=1 shared headline word — added
+//     after a real-world case (a live-blogged disaster) where one outlet's own coverage of one
+//     event got tagged inconsistently across separate hourly Claude batches (e.g. "Nepal
+//     floods" vs "Nepal" + "flash flood" vs "Nepal-Tibet floods" for the same story), so exact
+//     tag-string matching alone let many near-duplicate rows from that outlet survive. Scoping
+//     this looser path to same-source keeps it safe — it can't merge two different outlets'
+//     unrelated stories the way a bare fuzzy-tag rule could.
+function tagWords(tags: string[]): Set<string> {
+  const words = new Set<string>()
+  for (const tag of tags) significantHeadlineWords(tag).forEach(w => words.add(w))
+  return words
+}
+
 export function dedupeStories(articles: ArticleDisplay[]): ArticleDisplay[] {
-  const kept: Array<{ tags: Set<string>; words: Set<string> }> = []
+  const kept: Array<{ sourceName: string; tags: Set<string>; tagWords: Set<string>; words: Set<string> }> = []
   const result: ArticleDisplay[] = []
 
   for (const article of articles) {
     const tags = new Set(article.tags.map(t => t.toLowerCase().trim()).filter(Boolean))
     const words = significantHeadlineWords(article.headline)
+    const artTagWords = tagWords(article.tags)
 
     const isDuplicate = kept.some(k => {
-      if (tags.size === 0 || k.tags.size === 0) return false
-      const sharesTag = Array.from(tags).some(t => k.tags.has(t))
-      if (!sharesTag) return false
       let sharedWords = 0
       words.forEach(w => { if (k.words.has(w)) sharedWords++ })
-      return sharedWords >= 2
+
+      // Path A: exact tag match + strong headline overlap.
+      if (tags.size > 0 && k.tags.size > 0) {
+        const sharesTag = Array.from(tags).some(t => k.tags.has(t))
+        if (sharesTag && sharedWords >= 2) return true
+      }
+
+      // Path B: same source + fuzzy tag-topic overlap + at least one shared headline word.
+      if (article.sourceName && article.sourceName === k.sourceName) {
+        let sharedTagWords = 0
+        artTagWords.forEach(w => { if (k.tagWords.has(w)) sharedTagWords++ })
+        if (sharedTagWords > 0 && sharedWords >= 1) return true
+      }
+
+      return false
     })
 
     if (isDuplicate) continue
-    kept.push({ tags, words })
+    kept.push({ sourceName: article.sourceName, tags, tagWords: artTagWords, words })
     result.push(article)
   }
 

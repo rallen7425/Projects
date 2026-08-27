@@ -71,6 +71,7 @@ type EspnCompetitor = {
 }
 
 type EspnEvent = {
+  id: string
   date: string
   competitions: Array<{
     status: { type: { state: 'pre' | 'in' | 'post'; completed: boolean; detail: string; shortDetail: string } }
@@ -78,13 +79,47 @@ type EspnEvent = {
   }>
 }
 
-function toGameResult(event: EspnEvent, teamId: string, status: 'final' | 'live'): GameResult | null {
+// The team-schedule endpoint (used everywhere else in this file) reliably carries a real
+// score object for completed games, but doesn't update it in real time while a game is
+// still in progress — confirmed live 0-0 scores were showing throughout an actual game.
+// ESPN's per-event summary endpoint (the same one that backs its live "Gamecast" pages) does
+// track this in real time, so it's used as an override, but only for the one live event (if
+// any) rather than switching every fetch over to it.
+async function fetchLiveScore(
+  meta: LeagueMeta,
+  eventId: string,
+  teamId: string
+): Promise<{ teamScore: number; opponentScore: number } | null> {
+  try {
+    const res = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/${meta.sportPath}/${meta.leaguePath}/summary?event=${eventId}`,
+      { cache: 'no-store' }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    const competitors = data?.header?.competitions?.[0]?.competitors as Array<{ id: string; score?: string }> | undefined
+    if (!competitors) return null
+    const self = competitors.find((c) => c.id === teamId)
+    const opp = competitors.find((c) => c.id !== teamId)
+    if (!self || !opp || self.score == null || opp.score == null) return null
+    return { teamScore: Number(self.score), opponentScore: Number(opp.score) }
+  } catch {
+    return null
+  }
+}
+
+function toGameResult(
+  event: EspnEvent,
+  teamId: string,
+  status: 'final' | 'live',
+  scoreOverride?: { teamScore: number; opponentScore: number } | null
+): GameResult | null {
   const comp = event.competitions[0]
   const self = comp.competitors.find((c) => c.team.id === teamId)
   const opp = comp.competitors.find((c) => c.team.id !== teamId)
   if (!self || !opp) return null
-  const teamScore = self.score ? Number(self.score.value) : 0
-  const opponentScore = opp.score ? Number(opp.score.value) : 0
+  const teamScore = scoreOverride?.teamScore ?? (self.score ? Number(self.score.value) : 0)
+  const opponentScore = scoreOverride?.opponentScore ?? (opp.score ? Number(opp.score.value) : 0)
   return {
     status,
     opponent: opp.team.shortDisplayName,
@@ -138,7 +173,7 @@ async function fetchTeamScoreCard(team: TeamOfInterest): Promise<TeamScoreCard |
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
       const lastOrLiveGame = live
-        ? toGameResult(live, team.teamId, 'live')
+        ? toGameResult(live, team.teamId, 'live', await fetchLiveScore(meta, live.id, team.teamId))
         : completed[0]
           ? toGameResult(completed[0], team.teamId, 'final')
           : null

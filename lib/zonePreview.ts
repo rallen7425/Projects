@@ -92,8 +92,15 @@ export async function getZoneArticles(zoneType: ZoneType, config: Json, limit = 
     }
   }
 
-  const articles = await getArticlesByZone(zoneType, limit)
-  return articles.map(toArticleDisplay)
+  // Same reasoning as the Local branch above: fetch a larger raw pool than `limit` so
+  // dedupeStories has enough headroom to find genuinely distinct stories even when one
+  // event (e.g. a live-blogged breaking story) is dominating the zone's raw urgency-sorted
+  // pool — this branch previously skipped dedup entirely, which is what let Home/Summary's
+  // "Your Zones" card and the /zones hub keep showing several rows about the same event
+  // even after Breaking/Top Stories/Today (which do dedupe) had already collapsed them.
+  const poolSize = Math.max(limit * 3, 30)
+  const rows = await getArticlesByZone(zoneType, poolSize)
+  return dedupeStories(rows.map(toArticleDisplay)).slice(0, limit)
 }
 
 // `topArticles` is the full fetched pool (up to `limit`), not pre-sliced to 3 —
