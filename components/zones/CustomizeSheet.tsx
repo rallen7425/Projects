@@ -2,10 +2,11 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { ZONE_META, type LocalArea, type ZoneType } from '@/types'
 import type { TeamOfInterest } from '@/lib/scores/espn'
 import { TEAM_CATALOG, LEAGUE_LABELS } from '@/lib/scores/teams'
-import { updateZoneCustomization, addLocalArea, removeLocalArea } from '@/lib/actions'
+import { updateZoneCustomization } from '@/lib/actions'
 import type { Json } from '@/types/supabase'
 
 type Props = {
@@ -43,7 +44,7 @@ export default function CustomizeSheet({ zoneId, zoneType, config, onClose }: Pr
             <TeamsEditor zoneId={zoneId} initialTeams={(config as { teams?: TeamOfInterest[] } | null)?.teams ?? []} />
           )}
           {zoneType === 'local' && (
-            <AreasEditor zoneId={zoneId} initialAreas={(config as { areas?: LocalArea[] } | null)?.areas ?? []} />
+            <AreasEditor initialAreas={(config as { areas?: LocalArea[] } | null)?.areas ?? []} onClose={onClose} />
           )}
           {zoneType === 'work' && (
             <IndustryEditor zoneId={zoneId} initialIndustry={(config as { industry?: string } | null)?.industry ?? ''} onDone={onClose} />
@@ -175,49 +176,24 @@ function TeamsEditor({ zoneId, initialTeams }: { zoneId: string; initialTeams: T
   )
 }
 
-function AreasEditor({ zoneId, initialAreas }: { zoneId: string; initialAreas: LocalArea[] }) {
-  const router = useRouter()
-  const [areas, setAreas] = useState(initialAreas)
-  const [zip, setZip] = useState('')
-  const [isPending, startTransition] = useTransition()
-  const [error, setError] = useState('')
-
-  const defaults = areas.filter((a) => !a.id.includes('secondary'))
-  const extras = areas.filter((a) => a.id.includes('secondary'))
-
-  const handleAdd = () => {
-    if (!zip.trim()) return
-    setError('')
-    startTransition(async () => {
-      try {
-        const newArea = await addLocalArea(zoneId, zip.trim())
-        setZip('')
-        setAreas((prev) => [...prev, newArea])
-        router.refresh()
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not add that area')
-      }
-    })
-  }
-
-  const handleRemove = (areaId: string) => {
-    startTransition(async () => {
-      await removeLocalArea(zoneId, areaId)
-      setAreas((prev) => prev.filter((a) => a.id !== areaId))
-      router.refresh()
-    })
-  }
+// Local Zone's areas are now derived entirely from the user's Profile
+// (home location + up to 5 secondary locations) — this is a read-only
+// summary pointing there, rather than its own editor, since editing here
+// would just be a second, out-of-sync copy of the same data.
+function AreasEditor({ initialAreas, onClose }: { initialAreas: LocalArea[]; onClose: () => void }) {
+  const defaults = initialAreas.filter((a) => !a.id.includes('secondary'))
+  const extras = initialAreas.filter((a) => a.id.includes('secondary'))
 
   return (
     <div style={{ paddingBottom: '20px' }}>
       <div style={{ fontSize: '12.5px', color: 'var(--text-3)', marginBottom: '16px', lineHeight: 1.5 }}>
-        Your community, metro, and region are set from your zip code. Add up to 3 extra areas — like a second home or a place you follow closely.
+        Local areas are set from your Profile&apos;s home location and secondary locations, not here.
       </div>
 
       {defaults.length > 0 && (
         <div style={{ marginBottom: '18px' }}>
           <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: '8px' }}>
-            Default areas
+            Home areas
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {defaults.map((a) => (
@@ -229,58 +205,32 @@ function AreasEditor({ zoneId, initialAreas }: { zoneId: string; initialAreas: L
         </div>
       )}
 
-      <div style={{ marginBottom: '18px' }}>
-        <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: '8px' }}>
-          Extra areas ({extras.length}/3)
-        </div>
-        {extras.length === 0 && (
-          <div style={{ fontSize: '13px', color: 'var(--text-3)', padding: '4px 0' }}>None added yet.</div>
-        )}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {extras.map((a) => (
-            <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--surface-2)', borderRadius: '10px' }}>
-              <span style={{ fontSize: '13.5px', color: 'var(--text)' }}>{a.label}</span>
-              <button
-                onClick={() => handleRemove(a.id)}
-                disabled={isPending}
-                style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit' }}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {extras.length < 3 && (
-        <div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              value={zip}
-              onChange={(e) => setZip(e.target.value)}
-              placeholder="Zip code"
-              inputMode="numeric"
-              style={{
-                flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
-                borderRadius: '12px', padding: '11px 14px', fontSize: '14px', color: 'var(--text)',
-                fontFamily: 'inherit', outline: 'none',
-              }}
-            />
-            <button
-              onClick={handleAdd}
-              disabled={isPending || !zip.trim()}
-              style={{
-                padding: '0 18px', borderRadius: '12px', background: 'var(--local)', color: '#0a0a0f',
-                border: 'none', fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                opacity: isPending || !zip.trim() ? 0.5 : 1,
-              }}
-            >
-              Add
-            </button>
+      {extras.length > 0 && (
+        <div style={{ marginBottom: '18px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: '8px' }}>
+            Secondary locations
           </div>
-          {error && <div style={{ fontSize: '12px', color: '#EF4444', marginTop: '8px' }}>{error}</div>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {extras.map((a) => (
+              <div key={a.id} style={{ padding: '10px 12px', background: 'var(--surface-2)', borderRadius: '10px', fontSize: '13.5px', color: 'var(--text-2)' }}>
+                {a.label}
+              </div>
+            ))}
+          </div>
         </div>
       )}
+
+      <Link
+        href="/profile"
+        onClick={onClose}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '46px', borderRadius: '23px',
+          background: 'var(--primary)', color: 'var(--primary-text)', textDecoration: 'none',
+          fontSize: '15px', fontWeight: 700,
+        }}
+      >
+        Manage in Profile
+      </Link>
     </div>
   )
 }

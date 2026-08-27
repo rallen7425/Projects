@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   distilled: {
     Tables: {
@@ -61,6 +61,59 @@ export type Database = {
           zone_types?: string[]
         }
         Relationships: []
+      }
+      user_locations: {
+        Row: {
+          colleges: string | null
+          created_at: string
+          id: string
+          label: string
+          lat: number | null
+          lng: number | null
+          metro_area: string | null
+          position: number
+          private_schools: string | null
+          school_district: string | null
+          user_id: string
+          zip_code: string
+        }
+        Insert: {
+          colleges?: string | null
+          created_at?: string
+          id?: string
+          label: string
+          lat?: number | null
+          lng?: number | null
+          metro_area?: string | null
+          position?: number
+          private_schools?: string | null
+          school_district?: string | null
+          user_id: string
+          zip_code: string
+        }
+        Update: {
+          colleges?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          lat?: number | null
+          lng?: number | null
+          metro_area?: string | null
+          position?: number
+          private_schools?: string | null
+          school_district?: string | null
+          user_id?: string
+          zip_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_locations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_saves: {
         Row: {
@@ -142,27 +195,51 @@ export type Database = {
       }
       users: {
         Row: {
+          city: string | null
+          colleges: string | null
           created_at: string
           display_name: string | null
           email: string
           id: string
           industry: string | null
+          lat: number | null
+          lng: number | null
+          metro_area: string | null
+          private_schools: string | null
+          school_district: string | null
+          state_abbr: string | null
           zip_code: string | null
         }
         Insert: {
+          city?: string | null
+          colleges?: string | null
           created_at?: string
           display_name?: string | null
           email: string
           id?: string
           industry?: string | null
+          lat?: number | null
+          lng?: number | null
+          metro_area?: string | null
+          private_schools?: string | null
+          school_district?: string | null
+          state_abbr?: string | null
           zip_code?: string | null
         }
         Update: {
+          city?: string | null
+          colleges?: string | null
           created_at?: string
           display_name?: string | null
           email?: string
           id?: string
           industry?: string | null
+          lat?: number | null
+          lng?: number | null
+          metro_area?: string | null
+          private_schools?: string | null
+          school_district?: string | null
+          state_abbr?: string | null
           zip_code?: string | null
         }
         Relationships: []

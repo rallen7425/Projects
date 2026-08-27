@@ -11,13 +11,16 @@ import {
   updateZoneConfig,
   getZoneById,
   getUserZones,
+  syncLocalZoneAreas,
 } from './db/zones'
-import { buildDefaultLocalAreas } from './geo/localAreas'
+import { getUserProfile, getUserLocations, toHomeLocation } from './db/profile'
+import { buildLocalAreasFromProfile } from './geo/localAreas'
 import { geocodeZip } from './geo/zip'
 import { nearestMetro } from './geo/metros'
+import { lookupZip } from './geo/locationLookup'
 import { getDefaultTeamsForMetro } from './scores/metroTeams'
 import type { Json } from '@/types/supabase'
-import type { LocalArea, ZoneType } from '@/types'
+import type { ZoneType } from '@/types'
 
 function revalidateZoneSurfaces() {
   revalidatePath('/')
@@ -119,22 +122,31 @@ export async function unsaveArticle(articleId: string) {
 
 // setupInput carries whatever the Add Zone form collected for a template's
 // requiresZip/requiresIndustry fields — translated here into the actual
-// zones.config shape each zone type reads (Local's `areas`, geocoded from the
-// zip inline rather than requiring a separate Customize step; Work's plain
-// `industry` string).
+// zones.config shape each zone type reads (Work's plain `industry` string;
+// Sports' `teams`, seeded from a zip). Local no longer accepts a raw zip here
+// at all — its areas come entirely from the user's Profile home location
+// (see "Profile locations" below), since that's now the shared source of
+// truth Zones read from rather than each zone owning its own copy.
 export async function addZone(templateKey: string, setupInput?: { zip?: string; industry?: string }) {
   const user = await getEffectiveUser()
   if (!user) redirect('/auth/signin')
 
   let config: Json = {}
   if (templateKey === 'local') {
-    if (!setupInput?.zip) throw new Error('Zip code is required for the Local Zone')
-    const areas = await buildDefaultLocalAreas(setupInput.zip)
+    const profile = await getUserProfile(user.id)
+    const home = toHomeLocation(profile)
+    if (!home) throw new Error('Set up your home location in Profile before turning on the Local Zone')
+    const secondaries = await getUserLocations(user.id)
+    const areas = buildLocalAreasFromProfile(home, secondaries)
     config = { areas } as unknown as Json
   } else if (templateKey === 'sports') {
-    if (!setupInput?.zip) throw new Error('Zip code is required for the Sports Zone')
-    const location = await geocodeZip(setupInput.zip)
-    if (!location) throw new Error(`Could not find a location for zip code ${setupInput.zip}`)
+    // Prefer the Profile's home location if one is already set (skips the
+    // zip prompt entirely); otherwise fall back to the inline zip this
+    // template's setup prompt still collects, same as before.
+    const profile = await getUserProfile(user.id)
+    const home = toHomeLocation(profile)
+    const location = home ?? (setupInput?.zip ? await geocodeZip(setupInput.zip) : null)
+    if (!location) throw new Error('Zip code is required for the Sports Zone')
     const metro = nearestMetro(location.lat, location.lng)
     // No teams found for this metro (many smaller metros have none) — the zone
     // is still created, just empty; the Customize picker covers the rest.
@@ -178,9 +190,9 @@ export async function reorderZonesAction(orderedZoneIds: string[]) {
   revalidateZoneSurfaces()
 }
 
-// Generic zone-config writer used by every per-zone customization editor
-// (Sports' Teams of Interest, Local's Areas, Work's Industry) — all three
-// just write different shapes into the same zones.config jsonb column.
+// Generic zone-config writer used by the remaining per-zone customization
+// editors (Sports' Teams of Interest, Work's Industry) — Local's areas moved
+// to the Profile-driven path above and no longer go through this.
 export async function updateZoneCustomization(zoneId: string, config: Json) {
   const user = await getEffectiveUser()
   if (!user) redirect('/auth/signin')
@@ -192,48 +204,142 @@ export async function updateZoneCustomization(zoneId: string, config: Json) {
   revalidateZoneSurfaces()
 }
 
-// Local Zone's 3 zip-derived defaults (community/metro/region) are set at
-// creation time (see addZone above); this adds up to 3 additional
-// community-kind areas on top — e.g. a vacation town, same precedent as the
-// Wells, ME secondary area documented in CLAUDE.md.
-export async function addLocalArea(zoneId: string, zip: string) {
-  const user = await getEffectiveUser()
-  if (!user) redirect('/auth/signin')
+// ── Profile locations ──────────────────────────────────────────────────────
+// Location data (home + up to 5 secondary locations) now lives on the user's
+// Profile rather than inside any one zone's config — Local Zone's areas are
+// derived from it (see syncLocalZoneAreas) rather than typed directly into a
+// zone's own Customize sheet. Superseded the old addLocalArea/removeLocalArea
+// zone-scoped actions.
 
-  const zone = await getZoneById(zoneId, user.id)
-  if (!zone) throw new Error('Zone not found')
-
-  const existingConfig = (zone.config as Record<string, unknown> | null) ?? {}
-  const areas = (existingConfig.areas as LocalArea[] | undefined) ?? []
-  const secondaryCount = areas.filter((a) => a.id.includes('secondary')).length
-  if (secondaryCount >= 3) throw new Error('You can add up to 3 extra areas')
-
-  const location = await geocodeZip(zip)
-  if (!location) throw new Error(`Could not find a location for zip code ${zip}`)
-
-  const newArea: LocalArea = {
-    id: `community-secondary-${secondaryCount + 1}`,
-    kind: 'community',
-    label: `${location.city}, ${location.stateAbbr}`,
-    query: location.city,
-    zip,
-  }
-
-  await updateZoneConfig(zoneId, { ...existingConfig, areas: [...areas, newArea] } as unknown as Json)
+function revalidateProfileSurfaces() {
+  revalidatePath('/profile')
   revalidateZoneSurfaces()
-  return newArea
 }
 
-export async function removeLocalArea(zoneId: string, areaId: string) {
+// Read-only zip → city/state + up to 3 metro-city candidates, for the "which
+// city do you consider home?" step. Used identically by both the Home
+// Location and Secondary Location editors.
+export async function lookupZipForProfile(zip: string) {
+  const user = await getEffectiveUser()
+  if (!user) redirect('/auth/signin')
+  return lookupZip(zip)
+}
+
+type LocationInput = {
+  zip: string
+  city: string
+  stateAbbr: string
+  lat: number
+  lng: number
+  metroArea: string
+  schoolDistrict?: string
+  privateSchools?: string
+  colleges?: string
+}
+
+export async function saveHomeLocation(input: LocationInput) {
   const user = await getEffectiveUser()
   if (!user) redirect('/auth/signin')
 
-  const zone = await getZoneById(zoneId, user.id)
-  if (!zone) throw new Error('Zone not found')
+  const supabase = createServerSupabase()
+  const { error } = await supabase
+    .from('users')
+    .update({
+      zip_code: input.zip,
+      city: input.city,
+      state_abbr: input.stateAbbr,
+      lat: input.lat,
+      lng: input.lng,
+      metro_area: input.metroArea,
+      school_district: input.schoolDistrict ?? null,
+      private_schools: input.privateSchools ?? null,
+      colleges: input.colleges ?? null,
+    })
+    .eq('id', user.id)
+  if (error) throw error
 
-  const existingConfig = (zone.config as Record<string, unknown> | null) ?? {}
-  const areas = ((existingConfig.areas as LocalArea[] | undefined) ?? []).filter((a) => a.id !== areaId)
+  await syncLocalZoneAreas(user.id)
+  revalidateProfileSurfaces()
+}
 
-  await updateZoneConfig(zoneId, { ...existingConfig, areas } as unknown as Json)
-  revalidateZoneSurfaces()
+export async function updateHomeSchoolInfo(info: { schoolDistrict?: string; privateSchools?: string; colleges?: string }) {
+  const user = await getEffectiveUser()
+  if (!user) redirect('/auth/signin')
+
+  const supabase = createServerSupabase()
+  const { error } = await supabase
+    .from('users')
+    .update({
+      school_district: info.schoolDistrict ?? null,
+      private_schools: info.privateSchools ?? null,
+      colleges: info.colleges ?? null,
+    })
+    .eq('id', user.id)
+  if (error) throw error
+
+  revalidateProfileSurfaces()
+}
+
+export async function addSecondaryLocation(input: LocationInput) {
+  const user = await getEffectiveUser()
+  if (!user) redirect('/auth/signin')
+
+  const supabase = createServerSupabase()
+  const { count, error: countError } = await supabase
+    .from('user_locations')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+  if (countError) throw countError
+  if ((count ?? 0) >= 5) throw new Error('You can add up to 5 secondary locations')
+
+  const { error } = await supabase.from('user_locations').insert({
+    user_id: user.id,
+    zip_code: input.zip,
+    label: `${input.city}, ${input.stateAbbr}`,
+    lat: input.lat,
+    lng: input.lng,
+    metro_area: input.metroArea,
+    school_district: input.schoolDistrict ?? null,
+    private_schools: input.privateSchools ?? null,
+    colleges: input.colleges ?? null,
+    position: count ?? 0,
+  })
+  if (error) throw error
+
+  await syncLocalZoneAreas(user.id)
+  revalidateProfileSurfaces()
+}
+
+export async function removeSecondaryLocation(id: string) {
+  const user = await getEffectiveUser()
+  if (!user) redirect('/auth/signin')
+
+  const supabase = createServerSupabase()
+  const { error } = await supabase.from('user_locations').delete().eq('id', id).eq('user_id', user.id)
+  if (error) throw error
+
+  await syncLocalZoneAreas(user.id)
+  revalidateProfileSurfaces()
+}
+
+export async function updateSecondaryLocationSchoolInfo(
+  id: string,
+  info: { schoolDistrict?: string; privateSchools?: string; colleges?: string }
+) {
+  const user = await getEffectiveUser()
+  if (!user) redirect('/auth/signin')
+
+  const supabase = createServerSupabase()
+  const { error } = await supabase
+    .from('user_locations')
+    .update({
+      school_district: info.schoolDistrict ?? null,
+      private_schools: info.privateSchools ?? null,
+      colleges: info.colleges ?? null,
+    })
+    .eq('id', id)
+    .eq('user_id', user.id)
+  if (error) throw error
+
+  revalidateProfileSurfaces()
 }

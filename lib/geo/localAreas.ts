@@ -1,36 +1,34 @@
-// Derives a Local Zone's 3 default areas (community/metro/region) from a zip
-// code — the same logic scripts/setup-local-zone.ts already runs by hand,
-// extracted here so the Add Zone flow (lib/actions.ts) can do it inline at
-// zone-creation time instead of requiring a separate manual step.
+// Derives a Local Zone's config.areas from the user's Profile location data
+// (home location + up to 5 secondary locations) — the shared source of truth
+// Zones read from, per the 2026-08-27 Profile rework. Replaces the old
+// buildDefaultLocalAreas(zip), which derived a zone's own independent copy of
+// this data once at zone-creation time with no link back to a user profile.
 
-import { geocodeZip } from './zip'
-import { nearestMetro } from './metros'
 import { regionForState } from './regions'
-import type { LocalArea } from '@/types'
+import type { HomeLocation, LocalArea, UserLocation } from '@/types'
 
-export async function buildDefaultLocalAreas(zip: string): Promise<LocalArea[]> {
-  const location = await geocodeZip(zip)
-  if (!location) throw new Error(`Could not find a location for zip code ${zip}`)
+export function buildLocalAreasFromProfile(home: HomeLocation, secondaries: UserLocation[]): LocalArea[] {
+  const region = regionForState(home.stateAbbr)
+  if (!region) throw new Error(`No region mapping for state ${home.stateAbbr}`)
 
-  const metro = nearestMetro(location.lat, location.lng)
-  if (!metro) throw new Error('No nearby metro area found')
+  // metroArea is stored as "City, ST" (the label the user picked from the
+  // disambiguation list) — the query wants just the city name, matching the
+  // convention every other area's `query` already follows.
+  const metroCity = home.metroArea.split(',')[0].trim()
 
-  const region = regionForState(location.stateAbbr)
-  if (!region) throw new Error(`No region mapping for state ${location.stateAbbr}`)
-
-  return [
+  const areas: LocalArea[] = [
     {
       id: 'community-primary',
       kind: 'community',
-      label: `${location.city}, ${location.stateAbbr}`,
-      query: location.city,
-      zip,
+      label: `${home.city}, ${home.stateAbbr}`,
+      query: home.city,
+      zip: home.zip,
     },
     {
       id: 'metro-primary',
       kind: 'metro',
-      label: `${metro.name}, ${metro.state}`,
-      query: metro.name,
+      label: home.metroArea,
+      query: metroCity,
     },
     {
       id: 'region-primary',
@@ -39,4 +37,16 @@ export async function buildDefaultLocalAreas(zip: string): Promise<LocalArea[]> 
       query: region,
     },
   ]
+
+  secondaries.forEach((loc, i) => {
+    areas.push({
+      id: `community-secondary-${i + 1}`,
+      kind: 'community',
+      label: loc.label,
+      query: loc.label.split(',')[0].trim(),
+      zip: loc.zip,
+    })
+  })
+
+  return areas
 }

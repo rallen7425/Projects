@@ -34,14 +34,17 @@ const ROW_GAP = 8
 export default function ZoneManageClient({
   zones,
   templates,
+  hasHomeLocation,
 }: {
   zones: ZoneRow[]
   templates: TemplateWithKey[]
+  hasHomeLocation: boolean
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState({ visible: false, message: '' })
   const [setupTemplate, setSetupTemplate] = useState<TemplateWithKey | null>(null)
+  const [needsProfileTemplate, setNeedsProfileTemplate] = useState<TemplateWithKey | null>(null)
 
   const showToast = (message: string) => {
     setToast({ visible: true, message })
@@ -136,7 +139,30 @@ export default function ZoneManageClient({
   }
 
   const handleTogglePhantomOn = (template: TemplateWithKey) => {
-    if (template.requiresZip || template.requiresIndustry) {
+    // Local Zone's areas now come entirely from the Profile home location —
+    // it never shows its own zip prompt. With a home location already set,
+    // turning it on is immediate; without one, send the user to Profile first.
+    if (template.type === 'local') {
+      if (!hasHomeLocation) {
+        setNeedsProfileTemplate(template)
+        return
+      }
+      startTransition(async () => {
+        try {
+          await addZone(template.key)
+          showToast(`${template.label} on`)
+          router.refresh()
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Could not turn that on')
+        }
+      })
+      return
+    }
+
+    // Sports also seeds itself from a zip (for default Teams of Interest) —
+    // reuse the Profile home location automatically when one exists, so it
+    // only prompts when it genuinely has no location to work from.
+    if ((template.requiresZip && !(template.type === 'sports' && hasHomeLocation)) || template.requiresIndustry) {
       setSetupTemplate(template)
       return
     }
@@ -214,6 +240,10 @@ export default function ZoneManageClient({
           onSubmit={handleSetupSubmit}
           pending={isPending}
         />
+      )}
+
+      {needsProfileTemplate && (
+        <NeedsProfilePrompt template={needsProfileTemplate} onClose={() => setNeedsProfileTemplate(null)} />
       )}
 
       <Toast visible={toast.visible} message={toast.message} />
@@ -333,6 +363,47 @@ function PhantomRow({ row, onToggle, disabled }: { row: Row; onToggle: () => voi
       <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: meta?.color ?? 'var(--text-3)', flexShrink: 0, opacity: 0.5 }} />
       <span style={{ flex: 1, fontSize: '15px', fontWeight: 600, color: 'var(--text-2)' }}>{row.template.label}</span>
       <ToggleSwitch on={false} onClick={onToggle} disabled={disabled} />
+    </div>
+  )
+}
+
+function NeedsProfilePrompt({ template, onClose }: { template: TemplateWithKey; onClose: () => void }) {
+  return (
+    <div
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end' }}
+    >
+      <div style={{
+        width: '100%', maxWidth: '430px', margin: '0 auto', background: 'var(--surface)',
+        border: '1px solid var(--border-mid)', borderBottom: 'none', borderRadius: '22px 22px 0 0',
+        padding: '0 0 40px',
+      }}>
+        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'var(--border-mid)', margin: '12px auto 20px' }} />
+        <div style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', padding: '0 20px 8px' }}>
+          Set up your home location
+        </div>
+        <div style={{ fontSize: '13px', color: 'var(--text-2)', padding: '0 20px 20px', lineHeight: 1.5 }}>
+          {template.label} is built from the home location on your Profile — set that up first, then come back and turn this zone on.
+        </div>
+        <div style={{ display: 'flex', gap: '10px', padding: '0 20px' }}>
+          <button
+            onClick={onClose}
+            style={{ flex: 1, height: '46px', borderRadius: '23px', background: 'var(--surface-2)', border: '1px solid var(--border-mid)', color: 'var(--text-2)', fontSize: '15px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Cancel
+          </button>
+          <Link
+            href="/profile"
+            style={{
+              flex: 2, height: '46px', borderRadius: '23px', background: 'var(--primary)',
+              border: 'none', color: 'var(--primary-text)', fontSize: '15px', fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none',
+            }}
+          >
+            Go to Profile
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

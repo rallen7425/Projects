@@ -1,5 +1,7 @@
 import { createServerSupabase } from '@/lib/supabase/server'
 import { ZONE_TEMPLATES } from '@/lib/zone-templates'
+import { getUserProfile, getUserLocations, toHomeLocation } from '@/lib/db/profile'
+import { buildLocalAreasFromProfile } from '@/lib/geo/localAreas'
 import type { Json } from '@/types/supabase'
 
 export async function getUserZones(userId: string) {
@@ -137,6 +139,38 @@ export async function reorderZones(userId: string, orderedZoneIds: string[]) {
     orderedZoneIds.map((id, position) =>
       supabase.from('zones').update({ position }).eq('id', id).eq('user_id', userId)
     )
+  )
+}
+
+// Rebuilds every enabled Local Zone this user has from their current Profile
+// location data (home + secondary locations) and writes it into config.areas.
+// Called after any Profile location mutation so an existing Local Zone
+// reflects the change immediately — this is the actual implementation of
+// "the zone shares the zip code and location information" from the user.
+export async function syncLocalZoneAreas(userId: string) {
+  const [profile, secondaries] = await Promise.all([
+    getUserProfile(userId),
+    getUserLocations(userId),
+  ])
+  const home = toHomeLocation(profile)
+  if (!home) return // no complete home location yet — nothing to sync
+
+  const areas = buildLocalAreasFromProfile(home, secondaries)
+
+  const supabase = createServerSupabase()
+  const { data: localZones, error } = await supabase
+    .from('zones')
+    .select('id, config')
+    .eq('user_id', userId)
+    .eq('type', 'local')
+    .eq('enabled', true)
+  if (error) throw error
+
+  await Promise.all(
+    (localZones ?? []).map((zone) => {
+      const existingConfig = (zone.config as Record<string, unknown> | null) ?? {}
+      return updateZoneConfig(zone.id, { ...existingConfig, areas } as unknown as Json)
+    })
   )
 }
 

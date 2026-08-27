@@ -82,16 +82,16 @@ function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number):
   return R * 2 * Math.asin(Math.sqrt(a))
 }
 
+// Top N metros by distance, closest first — used for the "which city do you
+// consider home?" disambiguation picker, so the user always chooses rather
+// than having a single nearest metro auto-assigned silently.
+export function nearestMetros(lat: number, lng: number, n = 3): (Metro & { distanceMi: number })[] {
+  return METROS
+    .map((metro) => ({ ...metro, distanceMi: haversineMiles(lat, lng, metro.lat, metro.lng) }))
+    .sort((a, b) => a.distanceMi - b.distanceMi)
+    .slice(0, n)
+}
+
 export function nearestMetro(lat: number, lng: number): Metro | null {
-  if (METROS.length === 0) return null
-  let closest = METROS[0]
-  let closestDist = haversineMiles(lat, lng, closest.lat, closest.lng)
-  for (const metro of METROS.slice(1)) {
-    const dist = haversineMiles(lat, lng, metro.lat, metro.lng)
-    if (dist < closestDist) {
-      closest = metro
-      closestDist = dist
-    }
-  }
-  return closest
+  return nearestMetros(lat, lng, 1)[0] ?? null
 }

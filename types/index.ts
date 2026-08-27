@@ -53,6 +53,46 @@ export type LocalArea = {
   directSources?: DirectSource[] // curated real-article sources, in addition to Google News
 }
 
+// Reference-only education context a user can attach to a location (home or
+// secondary) — self-entered free text, not looked up from any data provider.
+export type SchoolInfo = {
+  schoolDistrict?: string
+  privateSchools?: string
+  colleges?: string
+}
+
+// The user's home location, stored directly on `users` — the shared source
+// of truth Local Zone's config.areas (and Sports' default-team seeding) are
+// derived from. `metroArea` is the one the user picked from the disambiguation
+// list, not necessarily the single geographically-nearest metro.
+export type HomeLocation = SchoolInfo & {
+  zip: string
+  city: string
+  stateAbbr: string
+  lat: number
+  lng: number
+  metroArea: string
+}
+
+// A secondary location (up to 5 per user) — a place followed beyond the home
+// area, e.g. a second home or family elsewhere. Same shape as HomeLocation
+// plus its own row id.
+export type UserLocation = SchoolInfo & {
+  id: string
+  zip: string
+  label: string
+  lat: number | null
+  lng: number | null
+  metroArea: string | null
+}
+
+// A candidate metro city offered during zip lookup — the user always picks
+// from a short list rather than having one auto-assigned silently.
+export type MetroOption = {
+  label: string // "Boston, MA"
+  distanceMi: number
+}
+
 export type ScheduleRow = {
   sport: 'mlb' | 'nba' | 'nfl' | 'other'
   matchup: string
