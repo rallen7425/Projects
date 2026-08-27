@@ -167,6 +167,8 @@ export default function BottomNav({ activeTab }: BottomNavProps) {
           display: 'flex',
           flexDirection: 'column',
           gap: '2px',
+          maxHeight: 'calc(100dvh - 140px)',
+          overflowY: 'auto',
           opacity: isMenuOpen ? 1 : 0,
           pointerEvents: isMenuOpen ? 'auto' : 'none',
           transition: 'opacity 0.2s ease, bottom 0.2s ease',
