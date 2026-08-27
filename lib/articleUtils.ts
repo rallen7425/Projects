@@ -62,41 +62,66 @@ function tagWords(tags: string[]): Set<string> {
   return words
 }
 
+type StoryProfile = { sourceName: string; tags: Set<string>; tagWords: Set<string>; words: Set<string> }
+
+function storyProfile(article: ArticleDisplay): StoryProfile {
+  return {
+    sourceName: article.sourceName,
+    tags: new Set(article.tags.map(t => t.toLowerCase().trim()).filter(Boolean)),
+    tagWords: tagWords(article.tags),
+    words: significantHeadlineWords(article.headline),
+  }
+}
+
+function isSameStory(a: StoryProfile, b: StoryProfile): boolean {
+  let sharedWords = 0
+  a.words.forEach(w => { if (b.words.has(w)) sharedWords++ })
+
+  // Path A: exact tag match + strong headline overlap.
+  if (a.tags.size > 0 && b.tags.size > 0) {
+    const sharesTag = Array.from(a.tags).some(t => b.tags.has(t))
+    if (sharesTag && sharedWords >= 2) return true
+  }
+
+  // Path B: same source + fuzzy tag-topic overlap + at least one shared headline word.
+  if (a.sourceName && a.sourceName === b.sourceName) {
+    let sharedTagWords = 0
+    a.tagWords.forEach(w => { if (b.tagWords.has(w)) sharedTagWords++ })
+    if (sharedTagWords > 0 && sharedWords >= 1) return true
+  }
+
+  return false
+}
+
 export function dedupeStories(articles: ArticleDisplay[]): ArticleDisplay[] {
-  const kept: Array<{ sourceName: string; tags: Set<string>; tagWords: Set<string>; words: Set<string> }> = []
+  const kept: StoryProfile[] = []
   const result: ArticleDisplay[] = []
 
   for (const article of articles) {
-    const tags = new Set(article.tags.map(t => t.toLowerCase().trim()).filter(Boolean))
-    const words = significantHeadlineWords(article.headline)
-    const artTagWords = tagWords(article.tags)
-
-    const isDuplicate = kept.some(k => {
-      let sharedWords = 0
-      words.forEach(w => { if (k.words.has(w)) sharedWords++ })
-
-      // Path A: exact tag match + strong headline overlap.
-      if (tags.size > 0 && k.tags.size > 0) {
-        const sharesTag = Array.from(tags).some(t => k.tags.has(t))
-        if (sharesTag && sharedWords >= 2) return true
-      }
-
-      // Path B: same source + fuzzy tag-topic overlap + at least one shared headline word.
-      if (article.sourceName && article.sourceName === k.sourceName) {
-        let sharedTagWords = 0
-        artTagWords.forEach(w => { if (k.tagWords.has(w)) sharedTagWords++ })
-        if (sharedTagWords > 0 && sharedWords >= 1) return true
-      }
-
-      return false
-    })
-
+    const profile = storyProfile(article)
+    const isDuplicate = kept.some(k => isSameStory(profile, k))
     if (isDuplicate) continue
-    kept.push({ sourceName: article.sourceName, tags, tagWords: artTagWords, words })
+    kept.push(profile)
     result.push(article)
   }
 
   return result
+}
+
+// Finds every article in `pool` that dedupeStories would treat as the same real-world
+// story as `article` — used by Story Detail's "Full Coverage" section, which previously
+// relied on a single-tag ILIKE search (lib/db/articles.ts's searchArticlesByTopic) that
+// missed most of a story's actual coverage for the exact same reason dedupeStories itself
+// used to under-collapse duplicates: inconsistent tag/headline phrasing for the same event
+// across separate pipeline batches. Reusing the same same-story comparator here means
+// Full Coverage now surfaces the very articles dedupeStories collapsed away up in
+// Breaking/Top Stories/Today, instead of a narrower, differently-computed set.
+export function findRelatedStories(article: ArticleDisplay, pool: ArticleDisplay[], max = 10): ArticleDisplay[] {
+  const target = storyProfile(article)
+  return pool
+    .filter(a => a.id !== article.id && isSameStory(target, storyProfile(a)))
+    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    .slice(0, max)
 }
 
 function scoreForImportance(article: ArticleDisplay): number {

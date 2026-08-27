@@ -2,9 +2,9 @@ import { createServerSupabase, getEffectiveUser } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getArticleById, getArticlesByZone, searchArticlesByTopic } from '@/lib/db/articles'
 import { getUserZones } from '@/lib/db/zones'
-import { toArticleDisplay } from '@/lib/articleUtils'
+import { toArticleDisplay, findRelatedStories } from '@/lib/articleUtils'
 import StoryDetailClient from './StoryDetailClient'
-import type { ZoneType } from '@/types'
+import type { ArticleDisplay, ZoneType } from '@/types'
 
 export default async function StoryDetailPage({ params }: { params: { zoneId: string; storyId: string } }) {
   const user = await getEffectiveUser()
@@ -22,25 +22,37 @@ export default async function StoryDetailPage({ params }: { params: { zoneId: st
 
   const supabase = createServerSupabase()
 
+  // zoneArticlesRaw is fetched wide (45, not the old flat 8) so findRelatedStories has
+  // enough of the zone's real pool to work with — a big story's coverage is often spread
+  // well past the first 8 urgency-sorted rows.
   const [coverageRaw, zoneArticlesRaw, saveData, userZones] = await Promise.all([
     searchArticlesByTopic(searchTopic, 7),
-    getArticlesByZone(zoneType, 8).catch(() => [] as Awaited<ReturnType<typeof getArticlesByZone>>),
+    getArticlesByZone(zoneType, 45).catch(() => [] as Awaited<ReturnType<typeof getArticlesByZone>>),
     supabase.from('user_saves').select('id').eq('user_id', user.id).eq('article_id', article.id).maybeSingle(),
     getUserZones(user.id).catch(() => [] as Awaited<ReturnType<typeof getUserZones>>),
   ])
 
-  // Coverage: topic-matched articles (excluding the main article), up to 5
-  const coverage = coverageRaw
-    .filter((a) => a.id !== article.id)
-    .slice(0, 5)
-    .map(toArticleDisplay)
+  const mainDisplay = toArticleDisplay(article)
+  const zoneDisplays = zoneArticlesRaw.map(toArticleDisplay)
+
+  // Coverage: every candidate — the zone pool plus the topic-search results (for recall
+  // beyond the zone pool, e.g. a related article classified under a different zone) — has
+  // to pass findRelatedStories' same-story check against the main article. The topic search
+  // alone isn't a safe signal on its own: `searchTopic` is often just the article's first
+  // tag (e.g. "AI"), and a bare ILIKE match on a short/generic tag like that matches almost
+  // anything, not just genuinely related coverage — confirmed live (an earbuds story pulled
+  // in NFL, markets, and politics articles before this was gated).
+  const candidatePool = new Map<string, ArticleDisplay>()
+  for (const a of [...zoneDisplays, ...coverageRaw.map(toArticleDisplay)]) {
+    if (a.id !== article.id) candidatePool.set(a.id, a)
+  }
+  const coverage = findRelatedStories(mainDisplay, Array.from(candidatePool.values()), 10)
 
   // Related: zone articles not already in coverage, up to 3
   const coverageIds = new Set([article.id, ...coverage.map((a) => a.id)])
-  const related = zoneArticlesRaw
+  const related = zoneDisplays
     .filter((a) => !coverageIds.has(a.id))
     .slice(0, 3)
-    .map(toArticleDisplay)
 
   // Zone page href for the zone pill click
   const userZone = userZones.find((z) => z.type === zoneType)
@@ -48,7 +60,7 @@ export default async function StoryDetailPage({ params }: { params: { zoneId: st
 
   return (
     <StoryDetailClient
-      article={toArticleDisplay(article)}
+      article={mainDisplay}
       coverage={coverage}
       related={related}
       isSaved={saveData.data !== null}
