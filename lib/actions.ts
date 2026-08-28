@@ -231,7 +231,10 @@ type LocationInput = {
   stateAbbr: string
   lat: number
   lng: number
-  metroArea: string
+  // Required in practice for the Home location (Local Zone's metro tier needs
+  // one) but omitted entirely for secondary locations, which are just a
+  // town/zip per explicit product direction — no metro/region attached.
+  metroArea?: string
   schoolDistrict?: string
   privateSchools?: string
   colleges?: string
@@ -250,7 +253,7 @@ export async function saveHomeLocation(input: LocationInput) {
       state_abbr: input.stateAbbr,
       lat: input.lat,
       lng: input.lng,
-      metro_area: input.metroArea,
+      metro_area: input.metroArea ?? null,
       school_district: input.schoolDistrict ?? null,
       private_schools: input.privateSchools ?? null,
       colleges: input.colleges ?? null,
@@ -298,7 +301,7 @@ export async function addSecondaryLocation(input: LocationInput) {
     label: `${input.city}, ${input.stateAbbr}`,
     lat: input.lat,
     lng: input.lng,
-    metro_area: input.metroArea,
+    metro_area: input.metroArea ?? null,
     school_district: input.schoolDistrict ?? null,
     private_schools: input.privateSchools ?? null,
     colleges: input.colleges ?? null,

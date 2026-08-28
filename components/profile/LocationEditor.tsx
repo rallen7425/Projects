@@ -10,23 +10,28 @@ export type LocationResult = {
   stateAbbr: string
   lat: number
   lng: number
-  metroArea: string
+  metroArea?: string
 }
 
-// Shared zip-lookup + metro-disambiguation bottom sheet, used both to set/edit
-// the Profile's Home Location and to add a Secondary Location. The metro
-// choice is never auto-picked — nearestMetros always returns up to 3
-// candidates and the user must tap one, even when there's an obvious nearest.
+// Shared zip-lookup bottom sheet, used both to set/edit the Profile's Home
+// Location and to add a Secondary Location. Home Location also asks the user
+// to pick their metro (Local Zone's metro tier needs one) — the choice is
+// never auto-picked, nearestMetros always returns up to 3 candidates and the
+// user must tap one, even when there's an obvious nearest. Secondary
+// locations skip that step entirely, per explicit product direction: a
+// secondary location is just the town/zip, no metro/region attached.
 export default function LocationEditor({
   title,
   submitLabel,
   initialZip,
+  requireMetro = true,
   onSave,
   onClose,
 }: {
   title: string
   submitLabel: string
   initialZip?: string
+  requireMetro?: boolean
   onSave: (location: LocationResult) => Promise<void>
   onClose: () => void
 }) {
@@ -51,11 +56,16 @@ export default function LocationEditor({
     })
   }
 
+  const canSave = !!lookup && (!requireMetro || !!selectedMetro)
+
   const handleSave = () => {
-    if (!lookup || !selectedMetro) return
+    if (!lookup || !canSave) return
     startTransition(async () => {
       try {
-        await onSave({ zip: zip.trim(), city: lookup.city, stateAbbr: lookup.stateAbbr, lat: lookup.lat, lng: lookup.lng, metroArea: selectedMetro })
+        await onSave({
+          zip: zip.trim(), city: lookup.city, stateAbbr: lookup.stateAbbr, lat: lookup.lat, lng: lookup.lng,
+          ...(requireMetro ? { metroArea: selectedMetro! } : {}),
+        })
         onClose()
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not save that location')
@@ -117,42 +127,47 @@ export default function LocationEditor({
               <div style={{ fontSize: '13.5px', color: 'var(--text)', marginBottom: '14px' }}>
                 {lookup.city}, {lookup.stateAbbr}
               </div>
-              <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', display: 'block', marginBottom: '8px' }}>
-                Which city do you consider home?
-              </label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '18px' }}>
-                {lookup.metroOptions.map((m) => {
-                  const active = selectedMetro === m.label
-                  return (
-                    <button
-                      key={m.label}
-                      onClick={() => setSelectedMetro(m.label)}
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '11px 14px', borderRadius: '12px', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-                        background: active ? 'var(--local)' : 'var(--surface-2)',
-                        border: `1px solid ${active ? 'var(--local)' : 'var(--border-mid)'}`,
-                        color: active ? '#0a0a0f' : 'var(--text)',
-                      }}
-                    >
-                      <span style={{ fontSize: '14px', fontWeight: 600 }}>{m.label}</span>
-                      <span style={{ fontSize: '12px', opacity: 0.8 }}>{m.distanceMi} mi</span>
-                    </button>
-                  )
-                })}
-              </div>
+
+              {requireMetro && (
+                <>
+                  <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', display: 'block', marginBottom: '8px' }}>
+                    Which city do you consider home?
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '18px' }}>
+                    {lookup.metroOptions.map((m) => {
+                      const active = selectedMetro === m.label
+                      return (
+                        <button
+                          key={m.label}
+                          onClick={() => setSelectedMetro(m.label)}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '11px 14px', borderRadius: '12px', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+                            background: active ? 'var(--local)' : 'var(--surface-2)',
+                            border: `1px solid ${active ? 'var(--local)' : 'var(--border-mid)'}`,
+                            color: active ? '#0a0a0f' : 'var(--text)',
+                          }}
+                        >
+                          <span style={{ fontSize: '14px', fontWeight: 600 }}>{m.label}</span>
+                          <span style={{ fontSize: '12px', opacity: 0.8 }}>{m.distanceMi} mi</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
 
               <button
                 onClick={handleSave}
-                disabled={isPending || !selectedMetro}
+                disabled={isPending || !canSave}
                 style={{
                   width: '100%', height: '46px', borderRadius: '23px',
                   background: 'var(--primary)', color: 'var(--primary-text)', border: 'none',
                   fontSize: '15px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                  opacity: isPending || !selectedMetro ? 0.5 : 1,
+                  opacity: isPending || !canSave ? 0.5 : 1,
                 }}
               >
-                {isPending && selectedMetro ? 'Saving…' : submitLabel}
+                {isPending && canSave ? 'Saving…' : submitLabel}
               </button>
             </div>
           )}

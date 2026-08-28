@@ -160,7 +160,6 @@ export default function ProfileClient({
                         style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', flex: 1 }}
                       >
                         <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--text)' }}>{loc.label}</div>
-                        {loc.metroArea && <div style={{ fontSize: '12.5px', color: 'var(--text-2)', marginTop: '2px' }}>Metro: {loc.metroArea}</div>}
                       </button>
                       <button
                         onClick={() => handleRemoveSecondary(loc.id)}
@@ -253,6 +252,7 @@ export default function ProfileClient({
         <LocationEditor
           title="Add Secondary Location"
           submitLabel="Add Location"
+          requireMetro={false}
           onSave={handleAddSecondary}
           onClose={() => setAddingSecondary(false)}
         />
