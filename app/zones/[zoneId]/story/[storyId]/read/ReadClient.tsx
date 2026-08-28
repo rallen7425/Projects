@@ -16,18 +16,35 @@ const EXTERNAL_LINK_ICON = (
   </svg>
 )
 
+function ChevronIcon({ direction }: { direction: 'left' | 'right' }) {
+  const d = direction === 'left' ? 'M8 1L1.5 7.5L8 14' : 'M1 1L7.5 7.5L1 14'
+  return (
+    <svg width="8" height="14" viewBox="0 0 9 15" fill="none">
+      <path d={d} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export default function ReadClient({
-  article,
+  source,
   isSaved: initialSaved,
-  url,
-  sourceName,
   canEmbed,
+  position,
+  total,
+  prevSourceId,
+  nextSourceId,
+  mainStoryId,
+  zoneId,
 }: {
-  article: ArticleDisplay
+  source: ArticleDisplay
   isSaved: boolean
-  url: string
-  sourceName: string
   canEmbed: boolean
+  position: number
+  total: number
+  prevSourceId: string | null
+  nextSourceId: string | null
+  mainStoryId: string
+  zoneId: string
 }) {
   const router = useRouter()
   const [saved, setSaved] = useState(initialSaved)
@@ -42,11 +59,11 @@ export default function ReadClient({
   const handleSave = async () => {
     if (saved) {
       setSaved(false)
-      await unsaveArticle(article.id).catch(() => setSaved(true))
+      await unsaveArticle(source.id).catch(() => setSaved(true))
       showToast('Removed from Read Later')
     } else {
       setSaved(true)
-      await saveArticle(article.id).catch(() => setSaved(false))
+      await saveArticle(source.id).catch(() => setSaved(false))
       showToast('Saved to Read Later')
     }
   }
@@ -57,72 +74,119 @@ export default function ReadClient({
     else showToast(`Couldn't save tracking topic`)
   }
 
+  const goToSource = (sourceId: string) => {
+    router.push(`/zones/${zoneId}/story/${mainStoryId}/read?sourceId=${sourceId}`)
+  }
+
   return (
     <div style={{ background: 'var(--bg)', height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-      {/* Fixed header — back (left), Save + Track (right). Same pattern as Story Detail. */}
+      {/* Fixed header — back (left), Save + Track (right); a second row below it
+          steps through Full Coverage when there's more than one source. */}
       <div style={{
         position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: '430px', zIndex: 100,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '54px 16px 14px',
         background: 'var(--bg)', borderBottom: '1px solid var(--border)',
       }}>
-        <button
-          onClick={() => router.back()}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-2)', fontSize: '15px', fontWeight: 500,
-            fontFamily: 'inherit', padding: '6px 0',
-          }}
-        >
-          <svg width="9" height="15" viewBox="0 0 9 15" fill="none">
-            <path d="M8 1L1.5 7.5L8 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Back
-        </button>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '54px 16px 14px',
+        }}>
           <button
-            onClick={handleSave}
-            aria-label={saved ? 'Remove from Read Later' : 'Save to Read Later'}
+            onClick={() => router.back()}
             style={{
-              width: '34px', height: '34px', borderRadius: '50%',
-              background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: saved ? 'var(--primary)' : 'var(--text-2)',
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-2)', fontSize: '15px', fontWeight: 500,
+              fontFamily: 'inherit', padding: '6px 0',
             }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-            </svg>
+            <ChevronIcon direction="left" />
+            Back
           </button>
-          <button
-            onClick={() => setTrackModalOpen(true)}
-            aria-label="Track this topic"
-            style={{
-              width: '34px', height: '34px', borderRadius: '50%',
-              background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'var(--text-2)',
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={handleSave}
+              aria-label={saved ? 'Remove from Read Later' : 'Save to Read Later'}
+              style={{
+                width: '34px', height: '34px', borderRadius: '50%',
+                background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: saved ? 'var(--primary)' : 'var(--text-2)',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setTrackModalOpen(true)}
+              aria-label="Track this topic"
+              style={{
+                width: '34px', height: '34px', borderRadius: '50%',
+                background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: 'var(--text-2)',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          </div>
         </div>
+
+        {total > 1 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '0 16px 12px',
+          }}>
+            <button
+              onClick={() => prevSourceId && goToSource(prevSourceId)}
+              disabled={!prevSourceId}
+              aria-label="Previous source"
+              style={{
+                width: '30px', height: '30px', borderRadius: '50%',
+                background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: prevSourceId ? 'pointer' : 'default',
+                color: prevSourceId ? 'var(--text-2)' : 'var(--text-3)',
+                opacity: prevSourceId ? 1 : 0.4,
+              }}
+            >
+              <ChevronIcon direction="left" />
+            </button>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-3)' }}>
+              {position} of {total} in Full Coverage
+            </span>
+            <button
+              onClick={() => nextSourceId && goToSource(nextSourceId)}
+              disabled={!nextSourceId}
+              aria-label="Next source"
+              style={{
+                width: '30px', height: '30px', borderRadius: '50%',
+                background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: nextSourceId ? 'pointer' : 'default',
+                color: nextSourceId ? 'var(--text-2)' : 'var(--text-3)',
+                opacity: nextSourceId ? 1 : 0.4,
+              }}
+            >
+              <ChevronIcon direction="right" />
+            </button>
+          </div>
+        )}
       </div>
 
       {canEmbed ? (
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', paddingTop: '108px' }}>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', paddingTop: total > 1 ? '146px' : '108px' }}>
           <div style={{ padding: '0 20px 10px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {sourceName}
+              {source.sourceName}
             </span>
             <a
-              href={url}
+              href={source.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
               style={{ flexShrink: 0, fontSize: '12px', fontWeight: 600, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: '5px', textDecoration: 'none' }}
@@ -132,8 +196,8 @@ export default function ReadClient({
             </a>
           </div>
           <iframe
-            src={url}
-            title={sourceName}
+            src={source.sourceUrl}
+            title={source.sourceName}
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
             style={{ flex: 1, minHeight: 0, width: '100%', border: 'none', background: '#fff' }}
           />
@@ -141,46 +205,59 @@ export default function ReadClient({
         </div>
       ) : (
         <div style={{
-          flex: 1, minHeight: 0, overflowY: 'auto', paddingTop: '108px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-          gap: '18px', padding: '128px 28px 140px',
+          flex: 1, minHeight: 0, overflowY: 'auto',
+          paddingTop: total > 1 ? '146px' : '108px', paddingBottom: '120px',
         }}>
-          <div style={{
-            width: '52px', height: '52px', borderRadius: '50%',
-            background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
+          {source.imageUrl && (
+            <div style={{
+              margin: '0 20px 18px', borderRadius: '14px', overflow: 'hidden',
+              aspectRatio: '16 / 9', background: 'var(--surface-2)',
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={source.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            </div>
+          )}
+
+          <div style={{ padding: '0 20px' }}>
+            <div style={{ fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: '8px' }}>
+              {source.sourceName}
+            </div>
+            <h1 style={{ fontSize: '21px', fontWeight: 800, lineHeight: 1.3, color: 'var(--text)', margin: '0 0 20px' }}>
+              {source.headline}
+            </h1>
+
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border-mid)',
+              borderRadius: '14px', padding: '18px', marginBottom: '24px',
+            }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--primary)', marginBottom: '10px' }}>
+                AI Story Preview
+              </div>
+              <p style={{ fontSize: '15px', lineHeight: 1.6, color: 'var(--text)', margin: 0 }}>
+                {source.summary || 'No preview available for this story yet.'}
+              </p>
+            </div>
+
+            <p style={{ fontSize: '13px', color: 'var(--text-3)', lineHeight: 1.5, margin: '0 0 20px' }}>
+              {source.sourceName} doesn&rsquo;t allow their pages to be viewed inside other apps — open it in your browser to read the full story.
+            </p>
+
+            <a
+              href={source.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                width: '100%', height: '48px',
+                background: 'var(--primary)', color: 'var(--primary-text)',
+                borderRadius: '24px', fontSize: '14.5px', fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              Open in Browser
+              {EXTERNAL_LINK_ICON}
+            </a>
           </div>
-          <div style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)' }}>
-            {sourceName} can&rsquo;t be shown here
-          </div>
-          <p style={{ fontSize: '14px', color: 'var(--text-2)', lineHeight: 1.5, margin: 0, maxWidth: '280px' }}>
-            This publisher doesn&rsquo;t allow their pages to be viewed inside other apps. You can open it in your browser instead.
-          </p>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '8px',
-              background: 'var(--primary)', color: 'var(--primary-text)',
-              borderRadius: '24px', padding: '12px 24px', fontSize: '14.5px', fontWeight: 700,
-              textDecoration: 'none',
-            }}
-          >
-            Open in Browser
-          </a>
-          <button
-            onClick={() => router.back()}
-            style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', padding: '8px' }}
-          >
-            Back to Story
-          </button>
         </div>
       )}
 
@@ -190,8 +267,8 @@ export default function ReadClient({
         open={trackModalOpen}
         onClose={() => setTrackModalOpen(false)}
         onConfirm={handleTrack}
-        initialTopic={article.tags[0] ?? article.headline.split(' ').slice(0, 4).join(' ')}
-        initialZone={article.zoneType}
+        initialTopic={source.tags[0] ?? source.headline.split(' ').slice(0, 4).join(' ')}
+        initialZone={source.zoneType}
         aiMode
       />
 

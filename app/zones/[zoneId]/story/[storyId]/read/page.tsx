@@ -1,7 +1,6 @@
 import { createServerSupabase, getEffectiveUser } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getArticleById } from '@/lib/db/articles'
-import { toArticleDisplay } from '@/lib/articleUtils'
+import { getStoryCoverage } from '@/lib/storyCoverage'
 import ReadClient from './ReadClient'
 
 // Sites that explicitly refuse to be framed tell us so via these headers.
@@ -33,7 +32,7 @@ async function checkEmbeddable(url: string): Promise<boolean> {
 
     return true
   } catch {
-    // Can't verify — fail safe to the interstitial rather than risk a blank frame.
+    // Can't verify — fail safe to the AI Preview rather than risk a blank frame.
     return false
   } finally {
     clearTimeout(timeout)
@@ -45,30 +44,43 @@ export default async function ReadPage({
   searchParams,
 }: {
   params: { zoneId: string; storyId: string }
-  searchParams: { url?: string; name?: string }
+  searchParams: { sourceId?: string }
 }) {
   const user = await getEffectiveUser()
   if (!user) redirect('/auth/signin')
 
-  const url = searchParams.url
-  if (!url) redirect(`/zones/${params.zoneId}/story/${params.storyId}`)
+  const storyCoverage = await getStoryCoverage(params.storyId)
+  if (!storyCoverage) redirect(`/zones/${params.zoneId}`)
+  const { sources } = storyCoverage
 
-  const article = await getArticleById(params.storyId)
-  if (!article) redirect(`/zones/${params.zoneId}`)
+  // Defaults to the main article's own source (position 0) when no sourceId is
+  // given — e.g. a bare link straight to /read.
+  const requestedId = searchParams.sourceId ?? sources[0]?.id
+  const currentIndex = sources.findIndex((s) => s.id === requestedId)
+  const source = currentIndex >= 0 ? sources[currentIndex] : sources[0]
+  if (!source) redirect(`/zones/${params.zoneId}/story/${params.storyId}`)
+
+  const resolvedIndex = currentIndex >= 0 ? currentIndex : 0
+  const prevSource = resolvedIndex > 0 ? sources[resolvedIndex - 1] : null
+  const nextSource = resolvedIndex < sources.length - 1 ? sources[resolvedIndex + 1] : null
 
   const supabase = createServerSupabase()
   const [saveData, canEmbed] = await Promise.all([
-    supabase.from('user_saves').select('id').eq('user_id', user.id).eq('article_id', article.id).maybeSingle(),
-    checkEmbeddable(url),
+    supabase.from('user_saves').select('id').eq('user_id', user.id).eq('article_id', source.id).maybeSingle(),
+    checkEmbeddable(source.sourceUrl),
   ])
 
   return (
     <ReadClient
-      article={toArticleDisplay(article)}
+      source={source}
       isSaved={saveData.data !== null}
-      url={url}
-      sourceName={searchParams.name ?? 'Source'}
       canEmbed={canEmbed}
+      position={resolvedIndex + 1}
+      total={sources.length}
+      prevSourceId={prevSource?.id ?? null}
+      nextSourceId={nextSource?.id ?? null}
+      mainStoryId={params.storyId}
+      zoneId={params.zoneId}
     />
   )
 }

@@ -228,7 +228,7 @@ export default function StoryDetailClient({
                 <div
                   key={src.id}
                   onClick={() => router.push(
-                    `/zones/${article.zoneType}/story/${article.id}/read?url=${encodeURIComponent(src.sourceUrl)}&name=${encodeURIComponent(src.sourceName)}`
+                    `/zones/${article.zoneType}/story/${article.id}/read?sourceId=${src.id}`
                   )}
                   style={{
                     background: 'var(--surface)', border: '1px solid var(--border)',
