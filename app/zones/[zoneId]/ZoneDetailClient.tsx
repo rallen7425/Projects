@@ -572,7 +572,6 @@ function StoryCard({
 
 export default function ZoneDetailClient({
   zone,
-  articles,
   quicklook,
   scores,
   weather,
@@ -586,7 +585,6 @@ export default function ZoneDetailClient({
   userId,
 }: {
   zone: ZoneRow
-  articles: ArticleDisplay[]
   quicklook: QuicklookRow[]
   scores: TeamScoreCard[]
   weather: WeatherCardData[]
@@ -724,19 +722,14 @@ export default function ZoneDetailClient({
           </button>
         }
         rightSlot={
-          <>
-            {canCustomize && (
-              <button
-                onClick={() => setCustomizeOpen(true)}
-                style={{ fontSize: '11px', fontWeight: 700, color: meta?.color ?? 'var(--text)', background: meta?.bg ?? 'var(--surface-2)', border: `1px solid ${meta?.border ?? 'var(--border)'}`, padding: '3px 11px', borderRadius: '20px', cursor: 'pointer', fontFamily: 'inherit' }}
-              >
-                Customize
-              </button>
-            )}
-            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-3)', background: 'var(--surface-2)', border: '1px solid var(--border)', padding: '3px 9px', borderRadius: '20px' }}>
-              {articles.length} stories
-            </span>
-          </>
+          canCustomize && (
+            <button
+              onClick={() => setCustomizeOpen(true)}
+              style={{ fontSize: '11px', fontWeight: 700, color: meta?.color ?? 'var(--text)', background: meta?.bg ?? 'var(--surface-2)', border: `1px solid ${meta?.border ?? 'var(--border)'}`, padding: '3px 11px', borderRadius: '20px', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              Customize
+            </button>
+          )
         }
       />
 

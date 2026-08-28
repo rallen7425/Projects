@@ -175,7 +175,6 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   return (
     <ZoneDetailClient
       zone={zone}
-      articles={zoneType === 'sports' ? articleDisplays : zoneDisplays}
       quicklook={quicklook}
       scores={scores}
       weather={weather}
