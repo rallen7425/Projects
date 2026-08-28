@@ -54,6 +54,7 @@ export default function StoryDetailClient({
   const [saved, setSaved] = useState(initialSaved)
   const [toast, setToast] = useState({ visible: false, message: '' })
   const [trackModalOpen, setTrackModalOpen] = useState(false)
+  const [visibleCoverageCount, setVisibleCoverageCount] = useState(5)
 
   const showToast = (message: string) => {
     setToast({ visible: true, message })
@@ -223,7 +224,7 @@ export default function StoryDetailClient({
               Full Coverage
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              {allSources.map((src) => (
+              {allSources.slice(0, visibleCoverageCount).map((src) => (
                 <div
                   key={src.id}
                   onClick={() => router.push(
@@ -261,6 +262,19 @@ export default function StoryDetailClient({
                 </div>
               ))}
             </div>
+            {visibleCoverageCount < allSources.length && (
+              <button
+                onClick={() => setVisibleCoverageCount((c) => c + 5)}
+                style={{
+                  width: '100%', marginTop: '8px', padding: '12px', borderRadius: '10px',
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  color: 'var(--text-2)', fontSize: '13.5px', fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                View more ({allSources.length - visibleCoverageCount} more)
+              </button>
+            )}
           </>
         )}
 

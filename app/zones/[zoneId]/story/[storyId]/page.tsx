@@ -46,7 +46,9 @@ export default async function StoryDetailPage({ params }: { params: { zoneId: st
   for (const a of [...zoneDisplays, ...coverageRaw.map(toArticleDisplay)]) {
     if (a.id !== article.id) candidatePool.set(a.id, a)
   }
-  const coverage = findRelatedStories(mainDisplay, Array.from(candidatePool.values()), 10)
+  // Capped well above the candidate pool's realistic size (rather than the old flat 10)
+  // now that the UI paginates Full Coverage 5-at-a-time instead of showing one flat list.
+  const coverage = findRelatedStories(mainDisplay, Array.from(candidatePool.values()), 40)
 
   // Related: zone articles not already in coverage, up to 3
   const coverageIds = new Set([article.id, ...coverage.map((a) => a.id)])
