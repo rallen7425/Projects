@@ -52,8 +52,11 @@ export default function ZoneManageClient({
   }
 
   const existingTypes = new Set(zones.map((z) => z.type))
+  // Hidden templates (Finance, Work — see lib/zone-templates.ts) aren't offered as a new
+  // phantom row to turn on, but a zone that already exists for one (enabled or disabled)
+  // still renders normally below via buildExistingOrder, so it stays fully manageable.
   const phantomRows: Row[] = templates
-    .filter((t) => !existingTypes.has(t.type))
+    .filter((t) => !existingTypes.has(t.type) && !t.hidden)
     .map((t) => ({ key: t.key, template: t, zone: null }))
 
   // Existing (created) zones are the only ones with a real position — kept as

@@ -20,6 +20,14 @@ export type ZoneTemplate = {
     label: string
   }
   specialCard?: 'scores' | 'weather' | 'quicklook' | 'airquality'
+  // Excluded from /zones/manage's phantom (not-yet-added) row list — not offered as
+  // something to turn on right now. Doesn't affect a zone that already exists (enabled
+  // or disabled): that row still renders normally and stays fully manageable, this only
+  // stops a *new* one from being added via the catalog. Set 2026-09-08 for Finance/Work
+  // per explicit product direction, after a real Finance Zone got created by mistake —
+  // both had been sitting in the catalog as always-visible toggle-on options with no
+  // real distinguishing signal that they weren't meant to be picked yet.
+  hidden?: boolean
 }
 
 export const ZONE_TEMPLATES: Record<string, ZoneTemplate> = {
@@ -69,6 +77,7 @@ export const ZONE_TEMPLATES: Record<string, ZoneTemplate> = {
     defaultConfig: {},
     sources: ['finance-api'],
     specialCard: 'quicklook',
+    hidden: true,
   },
   work: {
     type: 'work',
@@ -79,6 +88,7 @@ export const ZONE_TEMPLATES: Record<string, ZoneTemplate> = {
     sources: ['guardian', 'rss'],
     requiresIndustry: true,
     personalization: { kind: 'industry', label: 'Industry' },
+    hidden: true,
   },
   entertainment: {
     type: 'entertainment',
