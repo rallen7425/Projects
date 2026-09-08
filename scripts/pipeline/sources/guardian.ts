@@ -7,13 +7,18 @@ function makeExternalId(sourceUrl: string, headline: string): string {
   return createHash('sha256').update(sourceUrl + headline).digest('hex').slice(0, 32)
 }
 
-export async function fetchGuardian(section: string, zoneType: ZoneType): Promise<RawArticle[]> {
+// `byTag: true` queries a specific Guardian tag (e.g. 'lifeandstyle/parents-and-parenting')
+// instead of a whole section — used where a section is too broad (Family/Wellness both
+// draw from 'lifeandstyle', so each needs its own narrower tag to avoid near-identical
+// content; confirmed both tags exist and are reasonably populated via a live tags-API
+// check before wiring this in).
+export async function fetchGuardian(sectionOrTag: string, zoneType: ZoneType, opts?: { byTag?: boolean }): Promise<RawArticle[]> {
   const apiKey = process.env.GUARDIAN_API_KEY
   if (!apiKey) throw new Error('GUARDIAN_API_KEY not set')
 
   const url = new URL(BASE)
   url.searchParams.set('api-key', apiKey)
-  url.searchParams.set('section', section)
+  url.searchParams.set(opts?.byTag ? 'tag' : 'section', sectionOrTag)
   url.searchParams.set('show-fields', 'headline,bodyText,thumbnail')
   url.searchParams.set('page-size', '15')
   url.searchParams.set('order-by', 'newest')

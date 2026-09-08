@@ -15,11 +15,14 @@
   --text-3: rgba(238,238,242,0.30);
 
   /* Zone colors */
-  --sports:  #52C97A;
-  --local:   #5B9CF6;
-  --news:    #EF9F27;
-  --tech:    #A78BFA;
-  --finance: #34D399;
+  --sports:    #52C97A;
+  --local:     #5B9CF6;
+  --news:      #EF9F27;
+  --tech:      #A78BFA;
+  --finance:   #34D399;
+  --family:    #FBBF24;
+  --wellness:  #22D3EE;
+  --interests: #818CF8;
 
   /* Darkened zone colors — for solid-fill live-data cards (Scores, Weather)
      where white text needs real contrast, not the pill-scale zone color. */

@@ -37,6 +37,9 @@ const ZONE_GRADIENTS: Record<ZoneType, string> = {
   finance: 'linear-gradient(135deg,#0d2418,#070f0c)',
   work: 'linear-gradient(135deg,#1a1a2e,#0f0f1a)',
   entertainment: 'linear-gradient(135deg,#2d0d2e,#1a0a1a)',
+  family: 'linear-gradient(135deg,#4a3305,#241902)',
+  wellness: 'linear-gradient(135deg,#053a42,#021c20)',
+  interests: 'linear-gradient(135deg,#211c4a,#120f29)',
 }
 
 function Dot() {

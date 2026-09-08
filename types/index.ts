@@ -6,6 +6,9 @@ export type ZoneType =
   | 'finance'
   | 'work'
   | 'entertainment'
+  | 'family'
+  | 'wellness'
+  | 'interests'
 
 export type ArticleDisplay = {
   id: string
@@ -164,5 +167,26 @@ export const ZONE_META: Record<ZoneType, { label: string; shortLabel: string; co
     color: '#F472B6',
     bg: 'rgba(244,114,182,0.12)',
     border: 'rgba(244,114,182,0.30)',
+  },
+  family: {
+    label: 'Family Zone',
+    shortLabel: 'Family',
+    color: '#FBBF24',
+    bg: 'rgba(251,191,36,0.12)',
+    border: 'rgba(251,191,36,0.30)',
+  },
+  wellness: {
+    label: 'Health & Wellness Zone',
+    shortLabel: 'Wellness',
+    color: '#22D3EE',
+    bg: 'rgba(34,211,238,0.12)',
+    border: 'rgba(34,211,238,0.30)',
+  },
+  interests: {
+    label: 'Interests Zone',
+    shortLabel: 'Interests',
+    color: '#818CF8',
+    bg: 'rgba(129,140,248,0.12)',
+    border: 'rgba(129,140,248,0.30)',
   },
 }

@@ -49,6 +49,12 @@ export default function CustomizeSheet({ zoneId, zoneType, config, onClose }: Pr
           {zoneType === 'work' && (
             <IndustryEditor zoneId={zoneId} initialIndustry={(config as { industry?: string } | null)?.industry ?? ''} onDone={onClose} />
           )}
+          {zoneType === 'interests' && (
+            <TopicEditor zoneId={zoneId} initialTopic={(config as { topic?: string } | null)?.topic ?? ''} onDone={onClose} />
+          )}
+          {zoneType === 'entertainment' && (
+            <GenresEditor zoneId={zoneId} color={meta?.color ?? '#F472B6'} initialGenres={(config as { genres?: string[] } | null)?.genres ?? []} />
+          )}
         </div>
       </div>
     </div>
@@ -231,6 +237,116 @@ function AreasEditor({ initialAreas, onClose }: { initialAreas: LocalArea[]; onC
       >
         Manage in Profile
       </Link>
+    </div>
+  )
+}
+
+// A fixed multi-select list, matching Guardian's own culture-adjacent sections
+// (Film/Books/Music/Stage/Art & Design/Games/TV — confirmed via the Guardian
+// Content API's /sections endpoint) rather than an invented taxonomy.
+const GENRE_OPTIONS = ['Film', 'TV', 'Music', 'Books', 'Stage', 'Art & Design', 'Games']
+
+function GenresEditor({ zoneId, color, initialGenres }: { zoneId: string; color: string; initialGenres: string[] }) {
+  const router = useRouter()
+  const [selected, setSelected] = useState<string[]>(initialGenres)
+  const [isPending, startTransition] = useTransition()
+  const [saved, setSaved] = useState(false)
+
+  const toggle = (genre: string) => {
+    setSaved(false)
+    setSelected((prev) => (prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]))
+  }
+
+  const handleSave = () => {
+    startTransition(async () => {
+      await updateZoneCustomization(zoneId, { genres: selected } as unknown as Json)
+      setSaved(true)
+      router.refresh()
+    })
+  }
+
+  return (
+    <div style={{ paddingBottom: '20px' }}>
+      <div style={{ fontSize: '12.5px', color: 'var(--text-3)', marginBottom: '14px', lineHeight: 1.5 }}>
+        Pick the genres you care about most — this zone still shows everything, just favors these first. Leave nothing selected to see the unfiltered mix.
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '18px' }}>
+        {GENRE_OPTIONS.map((genre) => {
+          const active = selected.includes(genre)
+          return (
+            <button
+              key={genre}
+              onClick={() => toggle(genre)}
+              style={{
+                padding: '6px 14px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit',
+                background: active ? color : 'var(--surface-2)',
+                color: active ? '#0a0a0f' : 'var(--text-2)',
+                border: `1px solid ${active ? color : 'var(--border)'}`,
+              }}
+            >
+              {genre}
+            </button>
+          )
+        })}
+      </div>
+      <button
+        onClick={handleSave}
+        disabled={isPending}
+        style={{
+          width: '100%', height: '46px', borderRadius: '23px',
+          background: 'var(--primary)', color: 'var(--primary-text)', border: 'none',
+          fontSize: '15px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          opacity: isPending ? 0.6 : 1,
+        }}
+      >
+        {isPending ? 'Saving…' : saved ? 'Saved ✓' : 'Save Genres'}
+      </button>
+    </div>
+  )
+}
+
+function TopicEditor({ zoneId, initialTopic, onDone }: { zoneId: string; initialTopic: string; onDone: () => void }) {
+  const router = useRouter()
+  const [topic, setTopic] = useState(initialTopic)
+  const [isPending, startTransition] = useTransition()
+
+  const handleSave = () => {
+    if (!topic.trim()) return
+    startTransition(async () => {
+      await updateZoneCustomization(zoneId, { topic: topic.trim() } as unknown as Json)
+      router.refresh()
+      onDone()
+    })
+  }
+
+  return (
+    <div style={{ paddingBottom: '20px' }}>
+      <div style={{ fontSize: '12.5px', color: 'var(--text-3)', marginBottom: '16px', lineHeight: 1.5 }}>
+        Name the topic you want this zone to follow — a hobby, a team, anything.
+      </div>
+      <input
+        value={topic}
+        onChange={(e) => setTopic(e.target.value)}
+        placeholder="e.g. Guitar"
+        style={{
+          width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border-mid)',
+          borderRadius: '12px', padding: '13px 14px', fontSize: '15px', color: 'var(--text)',
+          fontFamily: 'inherit', outline: 'none', marginBottom: '16px',
+        }}
+      />
+      <button
+        onClick={handleSave}
+        disabled={isPending || !topic.trim()}
+        style={{
+          width: '100%', height: '46px', borderRadius: '23px',
+          background: 'var(--primary)', color: 'var(--primary-text)', border: 'none',
+          fontSize: '15px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          opacity: isPending || !topic.trim() ? 0.6 : 1,
+        }}
+      >
+        {isPending ? 'Saving…' : 'Save Topic'}
+      </button>
     </div>
   )
 }

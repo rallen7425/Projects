@@ -63,6 +63,45 @@ export function applyLocalAreaPriority(articles: ArticleDisplay[], areas: LocalA
   })
 }
 
+// Keyword sets for Entertainment's genre boost — matched against headline/summary/tags,
+// same substring approach (with the same known false-positive tradeoff) already used for
+// Sports' team matching and Local's area classification above. Genre labels themselves
+// (shown in the Customize UI) mirror Guardian's own culture-adjacent sections.
+const GENRE_KEYWORDS: Record<string, string[]> = {
+  Film: ['film', 'movie', 'cinema'],
+  TV: ['tv', 'television', 'series', 'episode'],
+  Music: ['music', 'album', 'song', 'concert', 'band', 'singer'],
+  Books: ['book', 'novel', 'author', 'literary'],
+  Stage: ['theatre', 'theater', 'stage', 'play', 'musical'],
+  'Art & Design': ['art', 'design', 'exhibition', 'gallery', 'artist'],
+  Games: ['game', 'gaming'],
+}
+
+// Boosts genre-matched articles' effective urgency, same non-exclusionary pattern as
+// applyLocalAreaPriority below — a selected genre biases ranking, it never hides the
+// unfiltered mix (an empty-looking zone because personalization filtered everything out
+// would be worse than an imperfectly-ranked one).
+export function applyGenrePriority(articles: ArticleDisplay[], genres: string[]): ArticleDisplay[] {
+  if (genres.length === 0) return articles
+  const keywords = genres.flatMap((g) => GENRE_KEYWORDS[g] ?? [])
+  if (keywords.length === 0) return articles
+
+  const matches = (a: ArticleDisplay) => {
+    const text = `${a.headline} ${a.summary} ${a.tags.join(' ')}`.toLowerCase()
+    return keywords.some((k) => text.includes(k))
+  }
+
+  const boosted = articles.map((a) => {
+    if (!matches(a)) return a
+    const urgencyScore = Math.min(5, a.urgencyScore + 1)
+    return { ...a, urgencyScore, isUrgent: urgencyScore >= 4 }
+  })
+  return boosted.sort((a, b) => {
+    if (b.urgencyScore !== a.urgencyScore) return b.urgencyScore - a.urgencyScore
+    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+  })
+}
+
 // Returns the zone's articles in personalized order — for Sports, team-of-interest
 // coverage first (falls back to the generic zone pool if no teams are configured or
 // none of them have any matching coverage); for Local, a larger raw pool (so there's
@@ -100,7 +139,14 @@ export async function getZoneArticles(zoneType: ZoneType, config: Json, limit = 
   // even after Breaking/Top Stories/Today (which do dedupe) had already collapsed them.
   const poolSize = Math.max(limit * 3, 30)
   const rows = await getArticlesByZone(zoneType, poolSize)
-  return dedupeStories(rows.map(toArticleDisplay)).slice(0, limit)
+  const displays = dedupeStories(rows.map(toArticleDisplay))
+
+  if (zoneType === 'entertainment') {
+    const genres = (config as { genres?: string[] } | null)?.genres ?? []
+    return applyGenrePriority(displays, genres).slice(0, limit)
+  }
+
+  return displays.slice(0, limit)
 }
 
 // `topArticles` is the full fetched pool (up to `limit`), not pre-sliced to 3 —

@@ -127,7 +127,7 @@ export async function unsaveArticle(articleId: string) {
 // at all — its areas come entirely from the user's Profile home location
 // (see "Profile locations" below), since that's now the shared source of
 // truth Zones read from rather than each zone owning its own copy.
-export async function addZone(templateKey: string, setupInput?: { zip?: string; industry?: string }) {
+export async function addZone(templateKey: string, setupInput?: { zip?: string; industry?: string; topic?: string }) {
   const user = await getEffectiveUser()
   if (!user) redirect('/auth/signin')
 
@@ -139,6 +139,15 @@ export async function addZone(templateKey: string, setupInput?: { zip?: string; 
     const secondaries = await getUserLocations(user.id)
     const areas = buildLocalAreasFromProfile(home, secondaries)
     config = { areas } as unknown as Json
+  } else if (templateKey === 'wellness') {
+    // No config to store — the Air Quality card reads the Profile home
+    // location directly at render time, same reasoning as Local's areas.
+    // Just verify one actually exists before creating the zone.
+    const profile = await getUserProfile(user.id)
+    if (!toHomeLocation(profile)) throw new Error('Set up your home location in Profile before turning on the Wellness Zone')
+  } else if (templateKey === 'interests') {
+    if (!setupInput?.topic) throw new Error('A topic is required for the Interests Zone')
+    config = { topic: setupInput.topic }
   } else if (templateKey === 'sports') {
     // Prefer the Profile's home location if one is already set (skips the
     // zip prompt entirely); otherwise fall back to the inline zip this

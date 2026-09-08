@@ -65,6 +65,32 @@ async function fetchLocalAreaConfigs(): Promise<LocalArea[]> {
   return Array.from(byQuery.values())
 }
 
+// Interests Zone content is driven by every enabled interests zone's own
+// config.topic — same shared-article-pool architecture as every other zone
+// (one union of topics, not a per-user pipeline run), same pattern as
+// fetchLocalAreaConfigs above. Each topic's Google News results are capped
+// before interleaving so one topic can't crowd out another.
+async function fetchInterestsTopics(): Promise<string[]> {
+  const supabase = createServiceClient()
+  const { data: zones, error } = await supabase
+    .from('zones')
+    .select('config')
+    .eq('type', 'interests')
+    .eq('enabled', true)
+
+  if (error) {
+    console.warn('[interests] Failed to load zone configs:', error.message)
+    return []
+  }
+
+  const topics = new Set<string>()
+  for (const zone of zones ?? []) {
+    const topic = (zone.config as { topic?: string } | null)?.topic
+    if (topic) topics.add(topic)
+  }
+  return Array.from(topics)
+}
+
 const ZONE_RUNNERS: ZoneRunner[] = [
   {
     zone: 'tech',
@@ -165,6 +191,29 @@ const ZONE_RUNNERS: ZoneRunner[] = [
   {
     zone: 'work',
     fetch: () => fetchGuardian('money', 'work'),
+  },
+  {
+    zone: 'family',
+    fetch: () => fetchGuardian('lifeandstyle/parents-and-parenting', 'family', { byTag: true }),
+  },
+  {
+    zone: 'wellness',
+    fetch: () => fetchGuardian('lifeandstyle/fitness', 'wellness', { byTag: true }),
+  },
+  {
+    zone: 'interests',
+    fetch: async () => {
+      const topics = await fetchInterestsTopics()
+      if (topics.length === 0) return []
+
+      const perTopic = await Promise.all(
+        topics.map((topic) => fetchGoogleNews(topic, 'interests', topic).catch(() => []))
+      )
+      const capped = perTopic.map((set) =>
+        [...set].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 8)
+      )
+      return interleaveRoundRobin(capped).slice(0, 15)
+    },
   },
 ]
 

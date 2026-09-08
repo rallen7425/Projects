@@ -14,11 +14,12 @@ export type ZoneTemplate = {
   sources: string[]
   requiresZip?: boolean
   requiresIndustry?: boolean
+  requiresTopic?: boolean
   personalization?: {
-    kind: 'teams' | 'areas' | 'industry'
+    kind: 'teams' | 'areas' | 'industry' | 'genres' | 'topic'
     label: string
   }
-  specialCard?: 'scores' | 'weather' | 'quicklook'
+  specialCard?: 'scores' | 'weather' | 'quicklook' | 'airquality'
 }
 
 export const ZONE_TEMPLATES: Record<string, ZoneTemplate> = {
@@ -86,5 +87,34 @@ export const ZONE_TEMPLATES: Record<string, ZoneTemplate> = {
     position: 6,
     defaultConfig: {},
     sources: ['guardian-culture'],
+    personalization: { kind: 'genres', label: 'Genres' },
+  },
+  family: {
+    type: 'family',
+    label: 'Family Zone',
+    description: 'Parenting and family-life coverage from The Guardian.',
+    position: 7,
+    defaultConfig: {},
+    sources: ['guardian-parenting'],
+  },
+  wellness: {
+    type: 'wellness',
+    label: 'Health & Wellness Zone',
+    description: 'Fitness and wellness coverage from The Guardian, plus live air quality and UV for your home location.',
+    position: 8,
+    defaultConfig: {},
+    sources: ['guardian-fitness', 'open-meteo-air-quality'],
+    requiresZip: true,
+    specialCard: 'airquality',
+  },
+  interests: {
+    type: 'interests',
+    label: 'Interests Zone',
+    description: 'News about a topic you name — a hobby, a team, anything you want to follow closely.',
+    position: 9,
+    defaultConfig: {},
+    sources: ['google-news'],
+    requiresTopic: true,
+    personalization: { kind: 'topic', label: 'Topic' },
   },
 }

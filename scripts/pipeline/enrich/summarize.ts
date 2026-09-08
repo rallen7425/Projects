@@ -7,7 +7,11 @@ function getClient() {
   return _client
 }
 
-const ZONE_VALUES: ZoneType[] = ['sports', 'local', 'tech', 'finance', 'entertainment', 'work', 'news']
+// Deliberately excludes 'interests' — unlike every other zone here, Interests is a
+// per-user named topic (e.g. "Guitar"), not a real content category a classifier can
+// judge generically. Its zone assignment is preserved from the ingestion-time hint
+// instead (see the override below), so it's never offered as a model output.
+const ZONE_VALUES: ZoneType[] = ['sports', 'local', 'tech', 'finance', 'entertainment', 'work', 'news', 'family', 'wellness']
 
 // A story is breaking/critical enough to also surface in News on top of its
 // native zone at this urgency tier (see the rubric in the prompt below) —
@@ -39,6 +43,8 @@ async function summarizeBatch(articles: RawArticle[]): Promise<SummarizeResult[]
   - "local": content specific to a particular city/region/community (schools, local government, local events) — not just "published by a local outlet," the substance must be geographically local.
   - "work": careers, workplace trends, employment, the world of work itself.
   - "entertainment": film, TV, music, celebrities, culture, arts.
+  - "family": parenting, child-rearing, or family life from a parent's perspective — not youth sports scores/schedules (that's "sports" if it's genuinely about a game or team) and not general education policy (that's "news" unless it's specifically about parenting or family life).
+  - "wellness": fitness, exercise, nutrition, or personal/mental wellbeing aimed at an individual reader — not medical/health-policy news (that's "news") and not organized/competitive sports (that's "sports").
   - "news": general significant world/national/political events that don't fit any zone above — this is the catch-all, not a default for borderline cases in another zone.
   A story about a tech company's stock move is "finance" or "tech", not both — pick the single best fit. A general-interest story that merely mentions a tech company in passing (e.g. a celebrity's death, an election ruling) is NOT "tech" just because it was found via a tech-adjacent source — classify it by its actual subject.
 - summary: 2-3 sentence plain English summary, no jargon
@@ -92,8 +98,11 @@ export async function summarizeArticles(articles: RawArticle[]): Promise<Process
     const result = resultMap.get(article.externalId)
     // If classification failed to come back for this article (parse error,
     // dropped batch item), fall back to the source-feed hint it was fetched
-    // with rather than losing the article's zone entirely.
-    const zoneType = result?.zoneType ?? article.zoneType
+    // with rather than losing the article's zone entirely. Interests articles
+    // always keep their ingestion-time hint regardless of what the model says —
+    // the per-zone Google News query already scoped it to the user's named
+    // topic, which content reclassification has no way to judge (see ZONE_VALUES).
+    const zoneType = article.zoneType === 'interests' ? 'interests' : (result?.zoneType ?? article.zoneType)
     const urgencyScore = result?.urgency ?? 1
     const zoneTypes: ZoneType[] =
       zoneType !== 'news' && urgencyScore >= NEWS_CROSSOVER_URGENCY ? [zoneType, 'news'] : [zoneType]

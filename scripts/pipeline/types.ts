@@ -1,4 +1,4 @@
-export type ZoneType = 'sports' | 'local' | 'tech' | 'finance' | 'entertainment' | 'work' | 'news'
+export type ZoneType = 'sports' | 'local' | 'tech' | 'finance' | 'entertainment' | 'work' | 'news' | 'family' | 'wellness' | 'interests'
 
 export type RawArticle = {
   externalId: string       // sha256 hash of (sourceUrl + headline), truncated to 32 chars

@@ -6,11 +6,13 @@ import { getArticlesByZone, getArticleById, searchTeamUpdates, searchArticlesByT
 import { getZoneQuicklook } from '@/lib/db/zones'
 import { getTrackedTopics } from '@/lib/db/tracks'
 import { toArticleDisplay, dedupeStories, selectBreakingStories, selectTopStories } from '@/lib/articleUtils'
-import { applyLocalAreaPriority } from '@/lib/zonePreview'
+import { applyLocalAreaPriority, applyGenrePriority } from '@/lib/zonePreview'
 import ZoneDetailClient from './ZoneDetailClient'
 import type { ArticleDisplay, LocalArea, ZoneType } from '@/types'
 import { getScoresForTeams, type TeamOfInterest } from '@/lib/scores/espn'
 import { getWeatherForAreas } from '@/lib/weather/nws'
+import { getAirQualityForLocation } from '@/lib/air/openmeteo'
+import { getUserProfile, toHomeLocation } from '@/lib/db/profile'
 
 type TrackingTopicResult = { id: string; topic: string; createdAt: string; article: ArticleDisplay | null; articleCount: number }
 
@@ -65,7 +67,7 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   // spawning a dozen high-urgency rows) before dedupeStories ever gets enough raw material to
   // find genuinely distinct stories among it. Local's version of this also re-biases toward the
   // user's primary community/metro via applyLocalAreaPriority (see that function's doc comment).
-  const [articles, quicklook, scores, weather, localPoolRows, genericPoolRows] = await Promise.all([
+  const [articles, quicklook, scores, weather, airQuality, localPoolRows, genericPoolRows] = await Promise.all([
     getArticlesByZone(zoneType, 15),
     getZoneQuicklook(zoneType),
     zoneType === 'sports' && teamsOfInterest.length > 0
@@ -74,6 +76,12 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
     zoneType === 'local' && localAreas.length > 0
       ? getWeatherForAreas(localAreas).catch(() => [])
       : Promise.resolve([]),
+    zoneType === 'wellness'
+      ? getUserProfile(user.id).then((profile) => {
+          const home = toHomeLocation(profile)
+          return home ? getAirQualityForLocation(home.lat, home.lng, home.city, home.stateAbbr).catch(() => null) : null
+        })
+      : Promise.resolve(null),
     zoneType === 'local' ? getArticlesByZone('local', 45) : Promise.resolve([]),
     isGeneric ? getArticlesByZone(zoneType, 45) : Promise.resolve([]),
   ])
@@ -140,10 +148,14 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
 
   // Top Stories/Today favor the user's primary community/metro over a secondary "extra"
   // area (see lib/zonePreview.ts's applyLocalAreaPriority) — a mix, not an exclusion,
-  // since secondary-area articles are only left unboosted, never penalized.
+  // since secondary-area articles are only left unboosted, never penalized. Entertainment
+  // gets the same non-exclusionary treatment for its configured genres.
+  const genres = zoneType === 'entertainment' ? ((zone.config as { genres?: string[] } | null)?.genres ?? []) : []
   const prioritizedRemaining = zoneType === 'local'
     ? applyLocalAreaPriority(zoneAfterBreaking, localAreas)
-    : zoneAfterBreaking
+    : zoneType === 'entertainment'
+      ? applyGenrePriority(zoneAfterBreaking, genres)
+      : zoneAfterBreaking
 
   const zoneTopStories = zoneType !== 'sports' ? selectTopStories(prioritizedRemaining, new Set()) : []
   const zoneTopIds = new Set(zoneTopStories.map((a) => a.id))
@@ -178,6 +190,7 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
       quicklook={quicklook}
       scores={scores}
       weather={weather}
+      airQuality={airQuality}
       updates={updateDisplays}
       breaking={zoneBreaking}
       topStories={zoneType === 'sports' ? topStories : zoneTopStories}

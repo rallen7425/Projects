@@ -13,10 +13,18 @@ export const dynamic = 'force-dynamic'
 // duplicate the Sports/Work Customize sheets, just summarizes what's set and
 // links to the zone's own detail page. Local isn't included here since its
 // editor (location data) now lives directly on this page instead.
-function summarizePersonalization(kind: 'teams' | 'industry', config: unknown): string {
+function summarizePersonalization(kind: 'teams' | 'industry' | 'genres' | 'topic', config: unknown): string {
   if (kind === 'teams') {
     const teams = (config as { teams?: TeamOfInterest[] } | null)?.teams ?? []
     return teams.length > 0 ? teams.map((t) => t.shortName).join(', ') : 'No teams selected yet'
+  }
+  if (kind === 'genres') {
+    const genres = (config as { genres?: string[] } | null)?.genres ?? []
+    return genres.length > 0 ? genres.join(', ') : 'No genres selected yet'
+  }
+  if (kind === 'topic') {
+    const topic = (config as { topic?: string } | null)?.topic
+    return topic || 'Not set yet'
   }
   const industry = (config as { industry?: string } | null)?.industry
   return industry || 'Not set yet'

@@ -14,6 +14,7 @@ import type { ArticleDisplay, ZoneType } from '@/types'
 import { ZONE_META } from '@/types'
 import type { TeamScoreCard } from '@/lib/scores/espn'
 import type { WeatherCard as WeatherCardData } from '@/lib/weather/nws'
+import type { AirQualityCardData } from '@/lib/air/openmeteo'
 
 type QuicklookRow = { label: string; value: string; sub?: string | null }
 type ZoneRow = { id: string; type: string; position: number; enabled: boolean; config?: unknown }
@@ -109,6 +110,34 @@ function WeatherCard({ weather }: { weather: WeatherCardData[] }) {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+// Air Quality card — a single row for the user's home location. Same
+// solid-fill live-data-card pattern as ScoresCard/WeatherCard.
+function AirQualityCard({ airQuality }: { airQuality: AirQualityCardData | null }) {
+  if (!airQuality) return null
+
+  return (
+    <div style={{
+      margin: '14px 16px 6px',
+      background: '#0e6b73',
+      borderRadius: '14px',
+      overflow: 'hidden',
+    }}>
+      <div style={{ padding: '12px 16px 4px', fontSize: '10px', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: '#ffffff' }}>
+        Air Quality
+      </div>
+      <div style={{ padding: '10px 16px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text)' }}>{airQuality.city}, {airQuality.state}</span>
+          <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)' }}>AQI {airQuality.aqi}</span>
+        </div>
+        <div style={{ fontSize: '13px', color: 'var(--text)', marginTop: '4px' }}>
+          {airQuality.aqiLabel} · UV Index {airQuality.uvIndex}
+        </div>
+      </div>
     </div>
   )
 }
@@ -371,6 +400,9 @@ const ZONE_GRADIENTS: Record<ZoneType, string> = {
   finance: 'linear-gradient(135deg,#0d2418,#070f0c)',
   work: 'linear-gradient(135deg,#1a1a2e,#0f0f1a)',
   entertainment: 'linear-gradient(135deg,#2d0d2e,#1a0a1a)',
+  family: 'linear-gradient(135deg,#4a3305,#241902)',
+  wellness: 'linear-gradient(135deg,#053a42,#021c20)',
+  interests: 'linear-gradient(135deg,#211c4a,#120f29)',
 }
 
 function relativeTime(iso: string): string {
@@ -575,6 +607,7 @@ export default function ZoneDetailClient({
   quicklook,
   scores,
   weather,
+  airQuality,
   updates,
   breaking,
   topStories,
@@ -588,6 +621,7 @@ export default function ZoneDetailClient({
   quicklook: QuicklookRow[]
   scores: TeamScoreCard[]
   weather: WeatherCardData[]
+  airQuality: AirQualityCardData | null
   updates: ArticleDisplay[]
   breaking: ArticleDisplay[]
   topStories: ArticleDisplay[]
@@ -610,7 +644,7 @@ export default function ZoneDetailClient({
   const trackMenuBtnRef = useRef<HTMLButtonElement>(null)
   const [todayVisibleCount, setTodayVisibleCount] = useState(5)
   const [customizeOpen, setCustomizeOpen] = useState(false)
-  const canCustomize = zoneType === 'sports' || zoneType === 'local' || zoneType === 'work'
+  const canCustomize = zoneType === 'sports' || zoneType === 'local' || zoneType === 'work' || zoneType === 'entertainment' || zoneType === 'interests'
 
   const showToast = (message: string) => {
     setToast({ visible: true, message })
@@ -744,6 +778,7 @@ export default function ZoneDetailClient({
 
       {zoneType === 'sports' && <ScoresCard scores={scores} />}
       {zoneType === 'local' && <WeatherCard weather={weather} />}
+      {zoneType === 'wellness' && <AirQualityCard airQuality={airQuality} />}
 
       {/* Local Zone has its own Weather Card now — the generic QuickLookStrip would be redundant */}
       {zoneType !== 'local' && qlItems.length > 0 && (

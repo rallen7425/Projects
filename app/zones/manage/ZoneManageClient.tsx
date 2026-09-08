@@ -142,7 +142,11 @@ export default function ZoneManageClient({
     // Local Zone's areas now come entirely from the Profile home location —
     // it never shows its own zip prompt. With a home location already set,
     // turning it on is immediate; without one, send the user to Profile first.
-    if (template.type === 'local') {
+    // Wellness's Air Quality card reads the same Profile home location
+    // directly at render time (no zip is ever stored on the zone itself), so
+    // it follows the exact same gate as Local rather than showing its own
+    // zip-collecting SetupPrompt.
+    if (template.type === 'local' || template.type === 'wellness') {
       if (!hasHomeLocation) {
         setNeedsProfileTemplate(template)
         return
@@ -162,7 +166,7 @@ export default function ZoneManageClient({
     // Sports also seeds itself from a zip (for default Teams of Interest) —
     // reuse the Profile home location automatically when one exists, so it
     // only prompts when it genuinely has no location to work from.
-    if ((template.requiresZip && !(template.type === 'sports' && hasHomeLocation)) || template.requiresIndustry) {
+    if ((template.requiresZip && !(template.type === 'sports' && hasHomeLocation)) || template.requiresIndustry || template.requiresTopic) {
       setSetupTemplate(template)
       return
     }
@@ -180,9 +184,10 @@ export default function ZoneManageClient({
   const handleSetupSubmit = (value: string) => {
     if (!setupTemplate) return
     const template = setupTemplate
+    const setupInput = template.requiresZip ? { zip: value } : template.requiresIndustry ? { industry: value } : { topic: value }
     startTransition(async () => {
       try {
-        await addZone(template.key, template.requiresZip ? { zip: value } : { industry: value })
+        await addZone(template.key, setupInput)
         setSetupTemplate(null)
         showToast(`${template.label} on`)
         router.refresh()
@@ -420,7 +425,7 @@ function SetupPrompt({
   pending: boolean
 }) {
   const [value, setValue] = useState('')
-  const fieldLabel = template.requiresZip ? 'Zip code' : 'Industry'
+  const fieldLabel = template.requiresZip ? 'Zip code' : template.requiresIndustry ? 'Industry' : 'Topic'
 
   return (
     <div
@@ -447,7 +452,7 @@ function SetupPrompt({
           <input
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder={template.requiresZip ? 'e.g. 01845' : 'e.g. Software'}
+            placeholder={template.requiresZip ? 'e.g. 01845' : template.requiresIndustry ? 'e.g. Software' : 'e.g. Guitar'}
             inputMode={template.requiresZip ? 'numeric' : 'text'}
             autoFocus
             style={{
