@@ -36,7 +36,7 @@ export default async function InDepthPage() {
   ])
 
   // Collapse separate DB rows covering the same real-world event before splitting into sections
-  const displays = dedupeStories(articles.map(toArticleDisplay))
+  const displays = dedupeStories(articles.map(row => toArticleDisplay(row)))
 
   const articleIds = articles.map((a) => a.id)
   const supabase = createServerSupabase()

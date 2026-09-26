@@ -116,7 +116,7 @@ export async function getZoneArticles(zoneType: ZoneType, config: Json, limit = 
       const scores = await getScoresForTeams(teams).catch(() => [])
       const teamNames = (scores.length > 0 ? scores.map((s) => s.team.shortName) : teams.map((t) => t.shortName))
       const rows = await searchTeamUpdates(teamNames, 8, 14, limit).catch(() => [])
-      const displays = dedupeStories(rows.map(toArticleDisplay))
+      const displays = dedupeStories(rows.map(row => toArticleDisplay(row)))
       if (displays.length > 0) return displays
     }
   }
@@ -126,7 +126,7 @@ export async function getZoneArticles(zoneType: ZoneType, config: Json, limit = 
     if (areas.length > 0) {
       const poolSize = Math.max(limit * 3, 30)
       const rows = await getArticlesByZone(zoneType, poolSize)
-      const displays = dedupeStories(rows.map(toArticleDisplay))
+      const displays = dedupeStories(rows.map(row => toArticleDisplay(row)))
       return applyLocalAreaPriority(displays, areas).slice(0, limit)
     }
   }
@@ -139,7 +139,7 @@ export async function getZoneArticles(zoneType: ZoneType, config: Json, limit = 
   // even after Breaking/Top Stories/Today (which do dedupe) had already collapsed them.
   const poolSize = Math.max(limit * 3, 30)
   const rows = await getArticlesByZone(zoneType, poolSize)
-  const displays = dedupeStories(rows.map(toArticleDisplay))
+  const displays = dedupeStories(rows.map(row => toArticleDisplay(row)))
 
   if (zoneType === 'entertainment') {
     const genres = (config as { genres?: string[] } | null)?.genres ?? []

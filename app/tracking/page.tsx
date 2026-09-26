@@ -31,7 +31,7 @@ export default async function TrackingPage() {
         if (zoneType && articles.length === 0) {
           articles = await searchArticlesByTopic(t.topic, 5, 30)
         }
-        return { topic: t, articles: articles.map(toArticleDisplay) }
+        return { topic: t, articles: articles.map(row => toArticleDisplay(row)) }
       } catch {
         return { topic: t, articles: [] }
       }

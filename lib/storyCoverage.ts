@@ -34,14 +34,14 @@ export async function getStoryCoverage(articleId: string): Promise<StoryCoverage
   ])
 
   const main = toArticleDisplay(article)
-  const zoneDisplays = zoneArticlesRaw.map(toArticleDisplay)
+  const zoneDisplays = zoneArticlesRaw.map(row => toArticleDisplay(row))
 
   // Every candidate has to pass findRelatedStories' same-story check — see
   // lib/articleUtils.ts's isSameStory doc comment for why the raw topic-search
   // results can't be trusted unfiltered (a short/generic tag ILIKE-matches almost
   // anything).
   const candidatePool = new Map<string, ArticleDisplay>()
-  for (const a of [...zoneDisplays, ...coverageRaw.map(toArticleDisplay)]) {
+  for (const a of [...zoneDisplays, ...coverageRaw.map(row => toArticleDisplay(row))]) {
     if (a.id !== article.id) candidatePool.set(a.id, a)
   }
   const coverage = findRelatedStories(main, Array.from(candidatePool.values()), 40)

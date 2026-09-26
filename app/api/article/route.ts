@@ -1,79 +1,51 @@
-import { NextRequest, NextResponse } from "next/server";
-import { Readability } from "@mozilla/readability";
-import { parseHTML } from "linkedom";
+import { NextRequest, NextResponse } from 'next/server'
+import { Readability } from '@mozilla/readability'
+import { parseHTML } from 'linkedom'
+import { createServerSupabase, getEffectiveUser } from '@/lib/supabase/server'
+import { articleUrl, fetchArticlePage } from '@/lib/security/safeArticleFetch'
+import { acquireArticleRead } from '@/lib/security/articleAccess'
 
-const HEADERS = {
-  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-  "Accept-Language": "en-US,en;q=0.9",
-};
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+const json = (body: unknown, status = 200) => NextResponse.json(body, {
+  status, headers: { 'Cache-Control': 'private, no-store' },
+})
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const url = searchParams.get("url");
-
-  if (!url) {
-    return NextResponse.json({ error: "url param required" }, { status: 400 });
-  }
-
+  const user = await getEffectiveUser()
+  if (!user) return json({ error: 'Unauthorized' }, 401)
+  const release = acquireArticleRead(user.id)
+  if (!release) return json({ error: 'Too many requests' }, 429)
+  let sourceUrl = ''
   try {
-    // Resolve Google News redirect URLs to the real article URL
-    let targetUrl = url;
-    if (url.includes("news.google.com")) {
-      targetUrl = await resolveGoogleNewsUrl(url);
+    const id = request.nextUrl.searchParams.get('id')
+    const suppliedUrl = request.nextUrl.searchParams.get('url')
+    if ((!id && !suppliedUrl) || (id && !/^[0-9a-f-]{36}$/i.test(id)) || (suppliedUrl && suppliedUrl.length > 4096)) {
+      return json({ error: 'Valid article id or stored url required' }, 400)
     }
-
-    const res = await fetch(targetUrl, {
-      headers: HEADERS,
-      redirect: "follow",
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) {
-      return NextResponse.json({ paragraphs: [], finalUrl: targetUrl });
+    const supabase = createServerSupabase()
+    let query = supabase.from('articles').select('source_url')
+    query = id ? query.eq('id', id) : query.eq('source_url', suppliedUrl!)
+    const { data, error } = await query.limit(1).maybeSingle()
+    if (error) return json({ error: 'Article lookup failed' }, 503)
+    if (!data?.source_url) return json({ error: 'Article not found' }, 404)
+    sourceUrl = articleUrl(data.source_url).href
+    const signal = AbortSignal.timeout(8000)
+    let page = await fetchArticlePage(sourceUrl, signal)
+    if (new URL(page.finalUrl).hostname === 'news.google.com') {
+      // Every discovered destination passes the same pinned-address transport.
+      const match = page.html.match(/data-n-au="([^"]+)"/) || page.html.match(/<a[^>]+href="(https?:\/\/[^"]+)"/i)
+      if (match?.[1]) page = await fetchArticlePage(match[1].replace(/&amp;/g, '&'), signal)
     }
-
-    const finalUrl = res.url;
-    const html = await res.text();
-    const paragraphs = extractWithReadability(html, finalUrl);
-    return NextResponse.json({ paragraphs, finalUrl });
-  } catch (_err) {
-    return NextResponse.json({ paragraphs: [], finalUrl: url });
+    return json({ paragraphs: extractWithReadability(page.html), finalUrl: page.finalUrl })
+  } catch {
+    return json({ paragraphs: [], ...(sourceUrl ? { finalUrl: sourceUrl } : {}) })
+  } finally {
+    release()
   }
 }
 
-async function resolveGoogleNewsUrl(googleUrl: string): Promise<string> {
-  // Strategy 1: try to decode the Base64-encoded URL directly from the path
-  try {
-    const path = new URL(googleUrl).pathname.replace("/rss/articles/", "");
-    const decoded = Buffer.from(path, "base64url").toString("binary");
-    const idx = decoded.indexOf("https://");
-    if (idx !== -1) {
-      const extracted = decoded.slice(idx).split(/[\x00\s]/)[0];
-      if (extracted.length > 20 && !extracted.includes("news.google.com")) {
-        return extracted;
-      }
-    }
-  } catch { /* fall through */ }
-
-  // Strategy 2: fetch and follow HTTP redirects — res.url is the final URL
-  try {
-    const res = await fetch(googleUrl, { headers: HEADERS, redirect: "follow" });
-    if (res.url && !res.url.includes("news.google.com")) {
-      return res.url;
-    }
-    // Strategy 3: look for the real URL inside the returned HTML
-    const html = await res.text();
-    const match =
-      html.match(/data-n-au="([^"]+)"/) ||
-      html.match(/<a[^>]+href="(https?:\/\/(?!news\.google\.com)[^"]+)"[^>]*>/i);
-    if (match?.[1]) return match[1];
-  } catch { /* fall through */ }
-
-  return googleUrl;
-}
-
-function extractWithReadability(html: string, url: string): string[] {
+function extractWithReadability(html: string): string[] {
   try {
     const { document } = parseHTML(html);
     const reader = new Readability(document as unknown as Document, {

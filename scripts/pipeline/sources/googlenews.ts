@@ -1,3 +1,5 @@
+import { observeSource } from '../sourceStatus'
+import { sourceDate } from '../sourceDate'
 import { createHash } from 'crypto'
 import Parser from 'rss-parser'
 import type { RawArticle, ZoneType } from '../types'
@@ -21,6 +23,7 @@ import type { RawArticle, ZoneType } from '../types'
 // redirect to the true publisher).
 
 const parser = new Parser({
+  timeout: 15000,
   headers: {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   },
@@ -31,7 +34,7 @@ function makeExternalId(sourceUrl: string, headline: string): string {
   return createHash('sha256').update(sourceUrl + headline).digest('hex').slice(0, 32)
 }
 
-export async function fetchGoogleNews(query: string, zoneType: ZoneType, sourceLabel?: string): Promise<RawArticle[]> {
+async function fetchGoogleNewsImpl(query: string, zoneType: ZoneType, sourceLabel?: string): Promise<RawArticle[]> {
   // Quoted as an exact phrase — unquoted multi-word queries are matched as loose
   // AND/OR keyword sets, not a phrase, which let a bare "Wells Maine" query match
   // an unrelated article about a person named "Nolan Wells" (confirmed via live
@@ -57,8 +60,12 @@ export async function fetchGoogleNews(query: string, zoneType: ZoneType, sourceL
       bodySnippet: content.slice(0, 500) || undefined,
       sourceUrl,
       sourceName,
-      publishedAt: item.isoDate ?? item.pubDate ?? new Date().toISOString(),
+      publishedAt: sourceDate(item.isoDate ?? item.pubDate),
       zoneType,
     } satisfies RawArticle
   })
+}
+
+export async function fetchGoogleNews(query: string, zoneType: ZoneType, sourceLabel?: string): Promise<RawArticle[]> {
+  return observeSource('Google News', () => fetchGoogleNewsImpl(query, zoneType, sourceLabel), rows => rows.length)
 }

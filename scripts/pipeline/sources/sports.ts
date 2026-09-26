@@ -1,3 +1,4 @@
+import { sourceTime } from '../sourceDate'
 import { fetchRss } from './rss'
 import type { RawArticle } from '../types'
 
@@ -24,6 +25,6 @@ export async function fetchSports(): Promise<RawArticle[]> {
 
   // Sort by publishedAt descending, cap at 15
   return articles
-    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    .sort((a, b) => sourceTime(b.publishedAt) - sourceTime(a.publishedAt))
     .slice(0, 15)
 }

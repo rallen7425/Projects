@@ -113,7 +113,7 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   const updateIds = new Set(updateDisplays.map((a) => a.id))
   const topStories = teamDisplays.filter((a) => !updateIds.has(a.id))
 
-  const articleDisplays = articles.map(toArticleDisplay)
+  const articleDisplays = articles.map(row => toArticleDisplay(row))
 
   // More — general sports news beyond the Teams of Interest (excludes anything
   // already surfaced as team-of-interest coverage above).
@@ -138,7 +138,7 @@ export default async function ZoneDetailPage({ params }: { params: { zoneId: str
   // above, rather than the flat 15-row `articles` fetch (see the comment above
   // that fetch for why).
   const nonSportsPool = zoneType === 'local' ? localPoolRows : genericPoolRows
-  const zoneDisplays = zoneType !== 'sports' ? dedupeStories(nonSportsPool.map(toArticleDisplay)) : []
+  const zoneDisplays = zoneType !== 'sports' ? dedupeStories(nonSportsPool.map(row => toArticleDisplay(row))) : []
 
   // Breaking stays purely urgency/recency-driven (unboosted) so a genuinely urgent story
   // from any configured area — primary or secondary — still surfaces here.

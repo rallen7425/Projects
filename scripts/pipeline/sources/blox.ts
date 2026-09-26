@@ -1,3 +1,5 @@
+import { observeSource } from '../sourceStatus'
+import { sourceDate } from '../sourceDate'
 import { createHash } from 'crypto'
 import Parser from 'rss-parser'
 import type { RawArticle, ZoneType } from '../types'
@@ -12,6 +14,7 @@ import type { RawArticle, ZoneType } from '../types'
 // User-Agent is required — a desktop UA got a 429 from at least
 // eagletribune.com; iPhone Safari's UA did not.
 const parser = new Parser({
+  timeout: 15000,
   headers: {
     'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
   },
@@ -32,7 +35,7 @@ function makeExternalId(sourceUrl: string, headline: string): string {
   return createHash('sha256').update(sourceUrl + headline).digest('hex').slice(0, 32)
 }
 
-export async function fetchBloxSearch(domain: string, query: string, zoneType: ZoneType, sourceName: string): Promise<RawArticle[]> {
+async function fetchBloxSearchImpl(domain: string, query: string, zoneType: ZoneType, sourceName: string): Promise<RawArticle[]> {
   const url = `https://${domain}/search/?q=${encodeURIComponent(query)}&f=rss&t=article`
   const feed = await parser.parseURL(url)
   const cutoffMs = Date.now() - MAX_AGE_DAYS * 24 * 60 * 60 * 1000
@@ -55,8 +58,12 @@ export async function fetchBloxSearch(domain: string, query: string, zoneType: Z
         bodySnippet: content.slice(0, 500) || undefined,
         sourceUrl,
         sourceName,
-        publishedAt: item.isoDate ?? item.pubDate ?? new Date().toISOString(),
+        publishedAt: sourceDate(item.isoDate ?? item.pubDate),
         zoneType,
       } satisfies RawArticle
     })
+}
+
+export async function fetchBloxSearch(domain: string, query: string, zoneType: ZoneType, sourceName: string): Promise<RawArticle[]> {
+  return observeSource('BLOX', () => fetchBloxSearchImpl(domain, query, zoneType, sourceName), rows => rows.length)
 }

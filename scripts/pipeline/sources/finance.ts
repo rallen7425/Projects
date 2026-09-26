@@ -1,3 +1,4 @@
+import { observeSource, sourceScope } from '../sourceStatus'
 import { createHash } from 'crypto'
 import type { RawArticle } from '../types'
 
@@ -14,27 +15,25 @@ type QuoteResult = {
 
 async function fetchQuote(symbol: string, apiKey: string): Promise<QuoteResult | null> {
   const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`
-  try {
-    const res = await fetch(url)
-    if (!res.ok) return null
+  return observeSource('Alpha Vantage ' + symbol, async () => {
+    const res = await fetch(url, { signal: AbortSignal.timeout(15000) })
+    if (!res.ok) throw new Error('Quote failed')
     const json = await res.json()
     const q = json?.['Global Quote']
-    if (!q?.['05. price']) return null
+    if (!q?.['05. price']) throw new Error('Missing quote')
     return {
       symbol,
       price: parseFloat(q['05. price']).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       change: q['09. change'],
       changePercent: q['10. change percent'],
     }
-  } catch {
-    return null
-  }
+  }, () => 1).catch(() => null)
 }
 
 export async function fetchFinance(): Promise<RawArticle[]> {
   const apiKey = process.env.ALPHA_VANTAGE_KEY
   if (!apiKey) {
-    console.warn('[finance] ALPHA_VANTAGE_KEY not set — skipping')
+    sourceScope.getStore()?.push({ source: 'Alpha Vantage', status: 'skipped', items: 0 })
     return []
   }
 

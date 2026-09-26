@@ -1,3 +1,5 @@
+import { observeSource } from '../sourceStatus'
+import { sourceDate } from '../sourceDate'
 import { createHash } from 'crypto'
 import type { RawArticle, ZoneType } from '../types'
 
@@ -12,7 +14,7 @@ function makeExternalId(sourceUrl: string, headline: string): string {
 // draw from 'lifeandstyle', so each needs its own narrower tag to avoid near-identical
 // content; confirmed both tags exist and are reasonably populated via a live tags-API
 // check before wiring this in).
-export async function fetchGuardian(sectionOrTag: string, zoneType: ZoneType, opts?: { byTag?: boolean }): Promise<RawArticle[]> {
+async function fetchGuardianImpl(sectionOrTag: string, zoneType: ZoneType, opts?: { byTag?: boolean }): Promise<RawArticle[]> {
   const apiKey = process.env.GUARDIAN_API_KEY
   if (!apiKey) throw new Error('GUARDIAN_API_KEY not set')
 
@@ -23,11 +25,12 @@ export async function fetchGuardian(sectionOrTag: string, zoneType: ZoneType, op
   url.searchParams.set('page-size', '15')
   url.searchParams.set('order-by', 'newest')
 
-  const res = await fetch(url.toString())
+  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(15000) })
   if (!res.ok) throw new Error(`Guardian API error: ${res.status}`)
 
   const json = await res.json()
-  const results = json?.response?.results ?? []
+  if (!Array.isArray(json?.response?.results)) throw new Error('Invalid Guardian response')
+  const results = json.response.results
 
   return results.slice(0, 15).map((item: Record<string, unknown>) => {
     const fields = (item.fields ?? {}) as Record<string, string>
@@ -42,8 +45,12 @@ export async function fetchGuardian(sectionOrTag: string, zoneType: ZoneType, op
       imageUrl: fields.thumbnail || undefined,
       sourceUrl: sourceUrl as string,
       sourceName: 'The Guardian',
-      publishedAt: (item.webPublicationDate ?? new Date().toISOString()) as string,
+      publishedAt: sourceDate(item.webPublicationDate),
       zoneType,
     } satisfies RawArticle
   })
+}
+
+export async function fetchGuardian(sectionOrTag: string, zoneType: ZoneType, opts?: { byTag?: boolean }): Promise<RawArticle[]> {
+  return observeSource('Guardian', () => fetchGuardianImpl(sectionOrTag, zoneType, opts), rows => rows.length)
 }

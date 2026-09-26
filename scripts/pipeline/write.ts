@@ -61,7 +61,7 @@ export async function writeArticles(articles: ProcessedArticle[]): Promise<numbe
     image_url: a.imageUrl ?? null,
     source_name: a.sourceName,
     source_url: a.sourceUrl,
-    published_at: a.publishedAt,
+    published_at: a.publishedAt || null,
     urgency_score: a.urgencyScore,
     zone_type: a.zoneType,
     zone_types: a.zoneTypes,

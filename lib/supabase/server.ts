@@ -1,3 +1,4 @@
+import { devBypassId } from '@/lib/auth/devBypass'
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
@@ -24,7 +25,7 @@ const createAnonClient = () => {
 
 // In dev bypass mode, use service role to skip RLS for all db queries.
 export const createServerSupabase = () => {
-  if (process.env.DEV_BYPASS_USER_ID) {
+  if (devBypassId()) {
     return createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -37,7 +38,7 @@ export const createServerSupabase = () => {
 // Use this in pages instead of supabase.auth.getUser() + redirect.
 // Returns the real session user, or a synthetic dev user when DEV_BYPASS_USER_ID is set.
 export async function getEffectiveUser(): Promise<{ id: string; email: string } | null> {
-  const devId = process.env.DEV_BYPASS_USER_ID
+  const devId = devBypassId()
   if (devId) return { id: devId, email: 'rallen7425@gmail.com' }
   const supabase = createAnonClient()
   const { data: { user } } = await supabase.auth.getUser()

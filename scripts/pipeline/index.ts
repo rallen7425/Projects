@@ -1,3 +1,5 @@
+import { sourceScope, resultStatus, runStatus, type SourceOutcome } from './sourceStatus'
+import { sourceTime } from './sourceDate'
 import { config } from 'dotenv'
 import { resolve } from 'path'
 // Load .env.local first (takes priority), then .env
@@ -51,8 +53,7 @@ async function fetchLocalAreaConfigs(): Promise<LocalArea[]> {
     .eq('enabled', true)
 
   if (error) {
-    console.warn('[local] Failed to load zone configs:', error.message)
-    return []
+    throw new Error('Local configuration lookup failed')
   }
 
   const byQuery = new Map<string, LocalArea>()
@@ -79,8 +80,7 @@ async function fetchInterestsTopics(): Promise<string[]> {
     .eq('enabled', true)
 
   if (error) {
-    console.warn('[interests] Failed to load zone configs:', error.message)
-    return []
+    throw new Error('Interests configuration lookup failed')
   }
 
   const topics = new Set<string>()
@@ -109,7 +109,7 @@ const ZONE_RUNNERS: ZoneRunner[] = [
       ])
       const merged = sources.flatMap((r) => (r.status === 'fulfilled' ? r.value.slice(0, 6) : []))
       return merged
-        .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+        .sort((a, b) => sourceTime(b.publishedAt) - sourceTime(a.publishedAt))
         .slice(0, 15)
     },
   },
@@ -167,7 +167,7 @@ const ZONE_RUNNERS: ZoneRunner[] = [
           }
           const sets = await Promise.all(fetchers)
           const perSource = sets.map((set) =>
-            [...set].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 6)
+            [...set].sort((a, b) => sourceTime(b.publishedAt) - sourceTime(a.publishedAt)).slice(0, 6)
           )
           return interleaveRoundRobin(perSource).slice(0, 8)
         })
@@ -210,14 +210,16 @@ const ZONE_RUNNERS: ZoneRunner[] = [
         topics.map((topic) => fetchGoogleNews(topic, 'interests', topic).catch(() => []))
       )
       const capped = perTopic.map((set) =>
-        [...set].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 8)
+        [...set].sort((a, b) => sourceTime(b.publishedAt) - sourceTime(a.publishedAt)).slice(0, 8)
       )
       return interleaveRoundRobin(capped).slice(0, 15)
     },
   },
 ]
 
-type PipelineResult = {
+export type PipelineResult = {
+  status: 'success' | 'partial' | 'failed'
+  sources: SourceOutcome[]
   zone: ZoneType
   fetched: number
   newArticles: number
@@ -233,52 +235,35 @@ export async function runPipeline(zones?: ZoneType[]): Promise<PipelineResult[]>
   const results: PipelineResult[] = []
 
   for (const runner of runners) {
-    console.log(`[pipeline] Running zone: ${runner.zone}`)
-    try {
-      const raw = await runner.fetch()
-      console.log(`[pipeline] ${runner.zone}: fetched ${raw.length} articles`)
-
-      if (raw.length === 0) {
-        results.push({ zone: runner.zone, fetched: 0, newArticles: 0, written: 0 })
-        continue
+    const sources: SourceOutcome[] = []
+    const result: PipelineResult = { zone: runner.zone, fetched: 0, newArticles: 0, written: 0, status: 'success', sources }
+    let stage = 'Acquisition'
+    await sourceScope.run(sources, async () => {
+      try {
+        const raw = await runner.fetch()
+        result.fetched = raw.length
+        if (!raw.length) return
+        stage = 'Deduplication'
+        const supabase = createServiceClient()
+        const { data: existing, error } = await supabase.from('articles').select('external_id').in('external_id', raw.map(a => a.externalId))
+        if (error) throw new Error('Dedup lookup failed')
+        const knownIds = new Set((existing ?? []).map(r => r.external_id))
+        const newRaw = raw.filter(a => !knownIds.has(a.externalId))
+        result.newArticles = newRaw.length
+        if (!newRaw.length) return
+        stage = 'Image enrichment'
+        const withImages = await enrichImages(newRaw)
+        stage = 'Summary enrichment'
+        const processed = await summarizeArticles(withImages)
+        stage = 'Storage'
+        result.written = await writeArticles(processed)
+      } catch {
+        result.error = `${stage} failed`
       }
-
-      // Check which are new before enrichment (optimization to avoid Claude calls)
-      const supabase = createServiceClient()
-      const externalIds = raw.map((a) => a.externalId)
-      const { data: existing, error: dedupError } = await supabase
-        .from('articles')
-        .select('external_id')
-        .in('external_id', externalIds)
-      if (dedupError) {
-        // If dedup query fails, skip this zone rather than calling Claude for
-        // articles that may already exist (write.ts has its own dedup as a fallback)
-        console.error(`[pipeline] ${runner.zone}: dedup query failed:`, dedupError.message)
-        results.push({ zone: runner.zone, fetched: raw.length, newArticles: 0, written: 0, error: dedupError.message })
-        continue
-      }
-      const knownIds = new Set((existing ?? []).map((r) => r.external_id))
-      const newRaw = raw.filter((a) => !knownIds.has(a.externalId))
-
-      console.log(`[pipeline] ${runner.zone}: ${newRaw.length} new articles`)
-
-      if (newRaw.length === 0) {
-        results.push({ zone: runner.zone, fetched: raw.length, newArticles: 0, written: 0 })
-        continue
-      }
-
-      // Enrich only new articles
-      const withImages = await enrichImages(newRaw)
-      const processed = await summarizeArticles(withImages)
-      const written = await writeArticles(processed)
-
-      console.log(`[pipeline] ${runner.zone}: wrote ${written} articles`)
-      results.push({ zone: runner.zone, fetched: raw.length, newArticles: newRaw.length, written })
-    } catch (err) {
-      const message = err instanceof Error ? err.message : JSON.stringify(err)
-      console.error(`[pipeline] ${runner.zone} failed:`, message)
-      results.push({ zone: runner.zone, fetched: 0, newArticles: 0, written: 0, error: message })
-    }
+    })
+    result.status = resultStatus(Boolean(result.error), sources)
+    results.push(result)
+    console.log('[pipeline]', JSON.stringify(result))
   }
 
   return results
@@ -292,9 +277,9 @@ if (process.argv[1]?.endsWith('index.ts') || process.argv[1]?.endsWith('index.js
       const status = r.error ? `ERROR: ${r.error}` : `fetched=${r.fetched} new=${r.newArticles} written=${r.written}`
       console.log(`  ${r.zone}: ${status}`)
     }
-    process.exit(0)
-  }).catch((err) => {
-    console.error('Pipeline crashed:', err)
+    process.exit(runStatus(results) === 'success' ? 0 : 1)
+  }).catch(() => {
+    console.error('Pipeline crashed')
     process.exit(1)
   })
 }

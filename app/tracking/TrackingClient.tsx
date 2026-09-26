@@ -15,6 +15,7 @@ type TopicRow = { id: string; topic: string; zone_id?: string | null; deadline_a
 type TopicData = { topic: TopicRow; articles: ArticleDisplay[] }
 
 function relativeTime(iso: string): string {
+  if (!Number.isFinite(Date.parse(iso)) || Date.parse(iso) > Date.now()) return 'Date unavailable'
   const diff = Date.now() - new Date(iso).getTime()
   const mins = Math.floor(diff / 60000)
   if (mins < 60) return `${mins}m ago`

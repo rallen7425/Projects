@@ -4,7 +4,7 @@ import type { Database } from '@/types/supabase'
 type ArticleRow = Database['distilled']['Tables']['articles']['Row']
 
 export function toArticleDisplay(row: ArticleRow, nowMs = Date.now()): ArticleDisplay {
-  const publishedMs = row.published_at ? new Date(row.published_at).getTime() : nowMs
+  const publishedMs = row.published_at ? new Date(row.published_at).getTime() : NaN
   const ageMs = nowMs - publishedMs
   const ageHours = ageMs / (1000 * 60 * 60)
 
@@ -15,82 +15,25 @@ export function toArticleDisplay(row: ArticleRow, nowMs = Date.now()): ArticleDi
     imageUrl: row.image_url ?? undefined,
     sourceName: row.source_name ?? '',
     sourceUrl: row.source_url ?? '',
-    publishedAt: row.published_at ?? new Date().toISOString(),
+    publishedAt: row.published_at ?? '',
     urgencyScore: row.urgency_score,
     zoneType: (row.zone_type ?? 'tech') as ZoneType,
     tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
-    isNew: ageHours < 3,
+    isNew: Number.isFinite(ageHours) && ageHours >= 0 && ageHours < 3,
     isUrgent: row.urgency_score >= 4,
   }
 }
 
-const HEADLINE_STOPWORDS = new Set([
-  'with', 'after', 'from', 'have', 'their', 'about', 'would', 'could', 'should',
-  'being', 'which', 'where', 'there', 'these', 'those', 'under', 'between',
-  'first', 'before', 'during', 'while', 'against', 'among', 'into', 'over',
-  'than', 'then', 'when', 'what', 'were', 'been', 'more', 'also', 'some',
-  'will', 'says', 'said', 'this', 'that', 'live',
-])
-
-function significantHeadlineWords(headline: string): Set<string> {
-  return new Set(
-    headline
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, ' ')
-      .split(/\s+/)
-      .filter(w => w.length > 3 && !HEADLINE_STOPWORDS.has(w))
-  )
-}
-
-// Collapses separate DB rows covering the same real-world event into one representative
-// article — the first (i.e. highest-priority, since callers pass an already urgency/recency
-// sorted list) encountered. Two articles are treated as the same story via either path:
-//
-//  A) an EXACT shared tag string AND >=2 shared significant headline words — tag overlap
-//     alone isn't safe, since generic tags (e.g. "Politics", "US Senate") are shared by
-//     genuinely unrelated stories.
-//  B) the SAME source, a fuzzy (word-level) tag overlap, AND >=1 shared headline word — added
-//     after a real-world case (a live-blogged disaster) where one outlet's own coverage of one
-//     event got tagged inconsistently across separate hourly Claude batches (e.g. "Nepal
-//     floods" vs "Nepal" + "flash flood" vs "Nepal-Tibet floods" for the same story), so exact
-//     tag-string matching alone let many near-duplicate rows from that outlet survive. Scoping
-//     this looser path to same-source keeps it safe — it can't merge two different outlets'
-//     unrelated stories the way a bare fuzzy-tag rule could.
-function tagWords(tags: string[]): Set<string> {
-  const words = new Set<string>()
-  for (const tag of tags) significantHeadlineWords(tag).forEach(w => words.add(w))
-  return words
-}
-
-type StoryProfile = { sourceName: string; tags: Set<string>; tagWords: Set<string>; words: Set<string> }
-
+// Until persistent event identities exist, only collapse exact normalized headlines.
+// Topic/tag overlap is not evidence that two reports describe the same event.
+type StoryProfile = { id: string; headline: string; publishedMs: number }
 function storyProfile(article: ArticleDisplay): StoryProfile {
-  return {
-    sourceName: article.sourceName,
-    tags: new Set(article.tags.map(t => t.toLowerCase().trim()).filter(Boolean)),
-    tagWords: tagWords(article.tags),
-    words: significantHeadlineWords(article.headline),
-  }
+  return { publishedMs: Date.parse(article.publishedAt), id: article.id, headline: article.headline.toLowerCase().replace(/\s+/g, ' ').trim() }
 }
-
 function isSameStory(a: StoryProfile, b: StoryProfile): boolean {
-  let sharedWords = 0
-  a.words.forEach(w => { if (b.words.has(w)) sharedWords++ })
-
-  // Path A: exact tag match + strong headline overlap.
-  if (a.tags.size > 0 && b.tags.size > 0) {
-    const sharesTag = Array.from(a.tags).some(t => b.tags.has(t))
-    if (sharesTag && sharedWords >= 2) return true
-  }
-
-  // Path B: same source + fuzzy tag-topic overlap + at least one shared headline word.
-  if (a.sourceName && a.sourceName === b.sourceName) {
-    let sharedTagWords = 0
-    a.tagWords.forEach(w => { if (b.tagWords.has(w)) sharedTagWords++ })
-    if (sharedTagWords > 0 && sharedWords >= 1) return true
-  }
-
-  return false
+  return a.id === b.id || (a.headline.length > 0 && a.headline === b.headline &&
+    Number.isFinite(a.publishedMs) && Number.isFinite(b.publishedMs) &&
+    Math.abs(a.publishedMs - b.publishedMs) <= 36 * 60 * 60 * 1000)
 }
 
 export function dedupeStories(articles: ArticleDisplay[]): ArticleDisplay[] {
@@ -128,9 +71,9 @@ function scoreForImportance(article: ArticleDisplay): number {
   let score = article.urgencyScore * 3
 
   const ageHours = (Date.now() - new Date(article.publishedAt).getTime()) / (1000 * 60 * 60)
-  if (ageHours < 2) score += 3
-  else if (ageHours < 6) score += 2
-  else if (ageHours < 12) score += 1
+  if (ageHours >= 0 && ageHours < 2) score += 3
+  else if (ageHours >= 0 && ageHours < 6) score += 2
+  else if (ageHours >= 0 && ageHours < 12) score += 1
 
   const timeSensitive = ['today', 'tonight', 'deadline', 'breaking', 'alert', 'closing', 'final', 'now', 'live']
   if (timeSensitive.some(w => article.headline.toLowerCase().includes(w))) score += 4
@@ -155,9 +98,10 @@ function pickDistributedByZone(scored: Array<{ article: ArticleDisplay; score: n
 
 // Breaking: urgent (score >= 4) stories from the last 12 hours only. Empty when nothing qualifies.
 export function selectBreakingStories(articles: ArticleDisplay[], max = 5): ArticleDisplay[] {
-  const cutoffMs = Date.now() - 12 * 60 * 60 * 1000
+  const now = Date.now()
+  const cutoffMs = now - 12 * 60 * 60 * 1000
   return articles
-    .filter(a => a.isUrgent && new Date(a.publishedAt).getTime() >= cutoffMs)
+    .filter(a => a.isUrgent && new Date(a.publishedAt).getTime() >= cutoffMs && new Date(a.publishedAt).getTime() <= now)
     .sort((a, b) => {
       if (b.urgencyScore !== a.urgencyScore) return b.urgencyScore - a.urgencyScore
       return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()

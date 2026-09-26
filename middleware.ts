@@ -1,10 +1,11 @@
+import { devBypassId } from '@/lib/auth/devBypass'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const PUBLIC_ROUTES = ['/auth/signin', '/auth/signup', '/auth/callback']
 
 export async function middleware(request: NextRequest) {
-  if (process.env.DEV_BYPASS_USER_ID) return NextResponse.next({ request })
+  if (devBypassId()) return NextResponse.next({ request })
 
   let response = NextResponse.next({ request })
 

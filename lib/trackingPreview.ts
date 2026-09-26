@@ -42,7 +42,7 @@ export async function getTrackingPreview(topicRow: TrackedTopicRow, zones: ZoneR
     matches = await searchArticlesByTopic(topicRow.topic, limit, 30).catch(() => [])
   }
 
-  const displays = dedupeStories(matches.map(toArticleDisplay))
+  const displays = dedupeStories(matches.map(row => toArticleDisplay(row)))
 
   return {
     id: topicRow.id,
