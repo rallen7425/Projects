@@ -20,7 +20,9 @@ export async function POST(request: NextRequest) {
     const results = await runPipeline(zones)
 
     const status = runStatus(results)
-    return NextResponse.json({ success: status === 'success', status, results }, { status: status === 'success' ? 200 : 502 })
+    // 'partial' (some sources/zones degraded, others fine) is still a usable run — only a
+    // total failure is an error. The workflow surfaces partial runs as warnings.
+    return NextResponse.json({ success: status !== 'failed', status, results }, { status: status === 'failed' ? 502 : 200 })
   } catch {
     const message = 'Pipeline failed'
     console.error('[pipeline trigger] Error:', message)

@@ -44,5 +44,15 @@ async function fetchRssImpl(feedUrl: string, zoneType: ZoneType, sourceName?: st
 }
 
 export async function fetchRss(feedUrl: string, zoneType: ZoneType, sourceName?: string): Promise<RawArticle[]> {
-  return observeSource(new URL(feedUrl).hostname, () => fetchRssImpl(feedUrl, zoneType, sourceName), rows => rows.length)
+  // One retry: community feeds (e.g. hnrss.org) intermittently time out, and a single
+  // transient miss shouldn't mark the whole zone partial.
+  const attempt = async () => {
+    try {
+      return await fetchRssImpl(feedUrl, zoneType, sourceName)
+    } catch {
+      await new Promise(r => setTimeout(r, 1500))
+      return fetchRssImpl(feedUrl, zoneType, sourceName)
+    }
+  }
+  return observeSource(new URL(feedUrl).hostname, attempt, rows => rows.length)
 }

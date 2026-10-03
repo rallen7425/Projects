@@ -21,7 +21,8 @@ jobs:
             -H "Content-Type: application/json" \
             --output result.json \
             https://distilled-news.vercel.app/api/pipeline/trigger
-          jq -e '.success == true and .status == "success" and (.results | length > 0) and all(.results[]; .status == "success")' result.json
+          jq -e '.success == true and (.results | length > 0) and all(.results[]; .status != "failed")' result.json
+          jq -r '.results[] | select(.status == "partial") | "::warning::zone \(.zone) partial — failed sources: \([.sources[] | select(.status == "failed") | .source] | join(", "))"' result.json
       - name: Show pipeline outcomes
         if: always()
         run: |
