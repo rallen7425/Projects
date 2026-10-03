@@ -37,11 +37,13 @@ export async function fetchFinance(): Promise<RawArticle[]> {
     return []
   }
 
-  const [spy, dia, qqq] = await Promise.all([
-    fetchQuote('SPY', apiKey),
-    fetchQuote('DIA', apiKey),
-    fetchQuote('QQQ', apiKey),
-  ])
+  // Free tier allows 1 request/second — parallel calls get rate-limited and
+  // silently return an "Information" body with no quote, so space them out.
+  const spy = await fetchQuote('SPY', apiKey)
+  await new Promise(r => setTimeout(r, 1100))
+  const dia = await fetchQuote('DIA', apiKey)
+  await new Promise(r => setTimeout(r, 1100))
+  const qqq = await fetchQuote('QQQ', apiKey)
 
   if (!spy) return []
 

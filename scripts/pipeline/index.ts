@@ -21,6 +21,8 @@ import type { LocalArea } from '@/types'
 type ZoneRunner = {
   zone: ZoneType
   fetch: () => Promise<RawArticle[]>
+  // Skipped by the default (all-zones) run; still runnable via an explicit `zones` list.
+  disabledByDefault?: boolean
 }
 
 // Merges pre-sorted (most-recent-first) groups by taking one item from each group in
@@ -115,6 +117,9 @@ const ZONE_RUNNERS: ZoneRunner[] = [
   },
   {
     zone: 'finance',
+    // Finance is hidden from the zone catalog (no user can enable it) and Alpha Vantage's
+    // free tier (25 calls/day) can't sustain 3 quotes/hour — it made every run report partial.
+    disabledByDefault: true,
     fetch: async () => {
       const [guardian, market] = await Promise.allSettled([
         fetchGuardian('business', 'finance'),
@@ -230,7 +235,7 @@ export type PipelineResult = {
 export async function runPipeline(zones?: ZoneType[]): Promise<PipelineResult[]> {
   const runners = zones
     ? ZONE_RUNNERS.filter((r) => zones.includes(r.zone))
-    : ZONE_RUNNERS
+    : ZONE_RUNNERS.filter((r) => !r.disabledByDefault)
 
   const results: PipelineResult[] = []
 
